@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+
+    // Administrador: quem está gravado em config/owner
+    function isOwner() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/config/owner)
+        && get(/databases/$(database)/documents/config/owner).data.uid == me();
+    }
+
+    // Membro aprovado pelo administrador
+    function isMember() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/approvals/$(me()))
+        && get(/databases/$(database)/documents/approvals/$(me())).data.status == 'aprovado';
+    }
+    function myMemberId() {
+      return get(/databases/$(database)/documents/approvals/$(me())).data.memberId;
+    }
+    function isLeaderOf(eventId) {
+      return isMember()
+        && exists(/databases/$(database)/documents/events/$(eventId))
+        && get(/databases/$(database)/documents/events/$(eventId)).data.leaderId == myMemberId();
+    }
+    function inside() { return isOwner() || isMember(); }
+
+    // O primeiro a entrar vira administrador; depois ninguém troca pelo app
+    match /config/owner {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == me();
+      allow update, delete: if false;
+    }
+    match /config/rules {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Lista de nomes: visível para quem entrou, para poder pedir acesso
+    match /members/{id} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Pedidos de acesso e perfil: cada um escreve só o seu
+    match /claims/{u} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && u == me();
+      allow delete: if isOwner() || (signedIn() && u == me());
+    }
+    match /approvals/{u} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+    match /avatars/{u} {
+      allow read: if signedIn();
+      allow write: if signedIn() && u == me();
+    }
+    match /profiles/{u} {
+      allow read: if signedIn();
+      allow write: if signedIn() && u == me();
+    }
+
+    // Eventos, presenças e justificativas: só o administrador e membros aprovados veem
+    match /events/{id} {
+      allow read: if inside();
+      allow write: if isOwner();
+    }
+    match /ctl/{eventId} {
+      allow read: if inside();
+      allow write: if isOwner() || isLeaderOf(eventId);
+    }
+    match /checkins/{key} {
+      allow read: if inside();
+      allow create, update: if isOwner()
+        || isLeaderOf(request.resource.data.eventId)
+        || (isMember()
+            && request.resource.data.memberId == myMemberId()
+            && key == request.resource.data.eventId + '_' + request.resource.data.memberId);
+      allow delete: if isOwner() || isLeaderOf(resource.data.eventId);
+    }
+    match /justifs/{key} {
+      allow read: if inside();
+      allow create: if isMember()
+        && request.resource.data.memberId == myMemberId()
+        && key == request.resource.data.eventId + '_' + request.resource.data.memberId;
+      // decisão: administrador ou líder do evento; voto: qualquer membro, só no campo de votos
+      allow update: if isOwner()
+        || isLeaderOf(resource.data.eventId)
+        || (isMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes']));
+      allow delete: if isOwner();
+    }
+  }
+}

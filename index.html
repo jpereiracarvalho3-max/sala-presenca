@@ -603,7 +603,7 @@ app.addEventListener('click',async ev=>{
   if(act==='addMember'){
     const n=((document.getElementById('nm_new')||{}).value||'').trim();if(!n)return;
     const id='m'+Date.now().toString(36);
-    if(await w(()=>db.doc('members/'+id).set({name:n,order:state.members.length+1,since:todayStr()}),'Membro adicionado.'))delete state.draft.nm_new;
+    if(await w(()=>db.doc('members/'+id).set({name:n,order:state.members.length+1,since:todayStr()}),'Membro adicionado.')){delete state.draft.nm_new;render();}
     return;
   }
   if(act==='rename'){const n=((document.getElementById('mn_'+d.m)||{}).value||'').trim();if(!n)return;if(await w(()=>db.doc('members/'+d.m).update({name:n}),'Nome salvo.'))delete state.draft['mn_'+d.m];return;}
