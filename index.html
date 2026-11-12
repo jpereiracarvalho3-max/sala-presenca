@@ -427,7 +427,8 @@ function eventosHTML(){
        '<label>Nome do evento<input id="ev_title" value="'+esc(val('ev_title',ed.title))+'" placeholder="Ex.: Encontro de sábado"></label>'+
        '<div class="grid2"><label>Data<input id="ev_date" type="date" value="'+esc(val('ev_date',ed.date||todayStr()))+'"></label><label>Hora<input id="ev_time" type="time" value="'+esc(val('ev_time',ed.time||'19:00'))+'"></label></div>'+
        '<label>Local<input id="ev_local" value="'+esc(val('ev_local',ed.local))+'" placeholder="Onde vai ser"></label>'+
-       '<label>Líder do evento<select id="ev_leader"><option value="">Escolha o líder</option>'+state.members.map(m=>'<option value="'+esc(m.id)+'"'+(val('ev_leader',ed.leaderId)===m.id?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></label>'+
+       (adm()?'<label>Líder do evento<select id="ev_leader"><option value="">Escolha o líder</option>'+state.members.map(m=>'<option value="'+esc(m.id)+'"'+(val('ev_leader',ed.leaderId||(state.editing==='new'&&myMember()?myMember().id:''))===m.id?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></label>'
+              :'<div class="small muted">Líder do evento: <b>'+esc(((state.members.find(m=>m.id===(ed.leaderId||(myMember()||{}).id))||{}).name)||'você')+'</b>'+(state.editing==='new'?' (quem cria o evento é o líder; o administrador pode trocar)':'')+'</div>')+
        '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
        '<div class="grid2"><label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label><label>Mesas (só no online)<input id="ev_mesas" type="number" min="1" max="6" value="'+esc(val('ev_mesas',ed.mesas||3))+'"></label></div>'+
        '<label>Links próprios das chamadas (opcional, só no online)<textarea id="ev_links" rows="2" placeholder="Não precisa preencher: a chamada de voz já funciona dentro do app. Se quiser oferecer também um link de fora (vídeo, por exemplo), cole um por linha, na ordem das mesas.">'+esc(val('ev_links',(ed.links||[]).join('\n')))+'</textarea></label>'+
@@ -658,7 +659,8 @@ app.addEventListener('click',async ev=>{
     const g=id=>(document.getElementById(id)||{}).value||'';
     const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(6,parseInt(g('ev_mesas'),10)||3)),links:g('ev_links').split(/\s+/).filter(x=>/^https:\/\//.test(x)).slice(0,6)};
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
-    if(!data.leaderId)return toast('Escolha o líder do evento.');
+    if(!adm()){const me=myMember();if(!me)return;if(state.editing==='new')data.leaderId=me.id;else delete data.leaderId;}
+    else if(!data.leaderId)return toast('Escolha o líder do evento.');
     let ok;
     if(state.editing==='new'){const id='e'+Date.now().toString(36);ok=await w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now(),createdBy:state.uid}),'Evento criado.');}
     else ok=await w(()=>db.doc('events/'+state.editing).update(data),'Evento atualizado.');
