@@ -1,0 +1,650 @@
+<title>Sala de Presença</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Conceito: uma sala de encontro ilustrada no alto; quem validou a presença aparece dentro da sala, quem faltou fica na porta. Abas simples e cartões claros embaixo. */
+:root{
+  --bg:#EDF0F7; --surface:#FFFFFF; --soft:#F5F7FC; --ink:#1B2140; --muted:#586080; --line:#D8DDEC;
+  --accent:#2457F5; --accent-ink:#FFFFFF; --ok:#13804D; --warn:#A86A00; --bad:#C7362F; --info:#2A64B0;
+  --ok-bg:#DDF3E8; --warn-bg:#FBEBCB; --bad-bg:#FADCDA; --info-bg:#DCE9F9;
+  --wall:#DCE3F5; --floor:#D8C8AA; --floor2:#CFBD9C; --door:#8A94B8;
+  --font-head:'Space Grotesk',system-ui,sans-serif; --font-body:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141829; --surface:#1D2240; --soft:#252B4F; --ink:#E9ECFA; --muted:#A0A9CC; --line:#323A66;
+    --accent:#8FA8FF; --accent-ink:#0E1330; --ok:#5CD49A; --warn:#F0B84A; --bad:#FF8A82; --info:#8FBCFF;
+    --ok-bg:#16382A; --warn-bg:#43330F; --bad-bg:#47201F; --info-bg:#1C3354;
+    --wall:#2A3160; --floor:#4A4160; --floor2:#433A59; --door:#5B6599; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141829; --surface:#1D2240; --soft:#252B4F; --ink:#E9ECFA; --muted:#A0A9CC; --line:#323A66;
+  --accent:#8FA8FF; --accent-ink:#0E1330; --ok:#5CD49A; --warn:#F0B84A; --bad:#FF8A82; --info:#8FBCFF;
+  --ok-bg:#16382A; --warn-bg:#43330F; --bad-bg:#47201F; --info-bg:#1C3354;
+  --wall:#2A3160; --floor:#4A4160; --floor2:#433A59; --door:#5B6599; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#app{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{font-family:var(--font-head);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:24px} h2{font-size:18px} h3{font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.chip.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chip.bad{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.chip.info{background:var(--info-bg);color:var(--info);border-color:transparent}
+.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px}
+.tabs button{border:0;background:transparent;padding:9px 4px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted);font-size:14px}
+.tabs button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.row.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)} .small{font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.good{background:var(--ok);color:#fff;border-color:transparent}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,.tabs button:focus-visible,.fig:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input,select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
+textarea{min-height:76px;resize:vertical}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.empty{padding:22px 14px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:14px}
+/* sala */
+.room{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.wall{background:var(--wall);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:64px}
+.wall .place{font-family:var(--font-head);font-weight:700;font-size:16px}
+.door{width:34px;height:52px;border-radius:6px 6px 0 0;background:var(--door);position:relative;flex:none;margin-bottom:-12px}
+.door::after{content:"";position:absolute;right:6px;top:26px;width:5px;height:5px;border-radius:50%;background:var(--wall)}
+.floor{background:repeating-linear-gradient(90deg,var(--floor) 0 46px,var(--floor2) 46px 48px);padding:16px 10px 14px;display:flex;flex-wrap:wrap;gap:6px 4px;justify-content:center;align-items:flex-end;min-height:150px}
+.floor .none{align-self:center;color:var(--ink);opacity:.7;font-weight:600;text-align:center;padding:10px}
+.fig{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 4px 2px;width:74px;cursor:default;color:var(--ink)}
+.fig.clickable{cursor:pointer}
+.fig svg{display:block}
+.fig span{font-size:12.5px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fig.out svg{filter:grayscale(1);opacity:.5}
+.fig.susp svg{filter:grayscale(1) sepia(.6) hue-rotate(-30deg);opacity:.6}
+.doorstep{display:flex;flex-wrap:wrap;gap:2px 4px;justify-content:center;padding:10px;background:var(--soft);border-top:1px solid var(--line)}
+.doorstep .cap{width:100%;text-align:center;font-size:12.5px;font-weight:600;color:var(--muted)}
+.codebox{font-family:var(--font-head);font-size:38px;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px 6px;background:var(--soft);border-radius:12px;border:1px dashed var(--line)}
+.qrwrap{background:#fff;padding:10px;border-radius:12px;display:inline-block;line-height:0}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.dot.presente{background:var(--ok)} .dot.falta{background:var(--bad)} .dot.abonada{background:var(--info)} .dot.suspenso{background:var(--muted)} .dot.analise{background:var(--warn)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--soft);min-width:0}
+.item p{margin:0;overflow-wrap:anywhere}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;max-width:calc(100vw - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#toast.show{opacity:1}
+
+/* temas da sala */
+.floor{position:relative;overflow:hidden}
+.fig{position:relative;z-index:1}
+.wall .decor{display:block;width:100%;height:60px}
+.wall.themed{display:block;padding:0;min-height:0}
+.wall.themed .wtxt{padding:12px 16px 6px}
+.th-festa .wall{background:#2d1457;color:#fff}.th-festa .wall .muted{color:#d9ccf5}
+.th-cinema .wall{background:#2a0a10;color:#fff}.th-cinema .wall .muted{color:#e7c9cf}
+.th-jantar .wall{background:#efd9b0;color:#3b2a14}.th-jantar .wall .muted{color:#6b5636}
+.th-churrasco .wall{background:#9bd8f5;color:#16384a}.th-churrasco .wall .muted{color:#2f5870}
+.th-festa .floor{background:repeating-conic-gradient(#3a1b6e 0 25%,#4b2590 0 50%) 0 0/48px 48px}
+.th-festa .floor::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 20% 30%,rgba(255,77,109,.38),transparent 38%),radial-gradient(circle at 75% 60%,rgba(77,171,247,.38),transparent 40%),radial-gradient(circle at 50% 90%,rgba(255,212,59,.3),transparent 35%);background-size:200% 200%;animation:lights 6s ease-in-out infinite alternate}
+@keyframes lights{from{background-position:0 0}to{background-position:100% 100%}}
+.th-cinema .floor{background:repeating-linear-gradient(90deg,#5d1020 0 22px,#4b0c19 22px 24px)}
+.th-jantar .floor{background:repeating-linear-gradient(0deg,#b98a5b 0 30px,#a97b4d 30px 32px)}
+.th-jantar .floor::before{content:"";position:absolute;left:10%;right:10%;bottom:12px;height:46px;border-radius:50%;background:#fff7e8;box-shadow:0 7px 0 #d8c29d}
+.th-churrasco .floor{background:repeating-linear-gradient(90deg,#7cc06a 0 40px,#72b560 40px 80px)}
+.th-festa .floor .fig,.th-cinema .floor .fig,.th-cinema .floor .none,.th-festa .floor .none{color:#fff}
+.th-festa .floor .fig span,.th-cinema .floor .fig span{text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.th-churrasco .floor .fig,.th-churrasco .floor .none{color:#10321a}
+.th-jantar .floor .fig,.th-jantar .floor .none{color:#2d1d0c}
+.th-jantar .floor .fig span{text-shadow:0 1px 2px rgba(255,255,255,.5)}
+/* movimento */
+.floor.stage{display:block;height:240px;min-height:240px;padding:0}
+.stage .fig{position:absolute;left:50%;top:115%;width:74px;height:100px;padding:0;margin:0;transform:translate(-50%,-100%);justify-content:flex-end}
+.stage .none{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.fig .bw{display:flex;justify-content:center}
+.stage .fig.walking .bw svg{animation:hop .45s ease-in-out infinite}
+.stage .fig.idle .bw svg{animation:sit 3.2s ease-in-out infinite}
+.th-festa .stage .fig .bw svg{animation:dance .6s ease-in-out infinite alternate;transform-origin:50% 90%}
+.th-festa .stage .fig.walking .bw svg{animation-duration:.35s}
+@keyframes hop{50%{transform:translateY(-6px)}}
+@keyframes dance{from{transform:rotate(-8deg) translateY(0)}to{transform:rotate(8deg) translateY(-8px)}}
+@keyframes sit{50%{transform:translateY(-2px) rotate(1.5deg)}}
+.tw{animation:tw 1.3s ease-in-out infinite alternate}.tw:nth-child(2n){animation-delay:.45s}.tw:nth-child(3n){animation-delay:.9s}
+@keyframes tw{from{opacity:.45}to{opacity:1}}
+.sm{animation:smoke 3s ease-out infinite}.sm:nth-child(2){animation-delay:1s}.sm:nth-child(3){animation-delay:2s}
+@keyframes smoke{from{transform:translateY(0);opacity:.8}to{transform:translateY(-22px);opacity:0}}
+.flick{animation:flick 2.4s ease-in-out infinite alternate}
+@keyframes flick{from{opacity:.85}to{opacity:1}}
+/* avatar */
+.avrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw{width:38px;height:38px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line);padding:0;cursor:pointer}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--accent)}
+.avprev{display:flex;justify-content:center;padding:6px 0;background:var(--soft);border-radius:14px}
+.avprev svg{width:84px;height:117px}
+.stl{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-weight:600;color:var(--ink)}
+.stl[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+@media (prefers-reduced-motion:reduce){.fig svg,.th-festa .floor::after,.tw,.sm,.flick{animation:none!important}#toast{transition:none}}
+</style>
+
+<div id="app"><div class="card"><h2>Sala de Presença</h2><p class="muted" style="margin:0">Carregando o grupo…</p></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const app=document.getElementById('app');
+const state={tab:'faltas',room:null,adminOn:true,members:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,nodb:false,slow:false,err:null,deferred:false};
+let db=null,user=null,toastT=null;
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+const hash=s=>{let h=0;for(const c of String(s)){h=(h*31+c.charCodeAt(0))>>>0;}return h;};
+const evTime=e=>new Date(e.date+'T'+(e.time||'00:00')+':00').getTime();
+const fmtDay=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+const fmtShort=t=>new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+const getStatus=e=>{const c=state.ctl[e.id]&&state.ctl[e.id].status;if(c==='encerrado'||c==='aberto')return c;return Date.now()>=evTime(e)?'aberto':'agendado';};
+const val=(id,def)=>Object.prototype.hasOwnProperty.call(state.draft,id)?state.draft[id]:(def==null?'':def);
+const toMap=s=>Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));
+const myMember=()=>{const a=state.approvals[state.uid];return a&&a.status==='aprovado'?state.members.find(m=>m.id===a.memberId)||null:null;};
+const isLeader=e=>{const m=myMember();return !!(m&&e&&e.leaderId===m.id);};
+const adm=()=>state.isOwner&&state.adminOn;
+const canManage=e=>adm()||isLeader(e);
+const readOnly=()=>state.canWrite===false;
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+async function w(fn,ok){try{await fn();if(ok)toast(ok);return true;}catch(e){toast(e&&e.code==='invalid_argument'?'Você não tem permissão para essa ação.':'Não deu certo. Tente de novo.');return false;}}
+function genCode(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const u=new Uint32Array(6);crypto.getRandomValues(u);return Array.from(u,x=>A[x%A.length]).join('');}
+
+/* regra de faltas, calculada sempre do zero a partir dos registros */
+function analyze(m){
+  const evs=state.events.filter(e=>getStatus(e)==='encerrado'&&(!m.since||e.date>=m.since)).sort((a,b)=>evTime(a)-evTime(b));
+  const cnt={};let until=0;const hist=[];
+  for(const e of evs){
+    const t=evTime(e);
+    if(t<until){hist.push({e,s:'suspenso'});continue;}
+    if(state.checkins[e.id+'_'+m.id]){hist.push({e,s:'presente'});continue;}
+    const j=state.justifs[e.id+'_'+m.id];
+    if(j&&j.decision==='abonada'){hist.push({e,s:'abonada'});continue;}
+    if(j&&!j.decision){hist.push({e,s:'analise'});continue;}
+    hist.push({e,s:'falta'});
+    const k=e.date.slice(0,7);cnt[k]=(cnt[k]||0)+1;
+    if(cnt[k]%state.rules.limite===0)until=t+state.rules.dias*864e5;
+  }
+  const mk=todayStr().slice(0,7);
+  return {hist,mes:cnt[mk]||0,suspenso:until>Date.now(),until};
+}
+function curEvent(){
+  const evs=state.events;if(!evs.length)return null;
+  const picked=evs.find(e=>e.id===state.eventId);if(picked)return picked;
+  const open=evs.find(e=>getStatus(e)==='aberto');if(open)return open;
+  const t=todayStr();
+  const next=evs.filter(e=>getStatus(e)==='agendado'&&e.date>=t).sort((a,b)=>evTime(a)-evTime(b))[0];
+  if(next)return next;
+  return evs.slice().sort((a,b)=>evTime(b)-evTime(a))[0];
+}
+
+/* bonequinho */
+const SKINS=['#F7DCC4','#F4D2B4','#E3B48C','#C68A5C','#A0673F','#6B4226'];
+const SKIN_N=['Muito clara','Clara','Média','Morena','Escura','Muito escura'];
+const HAIRS=['#1B1410','#4A2E1A','#7A4B25','#B8843F','#E0C070','#A23B2A','#9AA0A6','#3B5BDB'];
+const HAIR_N=['Preto','Castanho escuro','Castanho','Loiro escuro','Loiro','Ruivo','Grisalho','Azul'];
+const SHIRTS=['#E8590C','#D6336C','#7048E8','#1C7ED6','#0CA678','#74B816','#F59F00','#495057'];
+const SHIRT_N=['Laranja','Rosa','Roxo','Azul','Verde','Verde-limão','Amarelo','Cinza'];
+const STYLES=['Curto','Longo','Faixa','Careca','Cacheado'];
+function avUid(m){return Object.keys(state.approvals).find(k=>state.approvals[k].status==='aprovado'&&state.approvals[k].memberId===m.id);}
+function avOf(m){
+  const h=hash(m.name),u=avUid(m),a=(u&&state.avatars[u])||{};
+  const pick=(v,n,d)=>(Number.isInteger(v)&&v>=0&&v<n)?v:d;
+  return {skin:pick(a.skin,SKINS.length,h%SKINS.length),hair:pick(a.hair,HAIRS.length,(h>>3)%HAIRS.length),style:pick(a.style,STYLES.length,(h>>5)%3),shirt:pick(a.shirt,SHIRTS.length,(h>>7)%SHIRTS.length)};
+}
+function fig(m){
+  const av=avOf(m),skin=SKINS[av.skin],hair=HAIRS[av.hair],body=SHIRTS[av.shirt],style=av.style;
+  let hairSvg='',back='';
+  if(style===0)hairSvg='<path d="M14 21Q14 6 28 6Q42 6 42 21Q35 13 28 13Q21 13 14 21Z" fill="'+hair+'"/>';
+  else if(style===1)hairSvg='<path d="M13 24Q11 5 28 5Q45 5 43 24Q41 14 28 13Q15 14 13 24Z" fill="'+hair+'"/><rect x="11" y="20" width="5" height="16" rx="2.5" fill="'+hair+'"/><rect x="40" y="20" width="5" height="16" rx="2.5" fill="'+hair+'"/>';
+  else if(style===2)hairSvg='<path d="M14 18Q16 7 28 7Q40 7 42 18Q34 12 28 12Q22 12 14 18Z" fill="'+hair+'"/><rect x="12" y="14" width="32" height="5" rx="2.5" fill="'+body+'"/>';
+  else if(style===4){back='<circle cx="28" cy="14" r="17.5" fill="'+hair+'"/>';hairSvg='<path d="M15 20Q28 8 41 20Q34 15 28 15Q22 15 15 20Z" fill="'+hair+'"/>';}
+  return '<svg viewBox="0 0 56 78" width="56" height="78" aria-hidden="true"><ellipse cx="28" cy="74" rx="16" ry="3.6" fill="#000" opacity=".16"/>'+
+   '<rect x="15" y="58" width="10" height="15" rx="4.5" fill="'+body+'" opacity=".8"/><rect x="31" y="58" width="10" height="15" rx="4.5" fill="'+body+'" opacity=".8"/>'+
+   '<rect x="12" y="34" width="32" height="32" rx="13" fill="'+body+'"/>'+back+'<circle cx="28" cy="22" r="14" fill="'+skin+'"/>'+hairSvg+
+   '<circle cx="23" cy="23" r="1.8" fill="#222"/><circle cx="33" cy="23" r="1.8" fill="#222"/><path d="M23.5 29Q28 33 32.5 29" stroke="#222" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg>';
+}
+
+/* temas */
+const THEMES={padrao:'Padrão',festa:'Festa',cinema:'Cinema',jantar:'Jantar',churrasco:'Churrasco'};
+function themeOf(e){
+  const t=e.tema;if(t&&THEMES[t])return t;
+  const s=(e.title||'').toLowerCase();
+  if(/festa|balada|anivers|happy|role\b|rolê/.test(s))return 'festa';
+  if(/cinema|filme|sess[aã]o/.test(s))return 'cinema';
+  if(/jantar|almo[cç]o|restaurante|pizza|rod[ií]zio/.test(s))return 'jantar';
+  if(/churras/.test(s))return 'churrasco';
+  return 'padrao';
+}
+const DECOR={
+  festa:'<svg class="decor" viewBox="0 0 360 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M0 6Q90 30 180 8T360 6" stroke="#b8a9d9" fill="none" stroke-width="1.5"/><g><circle class="tw" cx="30" cy="17" r="5" fill="#ff4d6d"/><circle class="tw" cx="75" cy="24" r="5" fill="#ffd43b"/><circle class="tw" cx="120" cy="22" r="5" fill="#4dabf7"/><circle class="tw" cx="165" cy="13" r="5" fill="#69db7c"/><circle class="tw" cx="210" cy="12" r="5" fill="#ff8787"/><circle class="tw" cx="255" cy="19" r="5" fill="#da77f2"/><circle class="tw" cx="335" cy="14" r="5" fill="#ffd43b"/></g><line x1="300" y1="0" x2="300" y2="22" stroke="#b8a9d9"/><circle cx="300" cy="38" r="16" fill="#d5d9ea"/><path d="M286 32H314M285 40H315M293 24V52M300 22V54M307 24V52" stroke="#9aa1c2" stroke-width="1" fill="none"/><path class="tw" d="M326 40l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff"/><path class="tw" d="M268 44l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="#fff"/></svg>',
+  cinema:'<svg class="decor" viewBox="0 0 360 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect x="70" y="6" width="220" height="48" rx="3" fill="#e9ecf5" class="flick"/><rect x="0" y="0" width="52" height="60" fill="#9c1c2e"/><rect x="308" y="0" width="52" height="60" fill="#9c1c2e"/><path d="M13 0V60M26 0V60M39 0V60M321 0V60M334 0V60M347 0V60" stroke="#7a1423" stroke-width="3"/><path d="M52 0Q60 30 52 60" stroke="#7a1423" stroke-width="3" fill="none"/><path d="M308 0Q300 30 308 60" stroke="#7a1423" stroke-width="3" fill="none"/></svg>',
+  jantar:'<svg class="decor" viewBox="0 0 360 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect x="28" y="6" width="64" height="48" rx="3" fill="#1d2b53" stroke="#8a6a3b" stroke-width="4"/><circle cx="70" cy="22" r="7" fill="#fff3b0"/><path d="M60 54V6M28 30H92" stroke="#8a6a3b" stroke-width="3"/><line x1="190" y1="0" x2="190" y2="20" stroke="#6b5636" stroke-width="2"/><path d="M174 34Q190 14 206 34Z" fill="#c9852b"/><ellipse cx="190" cy="38" rx="22" ry="6" fill="#ffe08a" class="flick" opacity=".7"/><rect x="262" y="8" width="62" height="44" rx="2" fill="#f7ecd2" stroke="#8a6a3b" stroke-width="4"/><circle cx="293" cy="27" r="9" fill="#c0504d"/><path d="M270 46Q293 34 316 46" stroke="#5b8c3a" stroke-width="4" fill="none"/></svg>',
+  churrasco:'<svg class="decor" viewBox="0 0 360 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle cx="46" cy="24" r="14" fill="#ffd43b"/><ellipse cx="130" cy="20" rx="26" ry="9" fill="#fff"/><ellipse cx="148" cy="15" rx="16" ry="8" fill="#fff"/><g><circle class="sm" cx="272" cy="28" r="5" fill="#c9d3da"/><circle class="sm" cx="282" cy="30" r="4" fill="#c9d3da"/><circle class="sm" cx="266" cy="30" r="4" fill="#c9d3da"/></g><path d="M250 38H310A30 18 0 0 1 250 38Z" fill="#333"/><path class="flick" d="M262 38l4-8 4 8zM276 38l4-10 4 10z" fill="#ff922b"/><rect x="256" y="42" width="3" height="16" fill="#555"/><rect x="301" y="42" width="3" height="16" fill="#555"/></svg>'
+};
+
+/* telas */
+function head(){
+  const me=myMember();
+  let who='';
+  if(me)who='<span class="chip info">Você: '+esc(me.name)+'</span>';
+  if(state.isOwner)who+='<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>';
+  return '<div class="top"><div><h1>Sala de Presença</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
+}
+function tabsHTML(){
+  const t=[['faltas','Faltas'],['eventos','Eventos']];
+  if(adm()){const n=pendingReqs().length;t.push(['admin','Admin'+(n?' ('+n+')':'')]);}
+  return '<div class="tabs" role="tablist">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+}
+function claimHTML(){
+  const taken=new Set(Object.values(state.approvals).filter(a=>a.status==='aprovado').map(a=>a.memberId));
+  const free=state.members.filter(m=>!taken.has(m.id));
+  const own=state.isOwner;
+  return '<div class="card"><h2>'+(own?'Entrar como membro':'Pedir acesso')+'</h2><p class="muted" style="margin:0">'+(own?'Escolha o seu nome para participar das presenças, ou digite um nome novo.':'Escolha o seu nome. O administrador precisa aprovar antes de você entrar.')+'</p>'+
+    (free.length?'<div class="grid2">'+free.map(m=>'<button class="btn" data-act="'+(own?'ownerJoin':'request')+'" data-m="'+esc(m.id)+'">'+esc(m.name)+'</button>').join('')+'</div>':'')+
+    '<label>Meu nome não está na lista<input id="newname" placeholder="Digite o seu nome" value="'+esc(val('newname'))+'"></label>'+
+    '<button class="btn primary" data-act="'+(own?'ownerNew':'requestNew')+'">'+(own?'Entrar com este nome':'Pedir acesso com este nome')+'</button>'+
+    (own?'<button class="btn" data-act="skipClaim">Entrar só como administrador</button>':'')+'</div>';
+}
+function pendingReqs(){return Object.entries(state.claims).filter(([u])=>{const a=state.approvals[u];return !(a&&a.status==='aprovado');});}
+function pendHTML(){
+  const rs=pendingReqs();let h='';
+  if(!myMember())h+='<div class="card"><h2>Participar das presenças</h2><p class="muted" style="margin:0">Você ainda não está na lista de membros. Entre para aparecer na sala e ter presença e faltas como os outros.</p><button class="btn primary" data-act="joinMe">Entrar como membro</button></div>';
+  const takenBy=m=>Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m);
+  h+='<div class="card"><h2>Pedidos de acesso'+(rs.length?' ('+rs.length+')':'')+'</h2>'+(rs.length?'<div class="list">'+rs.map(([u,r])=>{
+    const mem=r.memberId?state.members.find(m=>m.id===r.memberId):null;
+    const nm=mem?mem.name:(r.novoNome||'Sem nome');
+    const busy=r.memberId&&takenBy(r.memberId)&&takenBy(r.memberId)!==u;
+    const refused=state.approvals[u]&&state.approvals[u].status==='recusado';
+    return '<div class="item"><div class="row between"><h3>'+esc(nm)+'</h3><span class="chip '+(refused?'bad':'warn')+'">'+(refused?'Recusado':(mem?'Nome da lista':'Nome novo'))+'</span></div>'+
+      '<div class="small muted">Conta no Claude: '+esc(state.names[u]||'nome não disponível')+'</div>'+
+      (busy?'<div class="small"><span class="chip bad">Esse nome já está com outra conta</span></div>':'')+
+      '<div class="row"><button class="btn good" data-act="approve" data-u="'+esc(u)+'"'+(busy?' disabled':'')+'>Aprovar</button>'+(refused?'':'<button class="btn danger" data-act="refuse" data-u="'+esc(u)+'">Recusar</button>')+'</div></div>';
+  }).join('')+'</div>':'<div class="empty">Nenhum pedido esperando.</div>')+'</div>';
+  return h;
+}
+function roomHTML(e){
+  const st=getStatus(e),live=st==='aberto',th=themeOf(e);
+  const inRoom=[],outside=[];
+  state.members.forEach(m=>{(state.checkins[e.id+'_'+m.id]?inRoom:outside).push(m);});
+  const susp=m=>{const a=analyze(m);const h=a.hist.find(x=>x.e.id===e.id);return h?h.s==='suspenso':(st!=='encerrado'&&a.suspenso);};
+  const mk=(m,cls,i)=>{
+    const stage=cls==='in';
+    let pos='';
+    if(stage){const p=state.pos[m.id];if(p)pos=' left:'+(p.x*100).toFixed(2)+'%;top:'+(p.y*100).toFixed(2)+'%;';}
+    return '<button class="fig '+cls+(adm()?' clickable':'')+'" data-pid="'+esc(m.id)+'"'+(pos?' style="'+pos+'"':'')+' '+(adm()?'data-act="toggle" data-m="'+esc(m.id)+'" data-e="'+esc(e.id)+'" title="Marcar ou desmarcar presença"':'tabindex="-1"')+' aria-label="'+esc(m.name)+(stage?', presente':', fora da sala')+'"><div class="bw">'+fig(m)+'</div><span>'+esc(m.name)+'</span></button>';
+  };
+  const txt='<div class="wtxt"><div class="place">'+esc(e.local||'Local a definir')+'</div><div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+'</div></div>';
+  const wall=th==='padrao'?'<div class="wall">'+txt+'<div class="door" title="Porta"></div></div>':'<div class="wall themed">'+txt+DECOR[th]+'</div>';
+  return '<div class="room th-'+th+'">'+wall+
+    '<div class="floor stage" data-th="'+th+'">'+(inRoom.length?inRoom.map((m,i)=>mk(m,'in',i)).join(''):'<div class="none">Ninguém na sala ainda.</div>')+'</div>'+
+    '<div class="doorstep"><div class="cap">Fora da sala ('+outside.length+')</div>'+outside.map((m,i)=>mk(m,susp(m)?'out susp':'out',i)).join('')+'</div></div>';
+}
+function avatarHTML(){
+  const me=myMember();if(!me||!state.uid||readOnly())return '';
+  const av=avOf(me);
+  const sw=(k,arr,names)=>'<div class="avrow">'+arr.map((c,i)=>'<button class="sw" data-act="av" data-k="'+k+'" data-v="'+i+'" aria-pressed="'+(av[k]===i)+'" aria-label="'+esc(names[i])+'" title="'+esc(names[i])+'" style="background:'+c+'"></button>').join('')+'</div>';
+  return '<div class="card"><h2>Meu avatar</h2><div class="avprev">'+fig(me)+'</div>'+
+    '<div><div class="small muted">Cor da pele</div>'+sw('skin',SKINS,SKIN_N)+'</div>'+
+    '<div><div class="small muted">Cor do cabelo</div>'+sw('hair',HAIRS,HAIR_N)+'</div>'+
+    '<div><div class="small muted">Estilo do cabelo</div><div class="avrow">'+STYLES.map((n,i)=>'<button class="stl" data-act="av" data-k="style" data-v="'+i+'" aria-pressed="'+(av.style===i)+'">'+n+'</button>').join('')+'</div></div>'+
+    '<div><div class="small muted">Cor da roupa</div>'+sw('shirt',SHIRTS,SHIRT_N)+'</div></div>';
+}
+function roomScreen(e){
+  const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
+  let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
+  h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+roomHTML(e);
+  if(canManage(e)&&!readOnly()){
+    let box='<div class="card"><h3>QR code do líder</h3>';
+    if(st==='agendado')box+='<p class="muted small" style="margin:0">A sala abre sozinha no horário do evento. Se quiser, abra agora.</p><button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
+    if(st==='aberto'){
+      const link=state.rules.appLink;
+      box+='<p class="muted small" style="margin:0">Mostre este QR code para o pessoal escanear. Quem escanear entra na sala.</p><div class="codebox" aria-label="Código do evento">'+esc(e.code||'------')+'</div>'+
+        (link?'<div class="row" style="justify-content:center"><div class="qrwrap"><div id="qr" data-text="'+esc(link.replace(/#.*$/,'')+'#v-'+e.id+'-'+(e.code||''))+'"></div></div></div>':'<p class="muted small" style="margin:0">Para mostrar o QR code, o administrador precisa colar o link do app em Admin.</p>')+
+        '<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar presença</button>';
+    }
+    if(st==='encerrado')box+='<p class="muted small" style="margin:0">Presença encerrada. As faltas já foram contadas.</p>'+(adm()?'<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir presença</button>':'');
+    if(adm())box+='<p class="muted small" style="margin:0">Como administrador, toque em um bonequinho para marcar ou desmarcar a presença dele.</p>';
+    h+=box+'</div>';
+  }else h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
+  return h;
+}
+function faltasHTML(){
+  const me=myMember();let out='';
+  if(me){
+    const a=analyze(me),lim=state.rules.limite;
+    const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
+    out+='<div class="card"><div class="row between"><h2 style="margin:0">Minhas faltas</h2>'+chip+'</div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
+  }
+  return out+avatarHTML()+placarHTML()+abonoHTML();
+}
+function eventosHTML(){
+  let out='';
+  if(adm()&&!readOnly()){
+    if(state.editing){
+      const ed=state.editing==='new'?{}:(state.events.find(x=>x.id===state.editing)||{});
+      out+='<div class="card"><h2>'+(state.editing==='new'?'Novo evento':'Editar evento')+'</h2>'+
+       '<label>Nome do evento<input id="ev_title" value="'+esc(val('ev_title',ed.title))+'" placeholder="Ex.: Encontro de sábado"></label>'+
+       '<div class="grid2"><label>Data<input id="ev_date" type="date" value="'+esc(val('ev_date',ed.date||todayStr()))+'"></label><label>Hora<input id="ev_time" type="time" value="'+esc(val('ev_time',ed.time||'19:00'))+'"></label></div>'+
+       '<label>Local<input id="ev_local" value="'+esc(val('ev_local',ed.local))+'" placeholder="Onde vai ser"></label>'+
+       '<label>Líder do evento<select id="ev_leader"><option value="">Escolha o líder</option>'+state.members.map(m=>'<option value="'+esc(m.id)+'"'+(val('ev_leader',ed.leaderId)===m.id?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></label>'+
+       '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
+       '<div class="row"><button class="btn primary" data-act="saveEvent">Salvar</button><button class="btn" data-act="cancelEdit">Cancelar</button></div></div>';
+    }else out+='<button class="btn primary" data-act="newEvent">Novo evento</button>';
+  }
+  const me=myMember();
+  const rank=e=>({aberto:0,agendado:1,encerrado:2})[getStatus(e)];
+  const evs=state.events.slice().sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?evTime(a)-evTime(b):evTime(b)-evTime(a)));
+  out+='<div class="card"><h2>Eventos marcados</h2>'+(evs.length?'<div class="list">'+evs.map(e=>{
+    const st=getStatus(e),l=state.members.find(m=>m.id===e.leaderId);
+    const n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length;
+    const present=!!(me&&state.checkins[e.id+'_'+me.id]);
+    let btns='';
+    if(adm()||(st==='aberto'&&(present||isLeader(e))))btns+='<button class="btn primary" data-act="enter" data-e="'+esc(e.id)+'">Entrar na sala</button>';
+    if(st==='agendado'&&canManage(e)&&!readOnly())btns+='<button class="btn" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
+    if(adm()&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button><button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
+    let codeBox='';
+    if(st==='aberto'&&me&&!present&&!isLeader(e)&&!readOnly())codeBox='<div class="small muted">Escaneie o QR code do líder com a câmera do celular. Se não conseguir, digite o código:</div><div class="row"><input id="code_'+esc(e.id)+'" class="grow" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="8" placeholder="Código de 6 letras" value="'+esc(val('code_'+e.id))+'"><button class="btn primary" data-act="validate" data-e="'+esc(e.id)+'">Validar</button></div>';
+    return '<div class="item"><div class="row between"><h3>'+esc(e.title)+'</h3><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
+      '<div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+' - '+esc(e.local||'local a definir')+'</div>'+
+      '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?' - '+n+' de '+state.members.length+' presentes':'')+(present?' - <b>você está presente</b>':'')+'</div>'+codeBox+
+      (btns?'<div class="row">'+btns+'</div>':'')+'</div>';
+  }).join('')+'</div>':'<div class="empty">Nenhum evento marcado ainda.</div>')+'</div>';
+  return out;
+}
+function placarHTML(){
+  if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
+  const rows=state.members.map(m=>({m,a:analyze(m)})).sort((x,y)=>(y.a.suspenso-x.a.suspenso)||(y.a.mes-x.a.mes)||x.m.name.localeCompare(y.m.name));
+  return '<div class="card"><h2>Placar do mês</h2><div class="legend"><span><i style="background:var(--ok)"></i>Presente</span><span><i style="background:var(--bad)"></i>Falta</span><span><i style="background:var(--info)"></i>Abonada</span><span><i style="background:var(--warn)"></i>Em análise</span><span><i style="background:var(--muted)"></i>Suspenso</span></div><div class="list">'+
+   rows.map(({m,a})=>{
+     const lim=state.rules.limite;
+     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':(a.mes>=lim?'<span class="chip warn">Suspensão já cumprida</span>':(a.mes===lim-1&&lim>1?'<span class="chip warn">Atenção: mais uma falta suspende</span>':'<span class="chip ok">Em dia</span>'));
+     const pres=a.hist.filter(h=>h.s==='presente').length;
+     return '<div class="item"><div class="row between"><h3>'+esc(m.name)+'</h3>'+chip+'</div><div class="small">Faltas neste mês: <b>'+a.mes+' de '+lim+'</b> - Presenças no total: '+pres+'</div>'+
+       '<div class="dots" aria-label="Últimos eventos">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
+   }).join('')+'</div></div>';
+}
+function abonoHTML(){
+  const me=myMember();let out='';
+  if(me&&!readOnly()){
+    const mine=analyze(me).hist.filter(h=>h.s==='falta'&&!state.justifs[h.e.id+'_'+me.id]);
+    out+='<div class="card"><h2>Pedir abono de falta</h2>'+(mine.length?'<div class="list">'+mine.map(h=>'<div class="item"><b>'+esc(h.e.title)+'</b><span class="small muted">'+esc(fmtDay(h.e.date))+'</span><label>Motivo<textarea id="jt_'+esc(h.e.id)+'" placeholder="Explique o que aconteceu">'+esc(val('jt_'+h.e.id))+'</textarea></label><button class="btn primary" data-act="sendJ" data-e="'+esc(h.e.id)+'">Enviar pedido</button></div>').join('')+'</div>':'<div class="empty">Você não tem faltas para justificar.</div>')+'<p class="muted small" style="margin:0">O grupo vota e o líder do evento decide se a falta é abonada. O administrador pode corrigir a decisão.</p></div>';
+  }
+  const js=Object.entries(state.justifs).map(([k,j])=>({k,j})).sort((a,b)=>(b.j.at||0)-(a.j.at||0));
+  out+='<div class="card"><h2>Pedidos de abono</h2>'+(js.length?'<div class="list">'+js.map(({k,j})=>{
+    const ev=state.events.find(e=>e.id===j.eventId),mem=state.members.find(m=>m.id===j.memberId);if(!ev||!mem)return '';
+    const votes=Object.values(j.votes||{}),sim=votes.filter(v=>v==='sim').length,nao=votes.filter(v=>v==='nao').length,mine=(j.votes||{})[state.uid];
+    const dec=j.decision;
+    let h='<div class="item"><div class="row between"><h3>'+esc(mem.name)+'</h3><span class="chip '+(dec==='abonada'?'info':dec==='negada'?'bad':'warn')+'">'+(dec==='abonada'?'Abonada':dec==='negada'?'Negada':'Em votação')+'</span></div>'+
+      '<div class="small muted">'+esc(ev.title)+' - '+esc(fmtDay(ev.date))+'</div><p>'+esc(j.text)+'</p><div class="small">Votos do grupo: <b>'+sim+' a favor</b> e <b>'+nao+' contra</b></div>';
+    if(!dec&&me&&j.memberId!==me.id&&!readOnly())h+='<div class="row"><button class="btn'+(mine==='sim'?' primary':'')+'" data-act="vote" data-k="'+esc(k)+'" data-v="sim">Votar a favor</button><button class="btn'+(mine==='nao'?' primary':'')+'" data-act="vote" data-k="'+esc(k)+'" data-v="nao">Votar contra</button></div>';
+    if((adm()||isLeader(ev))&&!readOnly()&&(!dec||adm()))h+='<div class="row"><span class="small muted">'+(isLeader(ev)?'Você é o líder deste evento:':'Decisão do administrador:')+'</span><button class="btn good" data-act="decide" data-k="'+esc(k)+'" data-v="abonada">Abonar</button><button class="btn danger" data-act="decide" data-k="'+esc(k)+'" data-v="negada">Negar</button></div>';
+    return h+'</div>';
+  }).join('')+'</div>':'<div class="empty">Nenhum pedido de abono ainda.</div>')+'</div>';
+  return out;
+}
+function adminHTML(){
+  if(!adm())return '<div class="card"><div class="empty">Só o administrador vê esta aba.</div></div>';
+  const r=state.rules;
+  let out=pendHTML()+'<div class="card"><h2>Regras</h2><div class="grid2"><label>Faltas no mês para suspender<input id="r_lim" type="number" min="1" max="10" value="'+esc(val('r_lim',r.limite))+'"></label><label>Dias de suspensão<input id="r_dias" type="number" min="1" max="60" value="'+esc(val('r_dias',r.dias))+'"></label></div>'+
+    '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Cole aqui o link de compartilhamento deste app"></label><p class="muted small" style="margin:0">Use o botão Compartilhar da página, copie o link e cole aqui. Compartilhe com permissão de colaborador, senão as pessoas só conseguem ver e não validam presença.</p><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
+  out+='<div class="card"><h2>Membros</h2><div class="list">'+state.members.map(m=>{
+    const claimUid=Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m.id);
+    return '<div class="item"><div class="row"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" data-act="rename" data-m="'+esc(m.id)+'">Salvar nome</button></div>'+
+      '<div class="row between"><span class="chip '+(claimUid?'ok':'')+'">'+(claimUid?'Já entrou'+(state.names[claimUid]?' como '+esc(state.names[claimUid]):''):'Ainda não entrou')+'</span><span class="row">'+(claimUid?'<button class="btn" data-act="release" data-u="'+esc(claimUid)+'">Remover acesso</button>':'')+'<button class="btn danger" data-act="delMember" data-m="'+esc(m.id)+'">Remover</button></span></div></div>';
+  }).join('')+'</div><div class="row"><input class="grow" id="nm_new" placeholder="Nome do novo membro" value="'+esc(val('nm_new'))+'"><button class="btn primary" data-act="addMember">Adicionar</button></div></div>';
+  return out;
+}
+
+function render(){
+  if(state.nodb){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p>Para ver a sala e validar presença, abra este link logado na sua conta do Claude.</p></div>';return;}
+  let h=head();
+  if(!state.loaded){
+    h+='<div class="card"><p class="muted" style="margin:0">'+(state.slow?'Está demorando para conectar. Os dados podem estar desatualizados.':'Carregando o grupo…')+'</p></div>';
+    if(state.err)h+='<div class="card"><span class="chip bad">Sem acesso aos dados</span></div>';
+    app.innerHTML=h;return;
+  }
+  if(!state.isOwner){
+    const acc=state.approvals[state.uid],req=state.claims[state.uid];
+    if(!(acc&&acc.status==='aprovado')){
+      if(readOnly())h+='<div class="card"><span class="chip warn">Você ainda não tem permissão de colaborador. Peça ao administrador.</span></div>';
+      else if(acc&&acc.status==='recusado')h+='<div class="card"><h2>Acesso não liberado</h2><p class="muted" style="margin:0">O administrador não aprovou o seu pedido. Fale com ele no grupo.</p></div>';
+      else if(req)h+='<div class="card"><h2>Pedido enviado</h2><p class="muted" style="margin:0">Aguarde o administrador aprovar o seu acesso. Depois é só abrir este link de novo.</p></div>';
+      else if(state.uid)h+=claimHTML();
+      else h+='<div class="card"><p style="margin:0">Não consegui identificar a sua conta. Abra este link logado no Claude.</p></div>';
+      app.innerHTML=h;return;
+    }
+    if(readOnly())h+='<div class="card"><span class="chip warn">Você está só olhando: peça ao administrador permissão de colaborador para validar presença.</span></div>';
+  }else if(!myMember()&&!state.skipClaim&&state.members.length&&state.uid){h+=claimHTML();app.innerHTML=h;return;}
+  if(state.room){
+    const re=state.events.find(x=>x.id===state.room);
+    const ok=re&&(canManage(re)||!!(myMember()&&state.checkins[re.id+'_'+myMember().id]));
+    if(!ok||(!canManage(re)&&getStatus(re)!=='aberto')){if(re&&ok)toast('A presença foi encerrada.');state.room=null;state.tab='eventos';}
+  }
+  if(state.room){
+    h+=roomScreen(state.events.find(x=>x.id===state.room));app.innerHTML=h;
+    const q0=document.getElementById('qr');
+    if(q0&&window.QRCode){try{new QRCode(q0,{text:q0.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q0.textContent='Não foi possível gerar o QR code.';}}
+    autoValidate();return;
+  }
+  h+=tabsHTML();
+  h+=({faltas:faltasHTML,eventos:eventosHTML,admin:adminHTML}[state.tab]||faltasHTML)();
+  app.innerHTML=h;
+  const q=document.getElementById('qr');
+  if(q&&window.QRCode){try{new QRCode(q,{text:q.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q.textContent='Não foi possível gerar o QR code.';}}
+  autoValidate();
+}
+function scheduleRender(){
+  const a=document.activeElement;
+  if(a&&app.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){state.deferred=true;return;}
+  render();
+}
+document.addEventListener('focusout',()=>{if(state.deferred){state.deferred=false;setTimeout(render,0);}});
+
+
+/* movimento dos bonequinhos */
+const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+function seatFor(th,i,n){
+  if(th==='cinema'){const per=5,row=Math.floor(i/per),col=i%per,cnt=Math.min(per,n-row*per);return {x:Math.min(.9,Math.max(.1,.5+(col-(cnt-1)/2)*.17)),y:row===0?.68:.97};}
+  const a=(i/Math.max(1,n))*Math.PI*2-Math.PI/2;return {x:.5+.38*Math.cos(a),y:.8+.17*Math.sin(a)};
+}
+function pickTarget(p,th){
+  const r=Math.random,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  if(th==='festa'){p.tx=cl(p.x+(r()-.5)*.3,.08,.92);p.ty=cl(p.y+(r()-.5)*.25,.55,.97);p.wait=.2+r()*.8;}
+  else{p.tx=.08+r()*.84;p.ty=.55+r()*.42;p.wait=1.5+r()*4;}
+}
+let lastT=0;
+function frame(t){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.1,Math.max(0,(t-lastT)/1000));lastT=t;
+  const st=document.querySelector('.stage');if(!st)return;
+  const W=st.clientWidth,H=st.clientHeight;if(!W||!H)return;
+  const th=st.dataset.th,seated=th==='cinema'||th==='jantar';
+  const figs=st.querySelectorAll('.fig');const n=figs.length;
+  figs.forEach((el,i)=>{
+    const id=el.dataset.pid;let p=state.pos[id];
+    if(!p){p=state.pos[id]={x:.2+Math.random()*.6,y:1.15,tx:null,ty:null,wait:0,dir:1};}
+    if(seated){const sp=seatFor(th,i,n);p.tx=sp.x;p.ty=sp.y;}
+    else if(p.tx==null)pickTarget(p,th);
+    const dx=(p.tx-p.x)*W,dy=(p.ty-p.y)*H,d=Math.hypot(dx,dy);
+    let walking=false;
+    if(d<3){
+      if(!seated){p.wait-=dt;if(p.wait<=0)pickTarget(p,th);}
+    }else if(REDUCE){p.x=p.tx;p.y=p.ty;}
+    else{
+      const step=(seated?70:th==='festa'?55:38)*dt;
+      if(step>=d){p.x=p.tx;p.y=p.ty;}else{p.x+=dx/d*step/W;p.y+=dy/d*step/H;walking=true;if(Math.abs(dx)>1)p.dir=dx>0?1:-1;}
+    }
+    el.style.left=(p.x*100).toFixed(2)+'%';el.style.top=(p.y*100).toFixed(2)+'%';el.style.zIndex=String(Math.round(p.y*100));
+    el.classList.toggle('walking',walking);el.classList.toggle('idle',!walking);
+    const bw=el.firstChild;if(bw)bw.style.transform='scaleX('+p.dir+')';
+  });
+}
+requestAnimationFrame(frame);
+
+/* ações */
+async function validate(e,code){
+  const me=myMember();
+  if(!me)return toast('Escolha quem você é primeiro.');
+  if(getStatus(e)!=='aberto')return toast('A presença deste evento não está aberta.');
+  const a=analyze(me);if(a.suspenso)return toast('Você está suspenso até '+fmtShort(a.until)+'.');
+  if(String(code||'').trim().toUpperCase()!==e.code)return toast('Código incorreto.');
+  if(await w(()=>db.doc('checkins/'+e.id+'_'+me.id).set({eventId:e.id,memberId:me.id,at:Date.now(),by:'self'}),'Presença confirmada!')){state.room=e.id;render();}
+}
+function autoValidate(){
+  const p=state.pendingV;if(!p||!state.loaded||!myMember())return;
+  state.pendingV=null;try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  const e=state.events.find(x=>x.id===p.eventId);
+  if(e){validate(e,p.code);}else toast('Evento do QR code não encontrado.');
+}
+app.addEventListener('click',async ev=>{
+  const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
+  const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
+  if(act==='tab'){state.tab=d.t;render();return;}
+  if(act==='skipClaim'){state.skipClaim=true;render();return;}
+  if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
+  if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
+  if(act==='leave'){state.room=null;state.tab='eventos';render();return;}
+  if(act==='enter'&&evn){
+    const me=myMember();
+    if(me&&getStatus(evn)==='aberto'&&isLeader(evn)&&!readOnly()&&!state.checkins[evn.id+'_'+me.id]&&!analyze(me).suspenso){
+      await w(()=>db.doc('checkins/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,at:Date.now(),by:'leader'}));
+    }
+    state.room=evn.id;render();return;
+  }
+  if(act==='joinMe'){state.skipClaim=false;render();return;}
+  if(act==='request'){await w(()=>db.doc('claims/'+state.uid).set({memberId:d.m,at:Date.now()}),'Pedido enviado.');return;}
+  if(act==='requestNew'||act==='ownerNew'){
+    const n=((document.getElementById('newname')||{}).value||'').trim();if(n.length<2)return toast('Digite o seu nome.');
+    if(act==='requestNew'){await w(()=>db.doc('claims/'+state.uid).set({novoNome:n,at:Date.now()}),'Pedido enviado.');return;}
+    const id='m'+Date.now().toString(36);
+    await w(async()=>{await db.doc('members/'+id).set({name:n,order:state.members.length+1,since:todayStr()});await db.doc('approvals/'+state.uid).set({status:'aprovado',memberId:id,at:Date.now()});},'Você entrou na sala.');return;
+  }
+  if(act==='ownerJoin'){await w(()=>db.doc('approvals/'+state.uid).set({status:'aprovado',memberId:d.m,at:Date.now()}),'Você entrou na sala.');return;}
+  if(act==='approve'){
+    const r=state.claims[d.u];if(!r)return;
+    await w(async()=>{let mid=r.memberId;if(!mid){mid='m'+Date.now().toString(36);await db.doc('members/'+mid).set({name:r.novoNome,order:state.members.length+1,since:todayStr()});}await db.doc('approvals/'+d.u).set({status:'aprovado',memberId:mid,at:Date.now()});},'Acesso aprovado.');return;
+  }
+  if(act==='refuse'){await w(()=>db.doc('approvals/'+d.u).set({status:'recusado',at:Date.now()}),'Pedido recusado.');return;}
+  if(act==='open'&&evn){await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Presença aberta.');return;}
+  if(act==='close'&&evn){if(await w(()=>db.doc('ctl/'+evn.id).set({status:'encerrado',at:Date.now()}),'Presença encerrada.')){state.room=null;state.tab='eventos';render();}return;}
+  if(act==='reopen'&&evn){await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Presença reaberta.');return;}
+  if(act==='validate'&&evn){const i=document.getElementById('code_'+evn.id);await validate(evn,i?i.value:'');return;}
+  if(act==='toggle'&&evn){
+    const key=evn.id+'_'+d.m;
+    if(state.checkins[key])await w(()=>db.doc('checkins/'+key).delete(),'Presença removida.');
+    else await w(()=>db.doc('checkins/'+key).set({eventId:evn.id,memberId:d.m,at:Date.now(),by:'admin'}),'Presença marcada.');
+    return;
+  }
+  if(act==='newEvent'){state.editing='new';state.draft={};render();return;}
+  if(act==='editEvent'){state.editing=d.e;state.draft={};render();return;}
+  if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
+  if(act==='saveEvent'){
+    const g=id=>(document.getElementById(id)||{}).value||'';
+    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto'};
+    if(!data.title||!data.date)return toast('Preencha o nome e a data.');
+    if(!data.leaderId)return toast('Escolha o líder do evento.');
+    let ok;
+    if(state.editing==='new'){const id='e'+Date.now().toString(36);ok=await w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now()}),'Evento criado.');}
+    else ok=await w(()=>db.doc('events/'+state.editing).update(data),'Evento atualizado.');
+    if(ok){state.editing=null;state.draft={};render();}
+    return;
+  }
+  if(act==='delEvent'&&evn){
+    if(!state.draft['del_'+evn.id]){state.draft['del_'+evn.id]=1;el.textContent='Toque de novo para apagar';return;}
+    const keys=Object.keys(state.checkins).filter(k=>k.startsWith(evn.id+'_')),jk=Object.keys(state.justifs).filter(k=>k.startsWith(evn.id+'_'));
+    await w(async()=>{for(const k of keys)await db.doc('checkins/'+k).delete();for(const k of jk)await db.doc('justifs/'+k).delete();await db.doc('ctl/'+evn.id).delete();await db.doc('events/'+evn.id).delete();},'Evento apagado.');
+    delete state.draft['del_'+evn.id];return;
+  }
+  if(act==='sendJ'&&evn){
+    const me=myMember(),t=(document.getElementById('jt_'+evn.id)||{}).value||'';
+    if(!me)return;if(t.trim().length<5)return toast('Explique o motivo em uma frase.');
+    if(await w(()=>db.doc('justifs/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,text:t.trim(),at:Date.now(),votes:{},decision:null}),'Pedido enviado.'))delete state.draft['jt_'+evn.id];
+    return;
+  }
+  if(act==='vote'){await w(()=>db.doc('justifs/'+d.k).update({votes:{[state.uid]:d.v}}),'Voto registrado.');return;}
+  if(act==='decide'){const me=myMember();await w(()=>db.doc('justifs/'+d.k).update({decision:d.v,decidedBy:me?me.id:'admin',decidedAt:Date.now()}),d.v==='abonada'?'Falta abonada.':'Pedido negado.');return;}
+  if(act==='saveRules'){
+    const lim=parseInt((document.getElementById('r_lim')||{}).value,10),dias=parseInt((document.getElementById('r_dias')||{}).value,10),link=((document.getElementById('r_link')||{}).value||'').trim();
+    if(!(lim>=1)||!(dias>=1))return toast('Use números a partir de 1.');
+    if(await w(()=>db.doc('config/rules').set({limite:lim,dias:dias,appLink:link}),'Regras salvas.')){delete state.draft.r_lim;delete state.draft.r_dias;delete state.draft.r_link;}
+    return;
+  }
+  if(act==='addMember'){
+    const n=((document.getElementById('nm_new')||{}).value||'').trim();if(!n)return;
+    const id='m'+Date.now().toString(36);
+    if(await w(()=>db.doc('members/'+id).set({name:n,order:state.members.length+1,since:todayStr()}),'Membro adicionado.'))delete state.draft.nm_new;
+    return;
+  }
+  if(act==='rename'){const n=((document.getElementById('mn_'+d.m)||{}).value||'').trim();if(!n)return;if(await w(()=>db.doc('members/'+d.m).update({name:n}),'Nome salvo.'))delete state.draft['mn_'+d.m];return;}
+  if(act==='release'){await w(async()=>{await db.doc('approvals/'+d.u).delete();await db.doc('claims/'+d.u).delete();},'Acesso removido.');return;}
+  if(act==='delMember'){
+    if(!state.draft['dm_'+d.m]){state.draft['dm_'+d.m]=1;el.textContent='Toque de novo para remover';return;}
+    const cu=Object.keys(state.approvals).find(u=>state.approvals[u].memberId===d.m);
+    await w(async()=>{if(cu){await db.doc('approvals/'+cu).delete();await db.doc('claims/'+cu).delete();}await db.doc('members/'+d.m).delete();},'Membro removido.');
+    delete state.draft['dm_'+d.m];return;
+  }
+});
+function onField(ev){
+  const t=ev.target;
+  if(t.id&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))state.draft[t.id]=t.value;
+  if(t.id==='evsel'&&ev.type==='change'){state.eventId=t.value;render();}
+}
+app.addEventListener('input',onField);app.addEventListener('change',onField);
+
+/* dados ao vivo */
+function sub(name,ref,fn){
+  ref.onSnapshot(s=>{fn(s);state.ready[name]=true;state.loaded=Object.keys(state.ready).length===9;scheduleRender();},e=>{state.err=e&&e.code;state.ready[name]=true;state.loaded=Object.keys(state.ready).length===9;scheduleRender();});
+}
+async function refreshProfiles(){
+  if(!user)return;const ids=Object.keys(state.claims);if(!ids.length)return;
+  try{const ps=await user.profiles(ids);let ch=false;for(const id of ids){const n=(ps[id]&&ps[id].name)||'';if(state.names[id]!==n){state.names[id]=n;ch=true;}}if(ch)scheduleRender();}catch(e){}
+}
+function subscribe(){
+  sub('members',db.collection('members'),s=>{state.members=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name));});
+  sub('events',db.collection('events'),s=>{state.events=s.docs.map(d=>({id:d.id,...d.data()}));});
+  sub('ctl',db.collection('ctl'),s=>{state.ctl=toMap(s);});
+  sub('checkins',db.collection('checkins'),s=>{state.checkins=toMap(s);});
+  sub('justifs',db.collection('justifs'),s=>{state.justifs=toMap(s);});
+  sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
+  sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);});
+  sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
+  sub('rules',db.doc('config/rules'),s=>{const r=s.exists?s.data():{};state.rules={limite:Math.max(1,r.limite||2),dias:Math.max(1,r.dias||3),appLink:r.appLink||''};});
+  setTimeout(()=>{if(!state.loaded){state.slow=true;render();}},10000);
+}
+async function boot(){
+  const m=/^#v-([a-z0-9]+)-([A-Za-z0-9]+)$/i.exec(location.hash||'');
+  if(m)state.pendingV={eventId:m[1],code:m[2]};
+  const c=window.claude;
+  try{
+    [db,user]=await Promise.all([c&&c.use?c.use('db'):null,c&&c.use?c.use('user'):null]);
+  }catch(e){db=null;}
+  if(!db){state.nodb=true;render();return;}
+  if(user){
+    const me=await user.me();state.uid=me.id;state.isOwner=me.isOwner;try{if(localStorage.getItem('presenca_adm')==='0')state.adminOn=false;}catch(e){}
+    state.canWrite=await user.can('data.write');
+  }
+  subscribe();
+  let sig='';setInterval(()=>{const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;scheduleRender();}},30000);
+}
+boot();
+})();
+</script>
