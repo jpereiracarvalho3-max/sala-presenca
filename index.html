@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sala de Presença</title>
+<title>Eventos dos Bêbados</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -146,7 +146,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;
 </style>
 </head>
 <body>
-<div id="app"><div class="card"><h2>Sala de Presença</h2><p class="muted" style="margin:0">Carregando o grupo…</p></div></div>
+<div id="app"><div class="card"><h2>Eventos dos Bêbados</h2><p class="muted" style="margin:0">Carregando o grupo…</p></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -256,7 +256,7 @@ function head(){
   if(me)who='<span class="chip info">Você: '+esc(me.name)+'</span>';
   if(state.uid)who+='<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer">Sair</button>';
   if(state.isOwner)who+='<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>';
-  return '<div class="top"><div><h1>Sala de Presença</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
+  return '<div class="top"><div><h1>Eventos dos Bêbados</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
 }
 function tabsHTML(){
   const t=[['faltas','Faltas'],['eventos','Eventos']];
@@ -424,8 +424,8 @@ function adminHTML(){
 }
 
 function render(){
-  if(state.nodb){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p>Não consegui conectar ao banco de dados. Confira a internet e abra o link de novo.</p></div>';return;}
-  if(state.needLogin){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p class="muted" style="margin:0">Entre com a sua conta Google para ver a sala e validar presença.</p><button class="btn primary" data-act="login">Entrar com Google</button><p class="muted small" style="margin:0">Se o botão não funcionar, abra este link no Safari ou no Chrome.</p></div>';return;}
+  if(state.nodb){app.innerHTML='<div class="card"><h1>Eventos dos Bêbados</h1><p>Não consegui conectar ao banco de dados. Confira a internet e abra o link de novo.</p></div>';return;}
+  if(state.needLogin){app.innerHTML='<div class="card"><h1>Eventos dos Bêbados</h1><p class="muted" style="margin:0">Entre com a sua conta Google para ver a sala e validar presença.</p><button class="btn primary" data-act="login">Entrar com Google</button><p class="muted small" style="margin:0">Se o botão não funcionar, abra este link no Safari ou no Chrome.</p></div>';return;}
   let h=head();
   if(!state.loaded){
     h+='<div class="card"><p class="muted" style="margin:0">'+(state.slow?'Está demorando para conectar. Os dados podem estar desatualizados.':'Carregando o grupo…')+'</p></div>';
