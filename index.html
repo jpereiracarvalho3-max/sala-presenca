@@ -420,7 +420,7 @@ function faltasHTML(){
 }
 function eventosHTML(){
   let out='';
-  if(adm()&&!readOnly()){
+  if((adm()||myMember())&&!readOnly()){
     if(state.editing){
       const ed=state.editing==='new'?{}:(state.events.find(x=>x.id===state.editing)||{});
       out+='<div class="card"><h2>'+(state.editing==='new'?'Novo evento':'Editar evento')+'</h2>'+
@@ -444,7 +444,8 @@ function eventosHTML(){
     let btns='';
     if(adm()||(st==='aberto'&&(present||isLeader(e))))btns+='<button class="btn primary" data-act="enter" data-e="'+esc(e.id)+'">Entrar na sala</button>';
     if(st==='agendado'&&canManage(e)&&!readOnly())btns+='<button class="btn" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
-    if(adm()&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button><button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
+    if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
+    if(adm()&&!readOnly())btns+='<button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
     let codeBox='';
     if(st==='aberto'&&me&&!present&&!readOnly()&&isOnline(e))codeBox='<button class="btn primary" data-act="joinOnline" data-e="'+esc(e.id)+'">Entrar na sala online</button>';
     else if(st==='aberto'&&me&&!present&&!isLeader(e)&&!readOnly())codeBox='<div class="small muted">Escaneie o QR code do líder com a câmera do celular. Se não conseguir, digite o código:</div><div class="row"><input id="code_'+esc(e.id)+'" class="grow" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="8" placeholder="Código de 6 letras" value="'+esc(val('code_'+e.id))+'"><button class="btn primary" data-act="validate" data-e="'+esc(e.id)+'">Validar</button></div>';
@@ -659,7 +660,7 @@ app.addEventListener('click',async ev=>{
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
     if(!data.leaderId)return toast('Escolha o líder do evento.');
     let ok;
-    if(state.editing==='new'){const id='e'+Date.now().toString(36);ok=await w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now()}),'Evento criado.');}
+    if(state.editing==='new'){const id='e'+Date.now().toString(36);ok=await w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now(),createdBy:state.uid}),'Evento criado.');}
     else ok=await w(()=>db.doc('events/'+state.editing).update(data),'Evento atualizado.');
     if(ok){state.editing=null;state.draft={};render();}
     return;

@@ -65,9 +65,12 @@ service cloud.firestore {
     }
 
     // Eventos, presenças e justificativas: só o administrador e membros aprovados veem
+    // Qualquer membro aprovado cria evento e edita o que criou; só o administrador apaga
     match /events/{id} {
       allow read: if inside();
-      allow write: if isOwner();
+      allow create: if isOwner() || (isMember() && request.resource.data.createdBy == me());
+      allow update: if isOwner() || (isMember() && resource.data.createdBy == me() && request.resource.data.createdBy == me());
+      allow delete: if isOwner();
     }
     match /ctl/{eventId} {
       allow read: if inside();
