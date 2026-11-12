@@ -1,7 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sala de Presença</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
 /* Conceito: uma sala de encontro ilustrada no alto; quem validou a presença aparece dentro da sala, quem faltou fica na porta. Abas simples e cartões claros embaixo. */
 :root{
@@ -137,7 +144,8 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;
 .stl[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 @media (prefers-reduced-motion:reduce){.fig svg,.th-festa .floor::after,.tw,.sm,.flick{animation:none!important}#toast{transition:none}}
 </style>
-
+</head>
+<body>
 <div id="app"><div class="card"><h2>Sala de Presença</h2><p class="muted" style="margin:0">Carregando o grupo…</p></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -145,7 +153,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;
 (function(){
 const app=document.getElementById('app');
 const state={tab:'faltas',room:null,adminOn:true,members:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
-  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,nodb:false,slow:false,err:null,deferred:false};
+  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -165,7 +173,7 @@ const canManage=e=>adm()||isLeader(e);
 const readOnly=()=>state.canWrite===false;
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
-async function w(fn,ok){try{await fn();if(ok)toast(ok);return true;}catch(e){toast(e&&e.code==='invalid_argument'?'Você não tem permissão para essa ação.':'Não deu certo. Tente de novo.');return false;}}
+async function w(fn,ok){try{await fn();if(ok)toast(ok);return true;}catch(e){toast(e&&(e.code==='invalid_argument'||e.code==='permission-denied')?'Você não tem permissão para essa ação.':'Não deu certo. Tente de novo.');return false;}}
 function genCode(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const u=new Uint32Array(6);crypto.getRandomValues(u);return Array.from(u,x=>A[x%A.length]).join('');}
 
 /* regra de faltas, calculada sempre do zero a partir dos registros */
@@ -246,6 +254,7 @@ function head(){
   const me=myMember();
   let who='';
   if(me)who='<span class="chip info">Você: '+esc(me.name)+'</span>';
+  if(state.uid)who+='<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer">Sair</button>';
   if(state.isOwner)who+='<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>';
   return '<div class="top"><div><h1>Sala de Presença</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
 }
@@ -275,7 +284,7 @@ function pendHTML(){
     const busy=r.memberId&&takenBy(r.memberId)&&takenBy(r.memberId)!==u;
     const refused=state.approvals[u]&&state.approvals[u].status==='recusado';
     return '<div class="item"><div class="row between"><h3>'+esc(nm)+'</h3><span class="chip '+(refused?'bad':'warn')+'">'+(refused?'Recusado':(mem?'Nome da lista':'Nome novo'))+'</span></div>'+
-      '<div class="small muted">Conta no Claude: '+esc(state.names[u]||'nome não disponível')+'</div>'+
+      '<div class="small muted">Conta Google: '+esc(state.names[u]||'nome não disponível')+'</div>'+
       (busy?'<div class="small"><span class="chip bad">Esse nome já está com outra conta</span></div>':'')+
       '<div class="row"><button class="btn good" data-act="approve" data-u="'+esc(u)+'"'+(busy?' disabled':'')+'>Aprovar</button>'+(refused?'':'<button class="btn danger" data-act="refuse" data-u="'+esc(u)+'">Recusar</button>')+'</div></div>';
   }).join('')+'</div>':'<div class="empty">Nenhum pedido esperando.</div>')+'</div>';
@@ -316,7 +325,7 @@ function roomScreen(e){
     let box='<div class="card"><h3>QR code do líder</h3>';
     if(st==='agendado')box+='<p class="muted small" style="margin:0">A sala abre sozinha no horário do evento. Se quiser, abra agora.</p><button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
     if(st==='aberto'){
-      const link=state.rules.appLink;
+      const link=state.rules.appLink||(location.origin+location.pathname);
       box+='<p class="muted small" style="margin:0">Mostre este QR code para o pessoal escanear. Quem escanear entra na sala.</p><div class="codebox" aria-label="Código do evento">'+esc(e.code||'------')+'</div>'+
         (link?'<div class="row" style="justify-content:center"><div class="qrwrap"><div id="qr" data-text="'+esc(link.replace(/#.*$/,'')+'#v-'+e.id+'-'+(e.code||''))+'"></div></div></div>':'<p class="muted small" style="margin:0">Para mostrar o QR code, o administrador precisa colar o link do app em Admin.</p>')+
         '<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar presença</button>';
@@ -405,7 +414,7 @@ function adminHTML(){
   if(!adm())return '<div class="card"><div class="empty">Só o administrador vê esta aba.</div></div>';
   const r=state.rules;
   let out=pendHTML()+'<div class="card"><h2>Regras</h2><div class="grid2"><label>Faltas no mês para suspender<input id="r_lim" type="number" min="1" max="10" value="'+esc(val('r_lim',r.limite))+'"></label><label>Dias de suspensão<input id="r_dias" type="number" min="1" max="60" value="'+esc(val('r_dias',r.dias))+'"></label></div>'+
-    '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Cole aqui o link de compartilhamento deste app"></label><p class="muted small" style="margin:0">Use o botão Compartilhar da página, copie o link e cole aqui. Compartilhe com permissão de colaborador, senão as pessoas só conseguem ver e não validam presença.</p><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
+    '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Deixe em branco para usar o endereço desta página"></label><p class="muted small" style="margin:0">Pode deixar em branco: o QR code usa o endereço desta página.</p><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
   out+='<div class="card"><h2>Membros</h2><div class="list">'+state.members.map(m=>{
     const claimUid=Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m.id);
     return '<div class="item"><div class="row"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" data-act="rename" data-m="'+esc(m.id)+'">Salvar nome</button></div>'+
@@ -415,7 +424,8 @@ function adminHTML(){
 }
 
 function render(){
-  if(state.nodb){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p>Para ver a sala e validar presença, abra este link logado na sua conta do Claude.</p></div>';return;}
+  if(state.nodb){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p>Não consegui conectar ao banco de dados. Confira a internet e abra o link de novo.</p></div>';return;}
+  if(state.needLogin){app.innerHTML='<div class="card"><h1>Sala de Presença</h1><p class="muted" style="margin:0">Entre com a sua conta Google para ver a sala e validar presença.</p><button class="btn primary" data-act="login">Entrar com Google</button><p class="muted small" style="margin:0">Se o botão não funcionar, abra este link no Safari ou no Chrome.</p></div>';return;}
   let h=head();
   if(!state.loaded){
     h+='<div class="card"><p class="muted" style="margin:0">'+(state.slow?'Está demorando para conectar. Os dados podem estar desatualizados.':'Carregando o grupo…')+'</p></div>';
@@ -429,7 +439,7 @@ function render(){
       else if(acc&&acc.status==='recusado')h+='<div class="card"><h2>Acesso não liberado</h2><p class="muted" style="margin:0">O administrador não aprovou o seu pedido. Fale com ele no grupo.</p></div>';
       else if(req)h+='<div class="card"><h2>Pedido enviado</h2><p class="muted" style="margin:0">Aguarde o administrador aprovar o seu acesso. Depois é só abrir este link de novo.</p></div>';
       else if(state.uid)h+=claimHTML();
-      else h+='<div class="card"><p style="margin:0">Não consegui identificar a sua conta. Abra este link logado no Claude.</p></div>';
+      else h+='<div class="card"><p style="margin:0">Não consegui identificar a sua conta. Abra este link de novo e entre com o Google.</p></div>';
       app.innerHTML=h;return;
     }
     if(readOnly())h+='<div class="card"><span class="chip warn">Você está só olhando: peça ao administrador permissão de colaborador para validar presença.</span></div>';
@@ -518,6 +528,8 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
+  if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
+  if(act==='logout'){firebase.auth().signOut();return;}
   if(act==='tab'){state.tab=d.t;render();return;}
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
@@ -580,7 +592,7 @@ app.addEventListener('click',async ev=>{
     if(await w(()=>db.doc('justifs/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,text:t.trim(),at:Date.now(),votes:{},decision:null}),'Pedido enviado.'))delete state.draft['jt_'+evn.id];
     return;
   }
-  if(act==='vote'){await w(()=>db.doc('justifs/'+d.k).update({votes:{[state.uid]:d.v}}),'Voto registrado.');return;}
+  if(act==='vote'){await w(()=>db.doc('justifs/'+d.k).update({['votes.'+state.uid]:d.v}),'Voto registrado.');return;}
   if(act==='decide'){const me=myMember();await w(()=>db.doc('justifs/'+d.k).update({decision:d.v,decidedBy:me?me.id:'admin',decidedAt:Date.now()}),d.v==='abonada'?'Falta abonada.':'Pedido negado.');return;}
   if(act==='saveRules'){
     const lim=parseInt((document.getElementById('r_lim')||{}).value,10),dias=parseInt((document.getElementById('r_dias')||{}).value,10),link=((document.getElementById('r_link')||{}).value||'').trim();
@@ -625,26 +637,38 @@ function subscribe(){
   sub('checkins',db.collection('checkins'),s=>{state.checkins=toMap(s);});
   sub('justifs',db.collection('justifs'),s=>{state.justifs=toMap(s);});
   sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
-  sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);});
+  sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
   sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
   sub('rules',db.doc('config/rules'),s=>{const r=s.exists?s.data():{};state.rules={limite:Math.max(1,r.limite||2),dias:Math.max(1,r.dias||3),appLink:r.appLink||''};});
   setTimeout(()=>{if(!state.loaded){state.slow=true;render();}},10000);
 }
-async function boot(){
+const FB={apiKey:"AIzaSyD8bO9UARwmwFzoAHe03_AV3iLQMPR9sAI",authDomain:"sala-presenca.firebaseapp.com",projectId:"sala-presenca",storageBucket:"sala-presenca.firebasestorage.app",messagingSenderId:"41549125231",appId:"1:41549125231:web:1be6dbefa5d5b47b79df9a"};
+function boot(){
   const m=/^#v-([a-z0-9]+)-([A-Za-z0-9]+)$/i.exec(location.hash||'');
   if(m)state.pendingV={eventId:m[1],code:m[2]};
-  const c=window.claude;
-  try{
-    [db,user]=await Promise.all([c&&c.use?c.use('db'):null,c&&c.use?c.use('user'):null]);
-  }catch(e){db=null;}
+  let auth;
+  try{firebase.initializeApp(FB);auth=firebase.auth();db=firebase.firestore();}catch(e){db=null;}
   if(!db){state.nodb=true;render();return;}
-  if(user){
-    const me=await user.me();state.uid=me.id;state.isOwner=me.isOwner;try{if(localStorage.getItem('presenca_adm')==='0')state.adminOn=false;}catch(e){}
-    state.canWrite=await user.can('data.write');
-  }
-  subscribe();
-  let sig='';setInterval(()=>{const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;scheduleRender();}},30000);
+  user={profiles:async ids=>{const out={};await Promise.all(ids.map(async id=>{try{const s=await db.doc('profiles/'+id).get();if(s.exists)out[id]=s.data();}catch(e){}}));return out;}};
+  let started=false;
+  auth.onAuthStateChanged(async u=>{
+    if(!u){if(started){location.reload();return;}state.needLogin=true;render();return;}
+    if(started)return;started=true;
+    state.needLogin=false;state.uid=u.uid;state.canWrite=true;render();
+    try{await db.doc('profiles/'+u.uid).set({name:u.displayName||''});}catch(e){}
+    /* o primeiro a entrar vira o administrador; as regras do banco impedem trocar depois */
+    try{
+      const ref=db.doc('config/owner');let s=await ref.get();
+      if(!s.exists){try{await ref.set({uid:u.uid,at:Date.now()});}catch(e){}s=await ref.get();}
+      state.isOwner=s.exists&&s.data().uid===u.uid;
+    }catch(e){}
+    try{if(localStorage.getItem('presenca_adm')==='0')state.adminOn=false;}catch(e){}
+    subscribe();
+    let sig='';setInterval(()=>{const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;scheduleRender();}},30000);
+  });
 }
 boot();
 })();
 </script>
+</body>
+</html>
