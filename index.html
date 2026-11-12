@@ -419,7 +419,7 @@ function adminHTML(){
     const claimUid=Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m.id);
     return '<div class="item"><div class="row"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" data-act="rename" data-m="'+esc(m.id)+'">Salvar nome</button></div>'+
       '<div class="row between"><span class="chip '+(claimUid?'ok':'')+'">'+(claimUid?'Já entrou'+(state.names[claimUid]?' como '+esc(state.names[claimUid]):''):'Ainda não entrou')+'</span><span class="row">'+(claimUid?'<button class="btn" data-act="release" data-u="'+esc(claimUid)+'">Remover acesso</button>':'')+'<button class="btn danger" data-act="delMember" data-m="'+esc(m.id)+'">Remover</button></span></div></div>';
-  }).join('')+'</div><div class="row"><input class="grow" id="nm_new" placeholder="Nome do novo membro" value="'+esc(val('nm_new'))+'"><button class="btn primary" data-act="addMember">Adicionar</button></div></div>';
+  }).join('')+'</div><label>Adicionar membros<textarea id="nm_new" rows="3" placeholder="Um nome por linha, ou separados por vírgula">'+esc(val('nm_new'))+'</textarea></label><button class="btn primary" data-act="addMember">Adicionar</button></div>';
   return out;
 }
 
@@ -601,9 +601,11 @@ app.addEventListener('click',async ev=>{
     return;
   }
   if(act==='addMember'){
-    const n=((document.getElementById('nm_new')||{}).value||'').trim();if(!n)return;
-    const id='m'+Date.now().toString(36);
-    if(await w(()=>db.doc('members/'+id).set({name:n,order:state.members.length+1,since:todayStr()}),'Membro adicionado.')){delete state.draft.nm_new;render();}
+    const have=new Set(state.members.map(m=>String(m.name).trim().toLowerCase())),ns=[];
+    for(const x of ((document.getElementById('nm_new')||{}).value||'').split(/[\n,;]+/)){const n=x.trim().replace(/\s+/g,' '),k=n.toLowerCase();if(n&&!have.has(k)){have.add(k);ns.push(n);}}
+    if(!ns.length)return toast('Digite pelo menos um nome que ainda não esteja na lista.');
+    const base=Date.now().toString(36),start=state.members.length;
+    if(await w(async()=>{for(let i=0;i<ns.length;i++)await db.doc('members/m'+base+(ns.length>1?i.toString(36):'')).set({name:ns[i],order:start+i+1,since:todayStr()});},ns.length>1?ns.length+' membros adicionados.':'Membro adicionado.')){delete state.draft.nm_new;render();}
     return;
   }
   if(act==='rename'){const n=((document.getElementById('mn_'+d.m)||{}).value||'').trim();if(!n)return;if(await w(()=>db.doc('members/'+d.m).update({name:n}),'Nome salvo.'))delete state.draft['mn_'+d.m];return;}
