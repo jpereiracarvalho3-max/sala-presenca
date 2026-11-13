@@ -1170,9 +1170,16 @@ async function pushToken(){
   if(!state.pushOk){state.pushOk=true;try{ms.onMessage(m=>{const n=(m&&m.notification)||{};if(n.title)toast(n.title+(n.body?': '+n.body:''));});}catch(e){}}
   return tk;
 }
+/* na primeira vez que a pessoa entra neste aparelho, uma tela pede para ativar (o celular só mostra o pedido de permissão depois de um toque) */
+const pushPerguntou=()=>{try{return !!localStorage.getItem('pushperg_'+state.uid);}catch(e){return true;}};
+const pushMarca=()=>{try{localStorage.setItem('pushperg_'+state.uid,'1');}catch(e){}};
+const pushPede=()=>pushBase()&&Notification.permission==='default'&&!state.pushOk&&!state.pendingV&&!!myMember()&&!pushPerguntou();
+function pushPedeHTML(){
+  return '<div class="card" style="align-items:center;text-align:center;padding:28px 18px"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7 2.5 7h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><h2 style="margin:0">Receba os avisos no celular</h2><span class="muted">Rachas, enquetes e recados dos eventos.</span><button class="btn primary" data-act="pushAtivar"'+(state.pushBusy?' disabled':'')+'>'+(state.pushBusy?'Ativando...':'Ativar notificações')+'</button><button class="tfim" data-act="pushDepois">Agora não</button></div>';
+}
 function pushHTML(){
   if(!VAPID)return '';
-  if(state.pushOk)return myMember()?'<div class="card"><div class="row between"><span class="chip ok">Notificações ativadas</span><button class="btn" data-act="pushTeste"'+(state.pushTestou?' disabled':'')+'>'+(state.pushTestou?'Chega em até 10 min':'Enviar teste')+'</button></div></div>':'';
+  if(state.pushOk)return '';
   if(!pushBase())return ehIOS()&&!instalado()?'<div class="card"><span class="small muted">Para receber notificações no iPhone, instale o app na tela inicial.</span></div>':'';
   const pm=Notification.permission;
   if(pm==='denied')return '<div class="card"><span class="small muted">As notificações estão bloqueadas neste aparelho. Libere nos ajustes do celular.</span></div>';
@@ -1430,6 +1437,7 @@ function render(){
     if(q0&&window.QRCode){try{new QRCode(q0,{text:q0.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q0.textContent='Não foi possível gerar o QR code.';}}
     autoValidate();return;
   }
+  if(pushPede()){app.innerHTML=h+pushPedeHTML();return;}
   h+=tabsHTML();
   h+='<div class="tela'+(Date.now()-state.telaAt<450?' entra':'')+'">'+({faltas:faltasHTML,eventos:eventosHTML,alertas:alertasHTML,avatar:()=>avatarHTML()||'<div class="card"><div class="empty">Entre como membro para montar o seu avatar.</div></div>',admin:adminHTML}[state.tab]||faltasHTML)()+'</div>';
   app.innerHTML=h;
@@ -1520,9 +1528,10 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
-  if(act==='pushTeste'){const me=myMember();if(!me||state.pushTestou)return;state.pushTestou=true;render();db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>toast('Teste na fila. Feche o app e aguarde até 10 minutos.')).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
+  if(act==='pushDepois'){pushMarca();render();return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
+    pushMarca();
     state.pushBusy=true;render();
     Promise.resolve().then(()=>Notification.requestPermission()).then(pm=>{if(pm!=='granted')throw new Error('negado');return pushToken();})
       .then(()=>{state.pushBusy=false;toast('Notificações ativadas neste celular.');render();})
@@ -1947,7 +1956,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113140710';
+const VER='20261113141230';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
