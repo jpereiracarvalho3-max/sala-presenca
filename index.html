@@ -1121,7 +1121,9 @@ function eventoPgHTML(e){
 /* notificações: montadas a partir do que já está no app; "visto" fica guardado neste aparelho */
 const alertasVisto=()=>{try{return +localStorage.getItem('alertas_'+state.uid)||0;}catch(e){return 0;}};
 /* o Geral traz enquetes e recados de todos os eventos, menos daqueles em que a pessoa marcou Não vou */
-function vouNo(eid){return !!state.events.find(x=>x.id===eid)&&(((state.avatars[state.uid]||{}).rsvp||{})[eid]!=='nao');}
+/* enquetes e recados saem do Geral 1 dia depois de o evento acabar (continuam guardados dentro do evento) */
+function evRecente(e){if(!e)return false;if(getStatus(e)!=='encerrado')return true;const c=state.ctl[e.id]||{},fim=c.status==='encerrado'&&c.at?c.at:(endTime(e)||evTime(e));return Date.now()<fim+864e5;}
+function vouNo(eid){return evRecente(state.events.find(x=>x.id===eid))&&(((state.avatars[state.uid]||{}).rsvp||{})[eid]!=='nao');}
 function alertasLista(){
   const me=myMember(),out=[],ev=id=>state.events.find(x=>x.id===id),de14=Date.now()-14*864e5;
   const add=(at,ic,txt,eid,fixo)=>{const e=eid&&ev(eid);if(eid&&!e)return;out.push({at:at||0,ic,txt,eid,ev:e?e.title:'',fixo:!!fixo,g:grupo});};let grupo='racha';
@@ -1133,8 +1135,8 @@ function alertasLista(){
     if(r.uid===state.uid){const dv=Object.keys(r.partes||{}).filter(m=>r.partes[m].st==='devendo');if(dv.length)add(r.at,'🧾',(r.desc||'Racha')+': falta'+(dv.length>1?'m ':' ')+dv.map(nomeDe).join(', ')+' pagar.',r.eventId);}
   }
   grupo='geral';
-  for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&vouNo(p.eventId)&&(p.at||0)>de14)add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
-  for(const q of Object.values(state.feats.polls||{}))if(q.uid!==state.uid&&vouNo(q.eventId)&&(q.at||0)>de14)add(q.at,'📊','Enquete: '+q.q,q.eventId);
+  for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&vouNo(p.eventId))add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
+  for(const q of Object.values(state.feats.polls||{}))if(q.uid!==state.uid&&vouNo(q.eventId))add(q.at,'📊','Enquete: '+q.q,q.eventId);
   return out.sort((a,b)=>(b.fixo-a.fixo)||(b.at-a.at));
 }
 const alertasNovos=()=>{const v=alertasVisto();return alertasLista().filter(a=>a.ic!=='⏳'&&a.ic!=='🧾'&&(a.fixo||a.at>v)).length;};
@@ -1143,8 +1145,8 @@ function alertasHTML(){
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
   const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
   const ge=[];
-  for(const [id,q] of Object.entries(state.feats.polls||{}))if(ev(q.eventId)&&(q.uid===state.uid||vouNo(q.eventId))&&(q.at||0)>de14)ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
-  for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&(p.uid===state.uid||vouNo(p.eventId))&&(p.at||0)>de14)ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
+  for(const [id,q] of Object.entries(state.feats.polls||{}))if(ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
+  for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
   ge.sort((a,b)=>b.at-a.at);
   if(state.featErr)return '<div class="card"><span class="chip warn">As notificações ainda não foram liberadas no banco.</span></div>';
   return (rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,ev(r.eventId).title)).join('')+'</div></div>':'')+
@@ -1879,7 +1881,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113134120';
+const VER='20261113134625';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
