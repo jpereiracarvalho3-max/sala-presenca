@@ -113,6 +113,19 @@ service cloud.firestore {
         || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votos']));
       allow delete: if isOwner() || resource.data.uid == me();
     }
+    // Chat geral: membros leem e escrevem; cada um apaga o que é seu e qualquer membro apaga mensagens com mais de 2 horas
+    match /chat/{id} {
+      allow read: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow delete: if isOwner() || resource.data.uid == me()
+        || (inside() && resource.data.at < request.time.toMillis() - 7200000);
+    }
+    match /chataudio/{id} {
+      allow read: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow delete: if isOwner() || resource.data.uid == me()
+        || (inside() && resource.data.at < request.time.toMillis() - 7200000);
+    }
     // Notificações no celular: cada um grava o registro do próprio aparelho; os avisos entram numa fila que só o robô de envio lê
     match /tokens/{u} {
       allow read, write: if signedIn() && u == me();
