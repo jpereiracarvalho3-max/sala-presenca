@@ -1075,7 +1075,7 @@ function faltasHTML(){
   if(me){
     const a=analyze(me),lim=state.rules.limite;
     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
-    out+='<div class="card hero"><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
+    out+='<div class="card hero"><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div><button class="btn" data-act="rachaIr">Novo racha (dividir uma conta)</button></div>';
   }
   return out+rankHTML()+destaquesHTML()+abonoHTML();
 }
@@ -1119,21 +1119,29 @@ function featGravar(col,id,dados,msg,modo){
 function rachaHTML(e){
   const me=myMember(),E=esc(e.id),lista=doEvento('splits',e.id);
   let h='<div class="card"><div class="row between"><h2 style="margin:0">Racha</h2>'+(me&&!state.rachaNovo?'<button class="btn" data-act="rachaNovo">Novo racha</button>':'')+'</div>';
-  if(state.rachaNovo&&me){
-    const px=pixSalvo(),outros=state.members.filter(m=>m.id!==me.id),presentes=new Set(outros.filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id));
+  if(state.rachaNovo&&me)h+=rachaForm(e);
+  if(!lista.length&&!state.rachaNovo)h+='<div class="empty">Nenhum racha neste evento.</div>';
+  h+=lista.map(r=>rachaCard(r)).join('');
+  return h+'</div>';
+}
+/* formulário de novo racha: dentro de um evento (e) ou solto, na aba Notificações (e vazio; a pessoa pode ligar a um evento ou deixar sem) */
+const rachaEventos=()=>state.events.filter(x=>!isOnline(x)&&evRecente(x)).sort((a,b)=>evTime(b)-evTime(a));
+function rachaForm(e){
+  const me=myMember();if(!me)return '';
+  {
+    const px=pixSalvo(),outros=state.members.filter(m=>m.id!==me.id),presentes=new Set(e?outros.filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id):[]);
     const sel=state.rachaSel||(state.rachaSel=Object.fromEntries(outros.map(m=>[m.id,presentes.size?presentes.has(m.id):false])));
-    const n=outros.filter(m=>sel[m.id]).length,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0;
-    h+='<div class="item"><label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
+    const n=outros.filter(m=>sel[m.id]).length,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0,evs=e?[]:rachaEventos();
+    let h='';
+    h+='<div class="item">'+(evs.length?'<label>Evento (opcional)<select id="rc_ev"><option value="">Sem evento</option>'+evs.map(x=>'<option value="'+esc(x.id)+'"'+(val('rc_ev','')===x.id?' selected':'')+'>'+esc(x.title)+' · '+esc(fmtDay(x.date))+'</option>').join('')+'</select></label>':'')+'<label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
       '<label>Valor total (R$)<input id="rc_total" inputmode="decimal" placeholder="0,00" value="'+esc(val('rc_total',''))+'"></label>'+
       '<div class="grid2"><label>Sua chave PIX<select id="rc_pt">'+Object.keys(PIX_TIPOS).map(k=>'<option value="'+k+'"'+(val('rc_pt',px.t||'cel')===k?' selected':'')+'>'+PIX_TIPOS[k]+'</option>').join('')+'</select></label><label>Chave<input id="rc_pc" autocomplete="off" value="'+esc(val('rc_pc',px.c||''))+'"></label></div>'+
       '<label>Data da cobrança (hoje = já aparece para todos do racha)<input id="rc_dt" type="date" min="'+todayStr()+'" value="'+esc(val('rc_dt',todayStr()))+'"></label>'+
       '<div><div class="small muted">Com quem você rachou ('+n+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="rachaSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
       '<div class="small">'+(n&&total>0?'Divide por <b>'+(n+1)+'</b> (você e mais '+n+'): <b>'+brl(total/(n+1))+'</b> para cada um.':'Escolha as pessoas e o valor.')+'</div>'+
-      '<div class="row"><button class="btn primary" data-act="rachaCriar" data-e="'+E+'">Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>';
+      '<div class="row"><button class="btn primary" data-act="rachaCriar"'+(e?' data-e="'+esc(e.id)+'"':'')+'>Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>';
+    return h;
   }
-  if(!lista.length&&!state.rachaNovo)h+='<div class="empty">Nenhum racha neste evento.</div>';
-  h+=lista.map(r=>rachaCard(r)).join('');
-  return h+'</div>';
 }
 const rachaAtivo=r=>!r.cobrar||r.cobrar<=todayStr();
 function rachaCard(r,sub){
@@ -1209,13 +1217,13 @@ const alertasNovos=()=>{const v=alertasVisto();return alertasLista().filter(a=>a
 function alertasHTML(){
   const v=state.alertasVistoAntes||0,me=myMember(),de14=Date.now()-14*864e5,ev=id=>state.events.find(x=>x.id===id&&!isOnline(x));
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
-  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
+  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];if(!r.eventId&&(meu||r.uid===state.uid)&&(r.at||0)>de14&&(r.uid===state.uid||rachaAtivo(r)))return true;return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
   const ge=[];
   for(const [id,q] of Object.entries(state.feats.polls||{}))if(ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
   for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
   ge.sort((a,b)=>b.at-a.at);
   if(state.featErr)return '<div class="card"><span class="chip warn">As notificações ainda não foram liberadas no banco.</span></div>';
-  return pushHTML()+(rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,ev(r.eventId).title)).join('')+'</div></div>':'')+
+  return pushHTML()+(rc.length||me?'<div class="card"><div class="row between"><h2 style="margin:0">Racha</h2>'+(me&&!state.rachaNovo?'<button class="btn" data-act="rachaNovo">Novo racha</button>':'')+'</div>'+(state.rachaNovo?rachaForm(null):'')+(rc.length?'<div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,r.eventId?ev(r.eventId).title:'Sem evento')).join('')+'</div>':(state.rachaNovo?'':'<div class="empty">Nenhum racha em aberto. Toque em Novo racha para dividir uma conta.</div>'))+'</div>':'')+
     '<div class="card"><h2 style="margin:0">Geral</h2>'+(ge.length?'<div class="list" style="gap:8px">'+ge.map(x=>x.h).join('')+'</div>':'<div class="empty">Nenhuma notificação por enquanto.</div>')+'</div>';
 }
 
@@ -1790,11 +1798,14 @@ app.addEventListener('click',async ev=>{
   if(act==='evVoltar'){if(state.evVolta){state.room=state.evVolta;state.evVolta=null;}state.evPg=null;state.rachaNovo=false;state.enqNova=false;render();return;}
   if(act==='copiar'){copiar(d.t,d.msg);return;}
   if(act==='rachaNovo'){state.rachaNovo=true;state.rachaSel=null;render();return;}
+  /* atalho da tela inicial: abre a aba Notificações já com o formulário de racha (com ou sem evento) */
+  if(act==='rachaIr'){state.alertasVistoAntes=alertasVisto();try{localStorage.setItem('alertas_'+state.uid,String(Date.now()));}catch(e){}state.evPg=null;state.tab='alertas';state.rachaNovo=true;state.rachaSel=null;delete state.draft.rc_ev;render();try{window.scrollTo(0,0);}catch(e){}return;}
   if(act==='rachaCancelar'){state.rachaNovo=false;state.rachaSel=null;render();return;}
   if(act==='rachaSel'){state.rachaSel=state.rachaSel||{};state.rachaSel[d.m]=!state.rachaSel[d.m];render();return;}
-  if(act==='rachaCriar'&&evn){
+  if(act==='rachaCriar'){
     const me=myMember();if(!me)return;
     const g=id=>(document.getElementById(id)||{}).value||'';
+    const eid=evn?evn.id:(state.events.some(x=>x.id===g('rc_ev'))?g('rc_ev'):'');
     const total=Math.round((parseFloat(g('rc_total').replace(/\./g,'').replace(',','.'))||parseFloat(g('rc_total').replace(',','.'))||0)*100)/100;
     const pt=PIX_TIPOS[g('rc_pt')]?g('rc_pt'):'cel',chave=g('rc_pc').trim(),pix=pixChave(pt,chave);
     const ids=Object.keys(state.rachaSel||{}).filter(i=>state.rachaSel[i]&&state.members.some(m=>m.id===i)&&i!==me.id);
@@ -1803,10 +1814,10 @@ app.addEventListener('click',async ev=>{
     if(pix.length<5)return toast('Digite a sua chave PIX.');
     const cada=Math.round(total/(ids.length+1)*100)/100,partes={};ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
     try{localStorage.setItem('pix_'+state.uid,JSON.stringify({t:pt,c:chave}));}catch(e){}
-    state.rachaNovo=false;state.rachaSel=null;const dt=g('rc_dt'),cobrar=/^\d{4}-\d\d-\d\d$/.test(dt)&&dt>todayStr()?dt:'';['rc_desc','rc_total','rc_pt','rc_pc','rc_dt'].forEach(k=>delete state.draft[k]);
+    state.rachaNovo=false;state.rachaSel=null;const dt=g('rc_dt'),cobrar=/^\d{4}-\d\d-\d\d$/.test(dt)&&dt>todayStr()?dt:'';['rc_desc','rc_total','rc_pt','rc_pc','rc_dt','rc_ev'].forEach(k=>delete state.draft[k]);
     const sid='s'+Date.now().toString(36),sdesc=g('rc_desc').trim()||'Racha';
-    featGravar('splits',sid,{eventId:evn.id,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes,cobrar,at:Date.now()},cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.','set');
-    avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',evn.id,cobrar,'r_'+sid);return;
+    featGravar('splits',sid,{eventId:eid,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes,cobrar,at:Date.now()},cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.','set');
+    avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',eid,cobrar,'r_'+sid);return;
   }
   if(act==='rachaAvisar'||act==='rachaMarcar'){
     const r=(state.feats.splits||{})[d.id],me=myMember();if(!r)return;
@@ -2202,7 +2213,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113152552';
+const VER='20261113155634';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
