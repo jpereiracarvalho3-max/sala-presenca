@@ -1520,7 +1520,7 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
-  if(act==='pushTeste'){const me=myMember();if(!me||state.pushTestou)return;state.pushTestou=true;avisar([me.id],'Eventos dos Bêbados','Notificação de teste: está funcionando.','','',null,true);toast('Teste enviado. Feche o app e aguarde até 10 minutos.');render();return;}
+  if(act==='pushTeste'){const me=myMember();if(!me||state.pushTestou)return;state.pushTestou=true;render();db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>toast('Teste na fila. Feche o app e aguarde até 10 minutos.')).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
     state.pushBusy=true;render();
@@ -1947,7 +1947,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113140414';
+const VER='20261113140710';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
