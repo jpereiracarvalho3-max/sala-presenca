@@ -212,24 +212,45 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 @keyframes insPulso{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.55)}60%{box-shadow:0 0 0 9px rgba(245,166,35,0)}}
 @keyframes insEntra{from{transform:translateY(14px)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){.ins-p,.ins-alvo{animation:none}}
-.chat-l{display:flex;flex-direction:column;gap:8px;min-height:38vh;justify-content:flex-end}
-.chat-m{max-width:84%;align-self:flex-start;background:var(--soft);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:8px 11px;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
-.chat-m.meu{align-self:flex-end;background:#4A3413;border-color:var(--accent);border-radius:14px 14px 4px 14px}
-.chat-m b{font-size:12px;color:var(--accent)}
-.chat-h{font-style:normal;font-size:11px;color:var(--muted);align-self:flex-end}
-.chat-audio{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;padding:6px 2px;min-height:44px;cursor:pointer;touch-action:manipulation}
-.chat-onda{display:flex;align-items:center;gap:3px;height:22px}
-.chat-onda i{width:3px;border-radius:2px;background:var(--accent);height:8px}
-.chat-onda i:nth-child(2n){height:16px}.chat-onda i:nth-child(3n){height:22px}
-.chat-onda.toc i{animation:chatOnda .7s ease-in-out infinite alternate}
-.chat-onda.toc i:nth-child(2n){animation-delay:.2s}.chat-onda.toc i:nth-child(3n){animation-delay:.4s}
-@keyframes chatOnda{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
-.chat-esp{height:76px}
-.chat-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(760px,100%);display:flex;gap:8px;align-items:center;padding:8px 12px;background:#1B1511;border-top:1px solid var(--line);z-index:59}
-.chat-bar input{flex:1;min-width:0;margin:0}
-.chat-b{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);color:var(--ink);display:grid;place-items:center;cursor:pointer;touch-action:manipulation}
-.chat-b.env{background:var(--accent);border-color:var(--accent);color:#1B1511}
-.chat-rec{flex:1;color:var(--bad);font-weight:700}
+/* faixa do relógio do celular: o conteúdo que rola não passa por baixo dela */
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:70;pointer-events:none}
+.chat-topo{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:0 4px}
+.chat-l{display:flex;flex-direction:column;gap:3px;min-height:calc(100dvh - 300px);justify-content:flex-end;padding:4px 0}
+.chat-ln{display:flex;align-items:flex-end;gap:6px}
+.chat-ln.pri{margin-top:9px}
+.chat-ln.meu{justify-content:flex-end}
+.chat-ln.novo .chat-m{animation:chatEntra .22s ease-out}
+@keyframes chatEntra{from{transform:translateY(10px) scale(.96)}to{transform:none}}
+.chat-av{flex:none;width:34px;height:34px;border-radius:50%;overflow:hidden;background:transparent}
+.chat-av svg{width:50px;height:70px;margin:-1px 0 0 -8px;display:block}
+.chat-av:has(svg){background:var(--soft);border:1px solid var(--line)}
+.chat-m{position:relative;max-width:78%;background:#2B231D;border-radius:16px;padding:7px 11px 5px;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere;font-size:15.5px;line-height:1.35}
+.chat-m.rabo{border-bottom-left-radius:5px}
+.chat-ln.meu .chat-m{background:#5A3E12}
+.chat-ln.meu .chat-m.rabo{border-bottom-left-radius:16px;border-bottom-right-radius:5px}
+.chat-m b{font-size:12.5px;font-family:var(--font-head)}
+.chat-h{font-style:normal;font-size:10.5px;color:var(--muted);align-self:flex-end;margin-top:-1px}
+.chat-audio{display:flex;align-items:center;gap:9px;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;padding:2px 0;min-height:48px;min-width:190px;cursor:pointer;touch-action:manipulation}
+.chat-play{flex:none;width:42px;height:42px;border-radius:50%;background:var(--accent);color:#1B1511;display:grid;place-items:center}
+.chat-dur{font-size:12px;color:var(--muted);font-weight:500}
+.chat-onda{flex:1;display:flex;align-items:center;gap:3px;height:24px}
+.chat-onda i{width:3px;border-radius:2px;background:var(--muted);height:7px}
+.chat-onda i:nth-child(2n){height:15px}.chat-onda i:nth-child(3n){height:22px}.chat-onda i:nth-child(5n){height:11px}
+.chat-onda.toc i{background:var(--accent);animation:chatOnda .6s ease-in-out infinite alternate}
+.chat-onda.toc i:nth-child(2n){animation-delay:.15s}.chat-onda.toc i:nth-child(3n){animation-delay:.3s}
+@keyframes chatOnda{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+.chat-esp{height:72px}
+.chat-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(760px,100%);display:flex;gap:8px;align-items:center;padding:8px 10px;background:#15110E;z-index:59}
+.chat-bar input{flex:1;min-width:0;margin:0;height:48px;border-radius:24px;padding:0 18px;font-size:16px;background:#2B231D;border:1px solid var(--line)}
+.chat-b{flex:none;width:48px;height:48px;border-radius:50%;border:0;background:#2B231D;color:var(--ink);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;transition:transform .08s}
+.chat-b:active{transform:scale(.9)}
+.chat-b.env{background:var(--accent);color:#1B1511}
+.chat-bar .so-env{display:none}
+.chat-bar.tem .so-env{display:grid}
+.chat-bar.tem .so-mic{display:none}
+.chat-rec{flex:1;display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600}
+.chat-pt{width:11px;height:11px;border-radius:50%;background:var(--bad);animation:chatPisca 1s steps(2) infinite}
+@keyframes chatPisca{50%{opacity:.2}}
 .cobra{border:1px solid var(--accent);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
 .opc{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;overflow:hidden;font:inherit;font-weight:600;text-align:left;touch-action:manipulation}
 .opc.meu{border-color:var(--accent)}
@@ -1207,20 +1228,37 @@ const chatViu=()=>{try{localStorage.setItem('chat_'+state.uid,String(Date.now())
 const chatNovas=()=>{if(state.tab==='chat'&&!state.room)return 0;const v=chatVisto();return chatMsgs().filter(m=>m.uid!==state.uid&&m.at>v).length;};
 const hora=ms=>{const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes());};
 const chatFim=()=>{try{window.scrollTo(0,document.documentElement.scrollHeight);}catch(e){}};
+const CHAT_CORES=['#F5A623','#7ED6A5','#7FB8FF','#FF9E9E','#D7A6FF','#FFD36E','#6EE0E0','#FFAD7A'];
+const chatCor=id=>CHAT_CORES[(hash(String(id||'x'))>>>0)%CHAT_CORES.length];
+let chatJaVi={};
 function chatListaHTML(){
   const l=chatMsgs();
-  if(!l.length)return '<div class="empty">Nenhuma mensagem.</div>';
-  return l.map(m=>{const meu=m.uid===state.uid,toc=state.chatTocando===m.id;
-    const corpo=m.tipo==='a'?'<button class="chat-audio" data-act="chatTocar" data-id="'+esc(m.id)+'" aria-label="'+(toc?'Parar áudio':'Tocar áudio')+'"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">'+(toc?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>':'<path d="M8 5v14l11-7z"/>')+'</svg><span class="chat-onda'+(toc?' toc':'')+'"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>'+(m.dur||0)+'s</span></button>':'<span>'+esc(m.text)+'</span>';
-    return '<div class="chat-m'+(meu?' meu':'')+'">'+(meu?'':'<b>'+esc(m.nome||nomeDe(m.mid))+'</b>')+corpo+'<i class="chat-h">'+hora(m.at)+'</i></div>';}).join('');
+  if(!l.length){chatJaVi={};return '<div class="empty">Nenhuma mensagem ainda. Diga oi para o grupo.</div>';}
+  const vistos={};
+  const out=l.map((m,i)=>{
+    const meu=m.uid===state.uid,toc=state.chatTocando===m.id,ant=l[i-1],prox=l[i+1];
+    const primeiro=!ant||ant.uid!==m.uid||m.at-ant.at>5*60000,ultimo=!prox||prox.uid!==m.uid||prox.at-m.at>5*60000;
+    const mb=state.members.find(x=>x.id===m.mid),nome=m.nome||nomeDe(m.mid);
+    vistos[m.id]=1;
+    const corpo=m.tipo==='a'
+      ?'<button class="chat-audio" data-act="chatTocar" data-id="'+esc(m.id)+'" aria-label="'+(toc?'Parar áudio':'Tocar áudio')+'"><span class="chat-play"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">'+(toc?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>':'<path d="M8 5v14l11-7z"/>')+'</svg></span><span class="chat-onda'+(toc?' toc':'')+'"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="chat-dur">0:'+pad(Math.min(59,m.dur||0))+'</span></button>'
+      :'<span class="chat-tx">'+esc(m.text)+'</span>';
+    return '<div class="chat-ln'+(meu?' meu':'')+(primeiro?' pri':'')+(chatJaVi[m.id]?'':' novo')+'">'+
+      (meu?'':'<span class="chat-av">'+(ultimo&&mb?fig(mb):'')+'</span>')+
+      '<div class="chat-m'+(ultimo?' rabo':'')+'">'+(!meu&&primeiro?'<b style="color:'+chatCor(m.mid||m.uid)+'">'+esc(nome)+'</b>':'')+corpo+'<i class="chat-h">'+hora(m.at)+'</i></div></div>';
+  }).join('');
+  chatJaVi=vistos;
+  return out;
 }
 function chatHTML(){
   if(state.chatErr)return '<div class="card"><span class="chip warn">O chat ainda não foi liberado no banco. O administrador precisa atualizar as regras do Firebase.</span></div>';
-  const MIC='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-  const ENV='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>';
-  return '<div class="card"><div class="row between"><h2 style="margin:0">Chat</h2><span class="small muted">some em 2 horas</span></div><div id="chatLista" class="chat-l">'+chatListaHTML()+'</div></div><div class="chat-esp"></div>'+
-    '<div class="chat-bar">'+(state.chatGrav?'<span class="chat-rec">● Gravando <b id="chatSeg">0</b>s</span><button class="btn" data-act="chatGravCancel">Cancelar</button><button class="btn primary" data-act="chatGravEnviar">Enviar</button>'
-      :'<input id="chat_txt" maxlength="300" placeholder="Mensagem" autocomplete="off" enterkeyhint="send" value="'+esc(val('chat_txt',''))+'"><button class="chat-b" data-act="chatGravar" aria-label="Gravar áudio">'+MIC+'</button><button class="chat-b env" data-act="chatEnviar" aria-label="Enviar">'+ENV+'</button>')+'</div>';
+  const I=(d,f)=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="'+(f||'none')+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+  const MIC=I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),ENV=I('<path d="M5 12l15-7-5.5 15-2.6-6.4z"/>','currentColor'),LIXO=I('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>');
+  const tem=!!String(val('chat_txt','')).trim();
+  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted">as mensagens somem em 2 horas</span></div><div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
+    '<div class="chat-bar'+(tem?' tem':'')+'">'+(state.chatGrav
+      ?'<button class="chat-b" data-act="chatGravCancel" aria-label="Cancelar gravação">'+LIXO+'</button><span class="chat-rec"><span class="chat-pt"></span>Gravando <b id="chatSeg">0</b>s</span><button class="chat-b env" data-act="chatGravEnviar" aria-label="Enviar áudio">'+ENV+'</button>'
+      :'<input id="chat_txt" maxlength="300" placeholder="Mensagem" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" value="'+esc(val('chat_txt',''))+'"><button class="chat-b env so-mic" data-act="chatGravar" aria-label="Gravar áudio">'+MIC+'</button><button class="chat-b env so-env" data-act="chatEnviar" aria-label="Enviar mensagem">'+ENV+'</button>')+'</div>';
 }
 /* atualiza só a lista (sem redesenhar a tela inteira, para não fechar o teclado de quem está digitando) */
 function chatPinta(rola){const el=document.getElementById('chatLista');if(!el||state.tab!=='chat'||state.room)return false;el.innerHTML=chatListaHTML();if(rola)chatFim();chatViu();return true;}
@@ -1239,8 +1277,9 @@ function chatEnviarTexto(){
   const el=document.getElementById('chat_txt'),t=((el&&el.value)||'').trim();
   if(!t)return;
   if(!(myMember()||state.isOwner))return toast('Entre como membro para conversar.');
-  el.value='';delete state.draft.chat_txt;
+  el.value='';delete state.draft.chat_txt;const br=el.closest('.chat-bar');if(br)br.classList.remove('tem');
   chatGrava({tipo:'t',text:t.slice(0,300)});
+  try{el.focus({preventScroll:true});}catch(e){}
 }
 let chatRec=null,chatAud=null;
 async function chatGravar(){
@@ -1991,6 +2030,9 @@ app.addEventListener('pointerup',ev=>{
 },true);
 app.addEventListener('click',ev=>{if(Date.now()-swAt<350){ev.stopPropagation();ev.preventDefault();}},true);
 app.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='chat_txt'){ev.preventDefault();chatEnviarTexto();}});
+app.addEventListener('input',ev=>{const t=ev.target;if(t&&t.id==='chat_txt'){const br=t.closest('.chat-bar');if(br)br.classList.toggle('tem',!!t.value.trim());}});
+/* tocar no botão de enviar não tira o foco do campo (o teclado continua aberto, como nos apps de conversa) */
+app.addEventListener('pointerdown',ev=>{const b=ev.target&&ev.target.closest&&ev.target.closest('[data-act=chatEnviar]');if(b)ev.preventDefault();});
 app.addEventListener('input',onField);app.addEventListener('change',onField);
 
 /* dados ao vivo */
@@ -2146,7 +2188,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113143021';
+const VER='20261113143555';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
