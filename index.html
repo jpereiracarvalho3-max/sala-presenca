@@ -1064,13 +1064,15 @@ function impScreen(e){
    embaralhados (como no Impostor), não trancados. */
 const CID_PAPEL={c:'Cidadão',a:'Assassino',j:'Anjo',d:'Detetive'};
 const CID_DICA={c:'Você não tem poder especial. Descubra quem é o assassino na conversa e vote.',a:'À noite, você escolhe no celular quem vai morrer. De dia, disfarce.',j:'À noite, você escolhe alguém para proteger do assassino.',d:'À noite, você investiga uma pessoa e descobre se ela é assassino.'};
-const CID_MIN=5,CID_VER=10000,CID_K=window.__cidK||1; /* CID_K encurta as esperas nos testes */
+const CID_MIN=5,CID_VER=10000,CID_VOTO=300000,CID_K=window.__cidK||1; /* CID_K encurta as esperas nos testes */
 const cGid=e=>e.id+'_cid';
 const cGame=e=>state.games[cGid(e)]||null;
 const cQtdAss=n=>n>=8?2:1;
 const cSeg=g=>(iDec(g&&g.seg)||{}).r||{};
 const cAlvo=s=>(iDec(s)||{}).t||'';
 const cNoite=f=>['dorme','na','fa','nj','fj','nd','fd'].includes(f);
+const cRelogio=fim=>{const s=Math.max(0,Math.ceil((fim-Date.now())/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+setInterval(()=>{const el=document.getElementById('cidTimer');if(el)el.textContent=cRelogio(+el.dataset.fim);},1000);
 function cVenc(r,vivos){const a=vivos.filter(m=>r[m]==='a').length;return a===0?'cidade':(a>=vivos.length-a?'assassinos':'');}
 function cEntrar(e,entra){const me=myMember();if(!me)return;return w(()=>db.doc('games/'+cGid(e)).set({jog:{[state.uid]:entra?me.id:null}},{merge:true}),entra?'':'Você saiu do jogo.');}
 function cGrava(e,dados){return db.doc('games/'+cGid(e)).update(dados);}
@@ -1116,8 +1118,8 @@ function cFala(g){
     case 'fd':return 'Detetive, feche os olhos e esconda o celular.';
     case 'manha':return 'A cidade acorda. Todos abram os olhos. '+(g.morto?'Esta noite, '+iNome(g.morto)+' foi assassinado.':g.salvo?'Esta noite, alguém foi atacado, mas o anjo salvou.':'Esta noite, ninguém morreu.');
     case 'dia':return 'Agora conversem. Quem é o assassino? Quando decidirem, abram a votação no celular do narrador.';
-    case 'voto':return 'Hora de votar. Cada um escolhe no seu celular quem deve ser eliminado.';
-    case 'res':return g.elim?'A cidade eliminou '+iNome(g.elim)+'. '+iNome(g.elim)+' era '+CID_PAPEL[r[g.elim]||'c'].toLowerCase()+'.':'Deu empate. Ninguém foi eliminado.';
+    case 'voto':return 'Agora conversem e descubram o assassino. Cada um vota no seu celular. A noite volta quando todos votarem, ou em cinco minutos.';
+    case 'res':return g.elim?'A cidade eliminou '+iNome(g.elim)+'. '+iNome(g.elim)+' era '+CID_PAPEL[r[g.elim]||'c'].toLowerCase()+'.':(g.empate?'Deu empate. Ninguém foi eliminado.':'Ninguém votou. Ninguém foi eliminado.');
     case 'fim':{const as=Object.keys(r).filter(m=>r[m]==='a').map(iNome);return 'Fim de jogo. '+(g.venc==='cidade'?'A cidade venceu!':'Os assassinos venceram!')+' '+(as.length>1?'Os assassinos eram ':'O assassino era ')+as.join(' e ')+'.';}
   }
   return '';
@@ -1137,7 +1139,7 @@ function cTick(){
 }
 function cAnda(e,g,gid){
   const L=cidLoc,t=Date.now();
-  if(L.gid!==gid||L.fn!==g.fn){L.gid=gid;L.fn=g.fn;L.ini=t;L.rand=(9000+Math.random()*6000)*CID_K;L.indo=false;cFalar(cFala(g));scheduleRender();}
+  if(L.gid!==gid||L.fn!==g.fn){L.gid=gid;L.fn=g.fn;L.ini=t;L.rand=(9000+Math.random()*6000)*CID_K;L.indo=false;L.avisou=false;cFalar(cFala(g));scheduleRender();}
   if(L.indo)return;
   const dt=L.falaFim?t-L.falaFim:-1,r=cSeg(g),vivos=Array.isArray(g.vivos)?g.vivos:[],tem=p=>vivos.some(m=>r[m]===p),S=5000*CID_K;
   const vai=d=>{L.indo=true;cGrava(e,{...d,fn:(g.fn||0)+1,ft:Date.now()}).catch(()=>{L.indo=false;});};
@@ -1151,8 +1153,10 @@ function cAnda(e,g,gid){
     case 'nd':if(tem('d')?(g.dok||t-L.ini>60000*CID_K):dt>=L.rand)vai({fase:'fd'});break;
     case 'fd':if(dt>=S){const alvo=cAlvo(g.ka),prot=cAlvo(g.pj),morto=alvo&&vivos.includes(alvo)&&alvo!==prot?alvo:'',nv=vivos.filter(m=>m!==morto);
       vai({fase:'manha',morto,salvo:!!alvo&&alvo===prot,vivos:nv,up:g.pj||'',venc:cVenc(r,nv)});}break;
-    case 'manha':if(dt>=2500*CID_K)vai(g.venc?{fase:'fim'}:{fase:'dia',votos:{},fechar:false});break;
-    case 'voto':{const v=g.votos||{};if(vivos.every(m=>m in v)||g.fechar){
+    case 'manha':if(dt>=2500*CID_K)vai(g.venc?{fase:'fim'}:{fase:'voto',votos:{},fechar:false});break;
+    case 'voto':{const v=g.votos||{},passou=t-L.ini;
+      if(!L.avisou&&passou>=(CID_VOTO-60000)*CID_K&&passou<CID_VOTO*CID_K){L.avisou=true;const fim=L.falaFim;cFalar('Falta um minuto para a noite voltar.');L.falaFim=fim||Date.now();}
+      if(vivos.every(m=>m in v)||g.fechar||passou>=CID_VOTO*CID_K){
       const cont={};vivos.forEach(m=>{const x=v[m];if(x&&vivos.includes(x))cont[x]=(cont[x]||0)+1;});
       const ord=Object.entries(cont).sort((a,b)=>b[1]-a[1]),elim=ord.length&&(ord.length===1||ord[0][1]>ord[1][1])?ord[0][0]:'',nv=vivos.filter(m=>m!==elim);
       vai({fase:'res',elim,empate:!elim&&ord.length>0,vivos:nv,venc:cVenc(r,nv)});}}break;
@@ -1243,7 +1247,8 @@ function cidScreen(e){
   h+=aviso(fala);
   if(f==='voto'){
     const v=g.votos||{},ja=me.id in v,nv=vivos.filter(m=>m in v).length;
-    if(ja)h+='<div class="empty">Voto registrado. '+nv+' de '+vivos.length+' já votaram.</div>';
+    h+='<div class="row between"><span class="small muted">'+nv+' de '+vivos.length+' já votaram</span><span class="chip warn">A noite volta em <b id="cidTimer" data-fim="'+((state.cidIni||Date.now())+CID_VOTO*CID_K)+'">'+cRelogio((state.cidIni||Date.now())+CID_VOTO*CID_K)+'</b></span></div>';
+    if(ja)h+='<div class="empty">Voto registrado. Esperando os outros.</div>';
     else h+='<div class="cidvez"><b>Quem deve ser eliminado?</b>'+cLista(vivos.filter(m=>m!==me.id),state.cidSel)+'<button class="btn primary" data-act="cConf" data-e="'+E+'"'+(state.cidSel?'':' disabled')+'>Votar</button><button class="tfim" data-act="cBranco" data-e="'+E+'">Não votar em ninguém</button></div>';
     if(souHost)h+='<button class="btn" data-act="cFechar" data-e="'+E+'">Encerrar a votação agora ('+nv+' de '+vivos.length+')</button>';
   }
@@ -2499,7 +2504,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113172750';
+const VER='20261113172944';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
