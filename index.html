@@ -500,10 +500,10 @@ const fmtShort=t=>new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2
 const endTime=e=>{if(!e.fim)return null;let t=new Date(e.date+'T'+e.fim+':00').getTime();if(!(t>evTime(e)))t+=864e5;return t;};
 /* o evento abre no horário de início e encerra sozinho no horário de término; o administrador pode encerrar antes ou reabrir depois */
 /* ao entrar na sala: na chamada online todo mundo fica presente; no evento presencial o líder ganha a presença sozinho,
-   mas só a partir do horário marcado (abrir a sala antes da hora não dá presença adiantada: ela entra quando o evento começar) */
+   quando o evento começa de verdade: no horário marcado, ou quando ele mesmo abre a sala mais cedo no dia do evento (ver evComecou) */
 function entraPresente(evn){
   const me=myMember();if(!me||!evn||readOnly()||getStatus(evn)!=='aberto'||state.checkins[evn.id+'_'+me.id])return;
-  if(!isOnline(evn)&&!(isLeader(evn)&&Date.now()>=evTime(evn)&&!analyze(me).suspenso))return;
+  if(!isOnline(evn)&&!(isLeader(evn)&&evComecou(evn)&&!analyze(me).suspenso))return;
   const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),by:isOnline(evn)?'online':'leader'};
   state.checkins[key]=data;w(()=>db.doc('checkins/'+key).set(data));scheduleRender();
 }
@@ -2698,9 +2698,10 @@ function eventosHTML(){
 /* ranking de participação: só eventos presenciais contam */
 /* ranking em forma de corrida: cada membro corre na sua raia até a posição das presenças (só eventos presenciais contam).
    Tocar no boneco abre os dados daquela pessoa. */
-/* presença só conta para a corrida e as conquistas depois que o evento começa de verdade (pelo horário marcado);
-   abrir a sala antes da hora não adianta ponto para ninguém, nem para o líder */
-const evComecou=e=>Date.now()>=evTime(e);
+/* presença só conta para a corrida e as conquistas depois que o evento começa de verdade: pelo horário marcado, ou quando
+   o líder abre a sala mais cedo no próprio dia (até 12 horas antes). Sala aberta com dias de antecedência não adianta ponto. */
+const EV_ANTES=12*36e5;
+const evComecou=e=>{if(Date.now()>=evTime(e))return true;const c=state.ctl[e.id]||{};return c.status==='aberto'&&(c.at||0)>=evTime(e)-EV_ANTES;};
 function rankHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
   const mes=state.rankMode!=='total',mk=todayStr().slice(0,7);
@@ -3505,7 +3506,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113194252';
+const VER='20261113194533';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
