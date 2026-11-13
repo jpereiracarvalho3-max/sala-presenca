@@ -193,7 +193,11 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 .conqs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .conq{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 2px;text-align:center}
 .conq i{font-style:normal;font-size:22px;line-height:1.1}.conq small{font-size:9.5px;line-height:1.15;color:var(--muted)}
-.conq.off{opacity:.38;filter:grayscale(1)}
+.conq{cursor:pointer;color:inherit;font:inherit;touch-action:manipulation}
+.conq.off i,.conq.off small{opacity:.4;filter:grayscale(1)}
+.conq.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.meta{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.barra{height:8px;border-radius:999px;background:var(--line);overflow:hidden}.barra span{display:block;height:100%;background:var(--accent);border-radius:999px}
 .dests{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .dest{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
 .dest i{font-style:normal;font-size:26px;line-height:1.1}.dest b{font-family:var(--font-head);font-size:15px}
@@ -279,7 +283,7 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={conqSel:null,evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -1058,14 +1062,24 @@ function statsDe(m){
     abon:Object.values(state.justifs).some(j=>j.memberId===m.id&&j.decision==='abonada'),
     perfeito:Object.values(porMes).some(v=>v.length>=2&&v.every(x=>x==='presente'))};
 }
+/* cada conquista: ícone, nome, meta, e uma função que devolve [quanto a pessoa tem, quanto precisa] */
 const CONQ=[
-  ['🎉','Estreia','Foi ao primeiro evento',x=>x.n>=1],['🍺','Fiel','5 presenças',x=>x.n>=5],['🏅','Veterano','10 presenças',x=>x.n>=10],['🏆','Lenda','25 presenças',x=>x.n>=25],
-  ['🔥','Em chamas','3 presenças seguidas',x=>x.best>=3],['🚀','Imparável','5 presenças seguidas',x=>x.best>=5],['⭐','Mês perfeito','Um mês inteiro sem faltar',x=>x.perfeito],
-  ['⏰','Primeiro a chegar','Chegou antes de todos',x=>x.primeiro>=1],['👑','Líder','Liderou um evento',x=>x.lider>=1],['📝','Desculpa aceita','Teve uma falta abonada',x=>x.abon]
+  ['🎉','Estreia','Ir ao primeiro evento presencial',x=>[x.n,1]],
+  ['🍺','Fiel','10 presenças',x=>[x.n,10]],
+  ['🏅','Veterano','20 presenças',x=>[x.n,20]],
+  ['🏆','Lenda','50 presenças',x=>[x.n,50]],
+  ['🍻','Bêbado lendário','100 presenças',x=>[x.n,100]],
+  ['🔥','Em chamas','3 presenças seguidas, sem faltar no meio',x=>[x.best,3]],
+  ['🚀','Imparável','5 presenças seguidas, sem faltar no meio',x=>[x.best,5]],
+  ['⭐','Mês perfeito','Um mês com pelo menos 2 eventos e nenhuma falta',x=>[x.perfeito?1:0,1]],
+  ['⏰','Primeiro a chegar','Ser o primeiro a validar presença em um evento',x=>[x.primeiro,1]],
+  ['👑','Líder','Liderar um evento',x=>[x.lider,1]]
 ];
 function conquistasHTML(m){
-  const x=statsDe(m),tem=CONQ.filter(c=>c[3](x)).length;
-  return '<div class="row between"><b>Conquistas</b><span class="small muted">'+tem+' de '+CONQ.length+(x.seq>1?' · '+x.seq+' seguidas agora':'')+'</span></div><div class="conqs">'+CONQ.map(c=>{const ok=c[3](x);return '<span class="conq'+(ok?'':' off')+'" title="'+c[1]+': '+c[2]+'" aria-label="'+c[1]+(ok?', conquistada':', ainda não')+'"><i>'+c[0]+'</i><small>'+c[1]+'</small></span>';}).join('')+'</div>';
+  const x=statsDe(m),pr=CONQ.map(c=>c[3](x)),tem=pr.filter(p=>p[0]>=p[1]).length;
+  const sel=state.conqSel&&state.conqSel.m===m.id?state.conqSel.i:-1,c=CONQ[sel],p=pr[sel];
+  return '<div class="row between"><b>Conquistas</b><span class="small muted">'+tem+' de '+CONQ.length+(x.seq>1?' · '+x.seq+' seguidas agora':'')+'</span></div><div class="conqs">'+CONQ.map((q,i)=>{const ok=pr[i][0]>=pr[i][1];return '<button class="conq'+(ok?'':' off')+(i===sel?' sel':'')+'" data-act="conq" data-m="'+esc(m.id)+'" data-i="'+i+'" aria-pressed="'+(i===sel)+'" aria-label="'+q[1]+(ok?', conquistada':', ainda não')+'"><i>'+q[0]+'</i><small>'+q[1]+'</small></button>';}).join('')+'</div>'+
+    (c?'<div class="meta"><div class="row between"><b>'+c[0]+' '+c[1]+'</b>'+(p[0]>=p[1]?'<span class="chip ok">Conquistada</span>':'<span class="chip">'+Math.min(p[0],p[1])+' de '+p[1]+'</span>')+'</div><div class="small">Meta: '+c[2]+'</div><div class="barra"><span style="width:'+Math.round(Math.min(1,p[0]/p[1])*100)+'%"></span></div></div>':'<div class="small muted" style="text-align:center">Toque em uma conquista para ver a meta</div>');
 }
 function destaquesHTML(){
   const mk=todayStr().slice(0,7),evs=state.events.filter(e=>!isOnline(e)&&getStatus(e)==='encerrado'&&String(e.date).slice(0,7)===mk);
@@ -1262,7 +1276,8 @@ app.addEventListener('click',async ev=>{
   if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
   if(act==='evAba'){state.evAba=d.v==='enc'?'enc':'atv';render();return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
-  if(act==='perfil'){state.perfil=state.perfil===d.m?null:d.m;render();return;}
+  if(act==='perfil'){state.perfil=state.perfil===d.m?null:d.m;state.conqSel=null;render();return;}
+  if(act==='conq'){const i=parseInt(d.i,10);state.conqSel=(state.conqSel&&state.conqSel.m===d.m&&state.conqSel.i===i)?null:{m:d.m,i};render();return;}
   if(act==='rsvp'&&evn){
     if(!myMember()||!state.uid)return;
     const cur=state.avatars[state.uid]||{},old=(cur.rsvp||{})[evn.id],v=old===d.v?null:(d.v==='nao'?'nao':'sim');
@@ -1584,7 +1599,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113122942';
+const VER='20261113124807';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
