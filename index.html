@@ -1258,9 +1258,6 @@ function cidScreen(e){
     return h+'</div>';
   }
   const r=cSeg(g),rod=Array.isArray(g.rod)?g.rod:[],vivos=Array.isArray(g.vivos)?g.vivos:[],f=g.fase,naRod=!!me&&rod.includes(me.id),vivo=naRod&&vivos.includes(me.id),meu=naRod?(r[me.id]||'c'):'',fala=cFala(g);
-  const papelBtn=()=>state.cidVer
-    ?'<button class="segredo aberto'+(meu==='a'?' imp':'')+'" data-act="cVer"><span class="small">Você é</span><b>'+CID_PAPEL[meu].toUpperCase()+'</b><span class="small">'+CID_DICA[meu]+'</span>'+(meu==='a'&&Object.values(r).filter(x=>x==='a').length>1?'<span class="small">Seu parceiro: <b style="font-size:inherit">'+esc(Object.keys(r).filter(m=>r[m]==='a'&&m!==me.id).map(iNome).join(', '))+'</b></span>':'')+'<span class="small muted">Toque para esconder</span></button>'
-    :'<button class="segredo" data-act="cVer"><b>Toque para ver o seu papel</b><span class="small muted">Não deixe ninguém olhar o seu celular</span></button>';
   const vivosHTML='<div><div class="small muted">Na cidade ('+vivos.length+')</div><div class="avrow">'+rod.map(m=>'<span class="chip'+(vivos.includes(m)?'':' cidfora')+'">'+esc(iNome(m))+'</span>').join('')+'</div></div>';
   const aviso=t=>'<div class="cidfala">'+esc(t)+'</div>';
   if(f==='fim'){
@@ -1376,9 +1373,10 @@ const fProprios=(e,g)=>iJog(e,g).map(x=>x.mid);
 /* conv = {pessoa sem celular: uid de quem a colocou na mesa}; ela joga pelo celular dessa pessoa */
 const fConv=g=>(g&&g.conv)||{};
 const fJog=(e,g)=>{if(!g)return [];const p=fPresentes(e),pr=fProprios(e,g),c=fConv(g);return pr.concat(Object.keys(c).filter(m=>c[m]&&(g.jog||{})[c[m]]&&p.includes(m)&&!pr.includes(m)));};
-const fMeus=g=>{const c=fConv(g);return Object.keys(c).filter(m=>c[m]===state.uid);};
+const fTemCel=(g,m)=>Object.values((g&&g.jog)||{}).includes(m);
+const fMeus=g=>{const c=fConv(g);return Object.keys(c).filter(m=>c[m]===state.uid&&!fTemCel(g,m));};
 /* cada um age pelo próprio celular; quem está sem celular age pelo celular de quem a colocou na mesa */
-const fPosso=(g,mid)=>{const me=myMember();return !!(g&&((me&&me.id===mid)||fConv(g)[mid]===state.uid));};
+const fPosso=(g,mid)=>{const me=myMember();return !!(g&&((me&&me.id===mid)||(fConv(g)[mid]===state.uid&&!fTemCel(g,mid))));};
 const fSorteia=a=>{const u=new Uint32Array(1);crypto.getRandomValues(u);return a[u[0]%a.length];};
 const fEmbaralha=a=>{const u=new Uint32Array(a.length);crypto.getRandomValues(u);return a.map((x,i)=>({x,k:u[i]})).sort((p,q)=>p.k-q.k).map(o=>o.x);};
 const fRnd=seed=>{let t=seed>>>0;return ()=>{t=(t+0x6D2B79F5)>>>0;let r=Math.imul(t^(t>>>15),1|t);r=(r+Math.imul(r^(r>>>7),61|r))^r;return ((r^(r>>>14))>>>0)/4294967296;};};
@@ -1387,7 +1385,7 @@ function fUp(e,k,d){return db.doc('games/'+fGid(e,k)).update(d).catch(()=>toast(
 /* relógio local de cada rodada: quando este aparelho viu a rodada n começar */
 function fRel(e,k,g){
   state.fIni=state.fIni||{};const id=fGid(e,k),L=state.fIni[id];
-  if(!L||L.n!==g.n){const velho=g.at&&Date.now()-g.at>20000;state.fIni[id]={n:g.n,t:velho?Date.now()-600000:Date.now(),est:-1,mandou:false};}
+  if(!L||L.n!==g.n){const velho=g.at&&Date.now()-g.at>20000;state.fIni[id]={n:g.n,t:velho?Date.now()-600000:Date.now(),est:-1,mandou:false,velho:!!velho};}
   return state.fIni[id];
 }
 function fRegrasHTML(k){
@@ -1439,7 +1437,7 @@ function fVotoHTML(e,k,g,rod,opcoes){
   const me=myMember(),v=g.votos||{},nv=rod.filter(m=>m in v).length,E=esc(e.id);
   let quem=null;
   if(me&&rod.includes(me.id)&&!(me.id in v))quem=me.id;
-  else{const prox=rod.find(m=>!(m in v)&&fConv(g)[m]===state.uid);if(prox){if(state.fPronto!==prox)return '<div class="fpassa">'+fig(fM(prox))+'<span class="small muted">Passe o celular para</span><b>'+esc(iNome(prox))+'</b><button class="btn primary" data-act="fPronto" data-m="'+esc(prox)+'">Sou eu, votar</button><span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';quem=prox;}}
+  else{const prox=rod.find(m=>!(m in v)&&fConv(g)[m]===state.uid&&!fTemCel(g,m));if(prox){if(state.fPronto!==prox)return '<div class="fpassa">'+fig(fM(prox))+'<span class="small muted">Passe o celular para</span><b>'+esc(iNome(prox))+'</b><button class="btn primary" data-act="fPronto" data-m="'+esc(prox)+'">Sou eu, votar</button><span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';quem=prox;}}
   if(!quem)return '<div class="empty">'+(me&&rod.includes(me.id)?'Voto registrado. ':'')+nv+' de '+rod.length+' já votaram.</div>'+(nv?'<button class="btn" data-act="fRev" data-e="'+E+'" data-k="'+k+'">Encerrar a votação agora</button>':'');
   return '<div class="cidvez"><b>'+esc(iNome(quem))+', escolha em segredo</b>'+opcoes(quem)+'<span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';
 }
@@ -1494,12 +1492,12 @@ function fScreen(e,k){
     const dupla=me&&rod.includes(me.id)?[me.id].concat(fMeus(g).filter(m=>rod.includes(m))):[];
     if(dupla.length>1){
       h+=fMesa(e,k,rod,{cls:'peq',marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'})+'<div class="fmeio">'+dupla.map(p=>'<div class="fmet'+(g.com===p?' com':'')+'"><span class="fmini">'+fig(fM(p))+'</span><b>'+esc(iNome(p))+'</b>'+(g.com===p?'<span class="small">💣 Está com você! Passe para:</span><div class="avrow" style="justify-content:center">'+rod.filter(m=>m!==p).map(m=>'<button class="stl" data-act="fBomPassa"'+attr+' data-m="'+esc(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div>':'<span class="small muted">Sem a bomba</span>')+'</div>').join('')+'</div>';
-      return h+'</div>';
+      return h+'<button class="tfim" data-act="fLobby"'+attr+'>Voltar para a entrada do jogo</button>'+'</div>';
     }
     const pode=fPosso(g,g.com),sem={[g.com]:1};
     h+=fMesa(e,k,rod,{act:pode?'fBomPassa':'',semAct:sem,marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'});
     h+='<div class="cidfala">'+(pode?(!(me&&me.id===g.com)?'A bomba está com <b>'+esc(iNome(g.com))+'</b>, que joga por este celular. Entregue o aparelho: é só tocar em quem vai receber.':'<b>A bomba está com você!</b> Toque em alguém para passar.'):'A bomba está com <b>'+esc(iNome(g.com))+'</b>.')+'</div>';
-    return h+'</div>';
+    return h+(dentro?'<button class="tfim" data-act="fLobby"'+attr+'>Voltar para a entrada do jogo</button>':'')+'</div>';
   }
   if(k==='car'){
     const c=g.cartas||{},topo={},marca={};
@@ -1520,7 +1518,7 @@ function fScreen(e,k){
     if(et<2){
       const ja=eu&&((eu in tp)||qm[eu]);
       h+='<button class="fsinal '+(et===1?'verde':'verm')+'" data-act="fSinTap"'+attr+(eu&&!ja?'':' disabled')+'>'+(!eu?'Você não está nesta rodada':qm[eu]?'Queimou a largada!':(eu in tp)?tp[eu]+' ms':et===1?'TOQUE!':'Espere o verde...')+'</button>';
-      return h+'<div class="small muted" style="text-align:center">'+rod.filter(m=>(m in tp)||qm[m]).length+' de '+rod.length+' já tocaram</div></div>';
+      return h+'<div class="small muted" style="text-align:center">'+rod.filter(m=>(m in tp)||qm[m]).length+' de '+rod.length+' já tocaram</div>'+(dentro?'<button class="tfim" data-act="fLobby"'+attr+'>Voltar para a entrada do jogo</button>':'')+'</div>';
     }
     const lin=rod.map(m=>({m,t:qm[m]?-1:(m in tp)?tp[m]:99999})).sort((a,b)=>(a.t<0?1e9:a.t)-(b.t<0?1e9:b.t)),val=lin.filter(x=>x.t>=0),pior=val.length?Math.max(...val.map(x=>x.t)):0;
     const bebem=lin.filter(x=>x.t<0||(val.length>1&&x.t===pior)||x.t===99999).map(x=>x.m);
@@ -1575,11 +1573,11 @@ function fTick(){
   if(k==='rol'||k==='vod'){const s=document.getElementById('fSeta');if(s&&el<F_GIRO)s.style.transform='rotate('+((+g.de||0)+((+g.ang||0)-(+g.de||0))*fEase(el/F_GIRO)).toFixed(1)+'deg)';}
   if(k==='bom'&&!g.est){
     const b=document.querySelector('.fbomba');if(b)b.style.animationDuration=Math.max(.12,.6-el/(g.dur||1)*.48).toFixed(2)+'s';
-    if(el>=(g.dur||0)&&!L.mandou&&(g.host===state.uid||el>=(g.dur||0)+4000)){L.mandou=true;fUp(e,k,{est:true,perdeu:g.com});}
+    if(el>=(g.dur||0)&&!L.mandou&&!L.velho&&(g.host===state.uid||el>=(g.dur||0)+4000)){L.mandou=true;fUp(e,k,{est:true,perdeu:g.com});}
   }
   if(k==='sin'&&!g.fim){
     const tp=g.tempos||{},qm=g.queimou||{},todos=rod.every(m=>(m in tp)||qm[m]);
-    if((todos||el>=(g.esp||0)+5000)&&!L.mandou&&(g.host===state.uid||el>=(g.esp||0)+8000)){L.mandou=true;fUp(e,k,{fim:true});}
+    if((todos||el>=(g.esp||0)+5000)&&!L.mandou&&!L.velho&&(g.host===state.uid||el>=(g.esp||0)+8000)){L.mandou=true;fUp(e,k,{fim:true});}
   }
   const et=fEtapa(k,g,el);if(et!==L.est){L.est=et;scheduleRender();}
 }
@@ -2518,11 +2516,9 @@ app.addEventListener('click',async ev=>{
   if(act==='cComecar'&&evn){cComecar(evn);return;}
   if(act==='cVer'){{const er=state.events.find(x=>x.id===state.room),gr=er&&cGame(er);if(gr)state.cidFn=gr.fn;}state.cidVer=!state.cidVer;clearTimeout(state.cidT);if(state.cidVer)state.cidT=setTimeout(()=>{state.cidVer=false;scheduleRender();},8000);render();return;}
   if(act==='cSel'){state.cidSel=d.m;render();return;}
-  if(['cVisto','cForca','cConf','cDok','cBranco','cFechar','cVotar','cNova','cEncerrar','cHost'].includes(act)&&evn){
+  if(['cConf','cDok','cBranco','cFechar','cVotar','cNova','cEncerrar','cHost'].includes(act)&&evn){
     const g=cGame(evn),me=myMember();if(!g||!me)return;
     const r=cSeg(g),vivo=(g.vivos||[]).includes(me.id),meu=r[me.id],sel=state.cidSel,souHost=g.host===state.uid,grava=dd=>cGrava(evn,dd).catch(()=>toast('Não consegui gravar. Confira a internet.'));
-    if(act==='cVisto'){state.cidVer=false;grava({['visto.'+me.id]:true});render();return;}
-    if(act==='cForca'&&souHost){grava({forca:true});return;}
     if(act==='cDok'&&meu==='d'){grava({dok:true});return;}
     if(act==='cConf'&&vivo&&sel&&(g.vivos||[]).includes(sel)){
       state.cidSel=null;
@@ -2865,7 +2861,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113182714';
+const VER='20261113183056';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
