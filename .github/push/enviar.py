@@ -54,7 +54,7 @@ def destinos(o, aprov, avatars):
         us = [u for u, m in aprov.items() if m in para]
     else:
         us = []
-    return sorted(u for u in set(us) if u != autor)
+    return sorted(u for u in set(us) if u != autor or o.get('teste'))
 
 
 def mensagem(o, token):

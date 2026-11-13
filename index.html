@@ -1171,7 +1171,8 @@ async function pushToken(){
   return tk;
 }
 function pushHTML(){
-  if(!VAPID||state.pushOk)return '';
+  if(!VAPID)return '';
+  if(state.pushOk)return myMember()?'<div class="card"><div class="row between"><span class="chip ok">Notificações ativadas</span><button class="btn" data-act="pushTeste"'+(state.pushTestou?' disabled':'')+'>'+(state.pushTestou?'Chega em até 10 min':'Enviar teste')+'</button></div></div>':'';
   if(!pushBase())return ehIOS()&&!instalado()?'<div class="card"><span class="small muted">Para receber notificações no iPhone, instale o app na tela inicial.</span></div>':'';
   const pm=Notification.permission;
   if(pm==='denied')return '<div class="card"><span class="small muted">As notificações estão bloqueadas neste aparelho. Libere nos ajustes do celular.</span></div>';
@@ -1179,9 +1180,9 @@ function pushHTML(){
   return '<div class="card"><button class="btn primary" data-act="pushAtivar"'+(state.pushBusy?' disabled':'')+'>'+(state.pushBusy?'Ativando...':'Ativar notificações no celular')+'</button></div>';
 }
 /* põe um aviso na fila: para = lista de ids de membros, ou 'todos' (o robô tira o autor e quem marcou Não vou no evento) */
-function avisar(para,titulo,corpo,eventId,quando,id){
+function avisar(para,titulo,corpo,eventId,quando,id,teste){
   if(!db)return;
-  try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',at:Date.now()}).catch(()=>{});}catch(e){}
+  try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',teste:!!teste,at:Date.now()}).catch(()=>{});}catch(e){}
 }
 /* antes do login, no celular: convida a instalar o app na tela inicial (assim o login fica guardado); dá para pular */
 let instalarEv=null;
@@ -1519,6 +1520,7 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
+  if(act==='pushTeste'){const me=myMember();if(!me||state.pushTestou)return;state.pushTestou=true;avisar([me.id],'Eventos dos Bêbados','Notificação de teste: está funcionando.','','',null,true);toast('Teste enviado. Feche o app e aguarde até 10 minutos.');render();return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
     state.pushBusy=true;render();
@@ -1945,7 +1947,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113135723';
+const VER='20261113140414';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
