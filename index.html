@@ -1156,7 +1156,7 @@ function alertasHTML(){
 /* NOTIFICAÇÕES NO CELULAR
    O app põe cada aviso numa fila (outbox); um robô no GitHub lê a fila a cada 5 minutos e envia pelo Firebase Cloud Messaging.
    VAPID é a chave pública de Web Push do projeto (Firebase > Configurações > Cloud Messaging). Sem ela, tudo aqui fica desligado. */
-const VAPID='';
+const VAPID='BJUneVWqbTaBejQKPxA1nTNV4HJr22hMcfjkj-kLKQb_rRMPA0S7EZNr2FAOyfxdmCkR08YWZXm_y1oywhouKHo';
 const pushBase=()=>!!(VAPID&&'serviceWorker' in navigator&&'Notification' in window&&'PushManager' in window);
 let pushSdkP=null,pushReg=null;
 const pushSdk=()=>pushSdkP||(pushSdkP=new Promise((ok,er)=>{if(window.firebase&&firebase.messaging)return ok();const x=document.createElement('script');x.src='https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js';x.onload=()=>ok();x.onerror=()=>{pushSdkP=null;er(new Error('sdk'));};document.head.appendChild(x);}));
@@ -1945,7 +1945,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113135520';
+const VER='20261113135723';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
