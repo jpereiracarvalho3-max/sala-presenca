@@ -157,6 +157,26 @@ button.carta:not([disabled]):active{transform:translateY(-6px)}
 button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .tmao.livre .carta{transform:translateY(-5px);box-shadow:0 0 0 2px var(--accent),0 6px 14px rgba(36,87,245,.28)}
 .tmao.livre .carta.man{box-shadow:0 0 0 2.5px #F2C230,0 6px 14px rgba(36,87,245,.28)}
+.imersa{position:relative;overflow:hidden;touch-action:pan-y;border-radius:18px}
+.trilho{display:flex;width:200%;transition:transform .28s ease;align-items:flex-start}
+.trilho>section{width:50%;min-width:0}
+.trilho.p1{transform:translateX(-50%)}
+.pjogo{padding:2px 2px 56px}
+.psala{position:relative}
+.ibar{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;z-index:120;pointer-events:none}
+.ibar>span{display:flex;gap:8px;align-items:center;pointer-events:auto}
+.ibar .ticon{background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.18);border-color:transparent}
+.ibar .ticon.on{background:var(--ok-bg)}.ibar .ticon.off{background:var(--warn-bg)}.ibar .ticon.fora{background:var(--bad-bg)}
+.rpop{position:absolute;top:56px;right:10px;z-index:121;background:#fff;border-radius:16px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 20px);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.rrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.rfeed{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pdots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:120;background:rgba(255,255,255,.92);border-radius:999px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.pdots button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
+.pdots button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.room.grande{display:flex;flex-direction:column;min-height:calc(100vh - 28px);min-height:calc(100dvh - 28px)}
+.room.grande .wall{flex:0 0 auto;padding-top:46px}
+.room.grande .wall.themed{padding-top:46px}
+.room.grande .floor.stage.online{flex:1 1 auto;height:auto;min-height:420px}
 .ticon{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--soft);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;touch-action:manipulation}
 .ticon.on{background:var(--ok-bg);color:var(--ok);border-color:transparent}
 .ticon.off{background:var(--warn-bg);color:var(--warn);border-color:transparent}
@@ -165,7 +185,7 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .placar2{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;text-align:center}
 .pt{display:flex;flex-direction:column;align-items:center;min-width:0}.pt .small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.pt b{font-size:30px;line-height:1.1;font-family:var(--font-head)}
 .px{font-family:var(--font-head);font-weight:700;font-size:20px;color:var(--muted)}
-.tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:4px 8px}
+.tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:11px 16px;min-height:40px;touch-action:manipulation}
 .truco{background:linear-gradient(180deg,#FFFFFF,#F6FAF7)}
 .tmao{display:flex;justify-content:center;gap:10px;min-height:86px;align-items:center}
 .tmesa{display:flex;justify-content:center;gap:12px;min-height:92px;align-items:center;background:#1F7A4D;border-radius:14px;padding:10px;flex-wrap:wrap}
@@ -213,7 +233,7 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -667,14 +687,42 @@ function carta(c,opt){
   opt=opt||{};const red=c[1]==='o'||c[1]==='c',man=!!T_MAN[c];
   return '<'+(opt.act?'button':'span')+' class="carta'+(red?' red':'')+(man?' man':'')+(opt.mini?' mini':'')+'"'+(opt.act?' data-act="tJogar" data-c="'+c+'" data-e="'+esc(opt.e)+'"'+(opt.off?' disabled':''):'')+' aria-label="'+c[0]+' de '+({o:'ouros',e:'espadas',c:'copas',p:'paus'})[c[1]]+(man?', manilha':'')+'"><b>'+c[0]+'</b><i>'+T_NAIPE[c[1]]+'</i></'+(opt.act?'button':'span')+'>';
 }
+const ICO={
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micOff:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>',
+  levantar:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+  sair:'<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/>',
+  balao:'<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M9 11h.01M12.5 11h.01M16 11h.01"/>'
+};
+const icoSvg=n=>'<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICO[n]+'</svg>';
+const icoBtn=(n,act,e,rotulo,cls)=>'<button class="ticon'+(cls?' '+cls:'')+'" data-act="'+act+'"'+(e?' data-e="'+e+'"':'')+' aria-label="'+rotulo+'" title="'+rotulo+'">'+icoSvg(n)+'</button>';
+function micBtn(e,t){
+  const E=esc(e.id);
+  if(rtc.on&&rtc.eid===e.id&&rtc.table===t)return icoBtn(rtc.muted?'micOff':'mic','callMute','',rtc.muted?'Reativar microfone':'Silenciar microfone',rtc.muted?'off':'on');
+  return icoBtn('micOff','callJoin',E,'Ligar o microfone e entrar na chamada','fora');
+}
+const emojiRow=e=>EMO.map((x,i)=>'<button class="emo" data-act="react" data-v="'+i+'" data-e="'+esc(e.id)+'" aria-label="Reagir com '+x+'">'+x+'</button>').join('');
+/* reações recentes, para quem está na tela do jogo e não vê os bonecos */
+function reactFeed(e){
+  const now=Date.now(),all=state.members.concat(state.guests);
+  const r=Object.keys(state.reactShow).map(mid=>({mid,r:state.reactShow[mid]})).filter(x=>x.r.ev===e.id&&x.r.until>now);
+  return r.length?'<div class="rfeed">'+r.map(x=>'<span class="chip">'+esc((all.find(m=>m.id===x.mid)||{}).name||'')+' '+EMO[x.r.e]+'</span>').join('')+'</div>':'';
+}
+/* sala online: tela cheia, só com ícones; na mesa do truco o jogo fica na frente e a sala ao lado (arrastar) */
+function onlineScreen(e){
+  const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id],st=getStatus(e),aberto=st==='aberto',t=c?tableOf(e,c):-1,E=esc(e.id);
+  const jogo=isJogos(e)?trucoHTML(e):'';
+  let dir=aberto?'':'<span class="chip">'+({agendado:'Agendado',encerrado:'Encerrado'})[st]+'</span>';
+  if(c&&aberto){dir+=icoBtn('balao','reactToggle','','Reagir',state.reactOpen?'on':'');if(t>=0)dir+=micBtn(e,t)+icoBtn('levantar','stand',E,'Levantar da mesa');}
+  const sala='<section class="psala"><div class="ibar"><span>'+icoBtn('sair','leave','','Sair da sala')+'</span><span>'+dir+'</span></div>'+(state.reactOpen&&c&&aberto?'<div class="rpop">'+emojiRow(e)+'</div>':'')+roomHTML(e,true)+'</section>';
+  if(!jogo)return '<div class="imersa">'+sala+'</div>';
+  const p=state.painel?1:0;
+  return '<div class="imersa" data-swipe="1"><div class="trilho'+(p?' p1':'')+'"><section class="pjogo">'+jogo+'</section>'+sala+'</div>'+
+    '<div class="pdots"><button data-act="painel" data-v="0" aria-pressed="'+(p===0)+'">Jogo</button><button data-act="painel" data-v="1" aria-pressed="'+(p===1)+'">Sala</button></div></div>';
+}
 function tIcones(e){
-  const svg=d=>'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
-  const MIC='<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',SAIR='<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/>';
-  const naChamada=rtc.on&&rtc.eid===e.id&&rtc.table===0,E=esc(e.id);
-  const mic=naChamada
-    ?'<button class="ticon '+(rtc.muted?'off':'on')+'" data-act="callMute" aria-label="'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'" title="'+(rtc.muted?'Microfone silenciado':'Microfone ligado')+'">'+svg(MIC+(rtc.muted?'<path d="M4 4l16 16"/>':''))+'</button>'
-    :'<button class="ticon fora" data-act="callJoin" data-e="'+E+'" aria-label="Ligar o microfone e entrar na chamada" title="Fora da chamada: toque para ligar">'+svg(MIC+'<path d="M4 4l16 16"/>')+'</button>';
-  return mic+'<button class="ticon" data-act="stand" data-e="'+E+'" aria-label="Levantar da mesa" title="Levantar da mesa">'+svg(SAIR)+'</button>';
+  const E=esc(e.id);
+  return icoBtn('balao','reactToggle','','Reagir',state.reactOpen?'on':'')+micBtn(e,0)+icoBtn('levantar','stand',E,'Levantar da mesa');
 }
 function trucoHTML(e){
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
@@ -686,13 +734,14 @@ function trucoHTML(e){
   if(!g||g.status!=='playing'){
     const ok=naMesa.length===2||naMesa.length===4;
     const nomes=naMesa.map(id=>(state.members.find(m=>m.id===id)||{}).name).filter(Boolean);
-    return '<div class="card truco"><div class="row between"><h3>Truco mineiro</h3><span class="row">'+tIcones(e)+'</span></div>'+
+    return '<div class="card truco"><div class="row between"><h3>Truco mineiro</h3><span class="row">'+tIcones(e)+'</span></div>'+(state.reactOpen?'<div class="rrow">'+emojiRow(e)+'</div>':'')+reactFeed(e)+
       (g&&g.status==='over'?'<div class="placar"><span class="chip ok">🏆 '+esc(tTimeNome(g,g.winner))+'</span><b>'+g.score[g.winner]+' x '+g.score[1-g.winner]+'</b></div>'+(g.msg?'<div class="small muted">'+esc(g.msg)+'</div>':''):'')+
       '<div class="small" style="text-align:center">'+esc(nomes.join(', '))+'</div><div class="small muted" style="text-align:center">Joga com 2 ou 4</div>'+
       '<button class="btn primary" data-act="tComecar" data-e="'+E+'"'+(ok?'':' disabled')+'>'+(g&&g.status==='over'?'Jogar de novo':'Começar partida')+'</button></div>';
   }
   const eu=tSeat(g),h=g.hand,n=g.seats.length,meuTime=eu>=0?tTeam(eu):0,minhas=eu>=0?tMinhas(e,g):null;
   let out='<div class="card truco"><div class="row between"><span class="chip info">Valendo '+h.valor+'</span><span class="row">'+tIcones(e)+'</span></div>';
+  out+=(state.reactOpen?'<div class="rrow">'+emojiRow(e)+'</div>':'')+reactFeed(e);
   out+='<div class="placar2"><div class="pt"><span class="small">'+esc(tTimeNome(g,meuTime))+'</span><b>'+g.score[meuTime]+'</b></div><span class="px">X</span><div class="pt"><span class="small">'+esc(tTimeNome(g,1-meuTime))+'</span><b>'+g.score[1-meuTime]+'</b></div></div>';
   out+='<div class="row" style="justify-content:center">'+[0,1,2].map(i=>{const r=h.res[i];return '<span class="vz '+(r===undefined?'':(r===-1?'emp':(r===meuTime?'nos':'eles')))+'" title="Rodada '+(i+1)+'"></span>';}).join('')+'</div>';
   const mesa=h.mesa.length?h.mesa:(g.ult?g.ult.mesa:[]),antiga=!h.mesa.length&&!!g.ult;
@@ -725,7 +774,7 @@ function reactBar(e){
   if(!me||getStatus(e)!=='aberto'||!state.checkins[e.id+'_'+me.id]||readOnly())return '';
   return '<div class="card"><h3>Reagir</h3><div class="row">'+EMO.map((x,i)=>'<button class="emo" data-act="react" data-v="'+i+'" data-e="'+esc(e.id)+'" aria-label="Reagir com '+x+'">'+x+'</button>').join('')+'</div></div>';
 }
-function roomHTML(e){
+function roomHTML(e,imersa){
   const st=getStatus(e),live=st==='aberto',th=themeOf(e);
   const inRoom=[],outside=[];
   state.members.concat(guestsOf(e)).forEach(m=>{(state.checkins[e.id+'_'+m.id]?inRoom:outside).push(m);});
@@ -741,9 +790,9 @@ function roomHTML(e){
   for(let i=0;i<nt;i++){const tp=tablePos(i,nt),k=seatedAt(e.id,i).length;mesas+='<button class="mesa'+(myT===i?' mine':'')+'"'+(walk?' data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'"':' tabindex="-1"')+' style="left:'+(tp.x*100).toFixed(2)+'%;top:'+(tp.y*100).toFixed(2)+'%;z-index:'+Math.round(tp.y*100)+'" aria-label="'+mesaNome(e,i)+', '+k+' sentados">'+mesaNome(e,i)+(k?' ('+k+')':'')+'</button>';}
   const txt='<div class="wtxt"><div class="place">'+esc(e.local||(on?'Evento online':'Local a definir'))+'</div><div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+'</div></div>';
   const wall=th==='padrao'?'<div class="wall">'+txt+'<div class="door" title="Porta"></div></div>':'<div class="wall themed">'+txt+DECOR[th]+'</div>';
-  return '<div class="room th-'+th+'">'+wall+
+  return '<div class="room th-'+th+(imersa?' grande':'')+'">'+wall+
     '<div class="floor stage'+(on?' online':'')+(walk?' canwalk':'')+'" data-th="'+th+'"'+(on?' data-online="1" data-eid="'+esc(e.id)+'" data-nt="'+nt+'"':'')+(walk?' data-act="walk" data-e="'+esc(e.id)+'"':'')+'>'+mesas+(inRoom.length?inRoom.map((m,i)=>mk(m,'in',i)).join(''):'<div class="none">Ninguém na sala ainda.</div>')+'</div>'+
-    '<div class="doorstep"><div class="cap">Fora da sala ('+outside.length+')</div>'+outside.map((m,i)=>mk(m,susp(m)?'out susp':'out',i)).join('')+'</div></div>';
+    (imersa?'':'<div class="doorstep"><div class="cap">Fora da sala ('+outside.length+')</div>'+outside.map((m,i)=>mk(m,susp(m)?'out susp':'out',i)).join('')+'</div>')+'</div>';
 }
 function avatarHTML(){
   const me=myMember();if(!me||!state.uid||readOnly())return '';
@@ -758,6 +807,7 @@ function avatarHTML(){
     opt('Roupa','roupa',ROUPAS)+opt('Na mão','mao',MAOS)+opt('Na boca','boca',BOCAS)+opt('Óculos','oculos',OCULOS)+opt('Na cabeça','chapeu',CHAPEUS)+opt('Rosto','rosto',ROSTOS)+opt('Colar','colar',COLARES)+opt('Anel e pulso','anel',ANEIS)+'</div>';
 }
 function roomScreen(e){
+  if(isOnline(e))return onlineScreen(e);
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
   const jogo=isJogos(e)?trucoHTML(e):'';
@@ -932,7 +982,7 @@ function render(){
     if(!ok||(!canManage(re)&&getStatus(re)!=='aberto')){if(re&&ok)toast(isOnline(re)?'A sala foi encerrada.':'A presença foi encerrada.');state.room=null;state.tab='eventos';}
   }
   if(state.room){
-    h+=roomScreen(state.events.find(x=>x.id===state.room));app.innerHTML=h;
+    const sala0=state.events.find(x=>x.id===state.room);h=(isOnline(sala0)?'':h)+roomScreen(sala0);app.innerHTML=h;
     const q0=document.getElementById('qr');
     if(q0&&window.QRCode){try{new QRCode(q0,{text:q0.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q0.textContent='Não foi possível gerar o QR code.';}}
     autoValidate();return;
@@ -1052,7 +1102,7 @@ app.addEventListener('click',async ev=>{
     const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key],i=parseInt(d.v,10);
     if(!c||!EMO[i]||!isOnline(evn)||getStatus(evn)!=='aberto')return;
     const r={e:i,at:Date.now()};
-    state.checkins[key]={...c,react:r};state.reactSeen[key]=r.at;state.reactShow[me.id]={e:i,until:r.at+4000,ev:evn.id};setTimeout(scheduleRender,4100);render();
+    state.reactOpen=false;state.checkins[key]={...c,react:r};state.reactSeen[key]=r.at;state.reactShow[me.id]={e:i,until:r.at+4000,ev:evn.id};setTimeout(scheduleRender,4100);render();
     db.doc('checkins/'+key).update({react:r}).catch(()=>{});return;
   }
   if(act==='backup'){
@@ -1064,7 +1114,9 @@ app.addEventListener('click',async ev=>{
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
-  if(act==='leave'){state.room=null;state.tab='eventos';render();return;}
+  if(act==='leave'){state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
+  if(act==='reactToggle'){state.reactOpen=!state.reactOpen;render();return;}
+  if(act==='painel'){state.painel=d.v==='1'?1:0;render();return;}
   if(act==='enter'&&evn){
     const me=myMember();
     if(me&&getStatus(evn)==='aberto'&&(isOnline(evn)||isLeader(evn))&&!readOnly()&&!state.checkins[evn.id+'_'+me.id]&&(isOnline(evn)||!analyze(me).suspenso)){
@@ -1145,7 +1197,7 @@ app.addEventListener('click',async ev=>{
     const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key];
     if(!c||getStatus(evn)!=='aberto'||!isOnline(evn))return;
     let up,sitT=-1;
-    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;if(tableOf(evn,c)===t&&rtc.on)return;if(isJogos(evn)&&t===0&&tableOf(evn,c)!==0&&seatedAt(evn.id,0).length>=4)return toast('A mesa do truco está cheia (4 lugares).');sitT=t;up={table:t};}
+    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;if(tableOf(evn,c)===t&&rtc.on)return;if(isJogos(evn)&&t===0&&tableOf(evn,c)!==0&&seatedAt(evn.id,0).length>=4)return toast('A mesa do truco está cheia (4 lugares).');sitT=t;up={table:t};if(isJogos(evn)&&t===0)state.painel=0;}
     else if(act==='stand'){const tp=tablePos(Math.max(0,tableOf(evn,c)),mesasOf(evn));up={table:null,x:tp.x,y:Math.min(.97,tp.y+.1)};}
     else{const r=el.getBoundingClientRect();if(!r.width||!r.height)return;up={table:null,x:+Math.max(.06,Math.min(.94,(ev.clientX-r.left)/r.width)).toFixed(3),y:+Math.max(.42,Math.min(.97,(ev.clientY-r.top)/r.height+.03)).toFixed(3)};}
     if(rtc.on){hangup(false);up.call=false;up.rtc={};}
@@ -1196,6 +1248,15 @@ function onField(ev){
   if(t.id==='evsel'&&ev.type==='change'){state.eventId=t.value;render();}
   if((t.id==='ev_modo'||t.id==='ev_sala')&&ev.type==='change')render();
 }
+let sw=null,swAt=0;
+app.addEventListener('pointerdown',ev=>{sw=ev.target.closest('[data-swipe]')?{x:ev.clientX,y:ev.clientY}:null;},true);
+app.addEventListener('pointerup',ev=>{
+  if(!sw)return;const dx=ev.clientX-sw.x,dy=ev.clientY-sw.y;sw=null;
+  if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.5)return;
+  const novo=dx<0?1:0;swAt=Date.now();
+  if(novo!==state.painel){state.painel=novo;const t=app.querySelector('.trilho');if(t)t.classList.toggle('p1',novo===1);app.querySelectorAll('.pdots button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===String(novo))));}
+},true);
+app.addEventListener('click',ev=>{if(Date.now()-swAt<350){ev.stopPropagation();ev.preventDefault();}},true);
 app.addEventListener('input',onField);app.addEventListener('change',onField);
 
 /* dados ao vivo */
@@ -1338,7 +1399,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112231055';
+const VER='20261112231742';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
