@@ -68,7 +68,7 @@ def mensagem(o, token):
 def main():
     sa = os.environ.get('FIREBASE_SA', '').strip()
     if not sa:
-        print('Segredo FIREBASE_SA não configurado; nada a fazer.')
+        print('::warning::Segredo FIREBASE_SA não configurado; nada a fazer.')
         return 0
     import requests
     from google.auth.transport.requests import Request
@@ -95,7 +95,7 @@ def main():
 
     fila = listar('outbox')
     if not fila:
-        print('Fila vazia.')
+        print('::notice::Chave aceita. Fila vazia.')
         return 0
     agora_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
     hoje = hoje_sp()
@@ -108,7 +108,7 @@ def main():
             continue
         prontos.append(o)
     if not prontos:
-        print(f'{len(fila)} aviso(s) aguardando a data.')
+        print(f'::notice::Chave aceita. {len(fila)} aviso(s) aguardando a data.')
         return 0
 
     aprov = {a['_id']: a.get('memberId') for a in listar('approvals') if a.get('status') == 'aprovado'}
@@ -123,13 +123,13 @@ def main():
                     enviados += 1
                     continue
                 falhas += 1
-                print('Falha', r.status_code, r.text[:200].replace(tk, '<aparelho>'))
+                print('::warning::Falha no envio', r.status_code, ' '.join(r.text[:200].replace(tk, '<aparelho>').split()))
                 if r.status_code in (400, 404):  # aparelho que não existe mais: tira do cadastro
                     tokens[u].pop(tk, None)
                     corpo = {'fields': {'t': {'mapValue': {'fields': {k: {'integerValue': str(int(v))} for k, v in tokens[u].items()}}}}}
                     requests.patch(f'{DOCS}/tokens/{u}', headers=h, params={'updateMask.fieldPaths': 't'}, json=corpo, timeout=30)
         apagar('outbox/' + o['_id'])
-    print(f'{len(prontos)} aviso(s) processado(s), {enviados} envio(s), {falhas} falha(s).')
+    print(f'::notice::{len(prontos)} aviso(s) processado(s), {len(tokens)} pessoa(s) com celular cadastrado, {enviados} envio(s), {falhas} falha(s).')
     return 0
 
 
