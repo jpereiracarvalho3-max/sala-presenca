@@ -322,9 +322,63 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 .cidlista .stl:disabled{opacity:.45;cursor:default}
 .cidfala{border-radius:14px;background:var(--soft);border:1px solid var(--line);padding:14px;text-align:center;font-weight:600;font-size:17px;line-height:1.35}
 .chip.cidfora{opacity:.45;text-decoration:line-through}
-.jogoop{width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;background:var(--soft);color:var(--ink);padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;touch-action:manipulation}
-.jogoop b{font-family:var(--font-head);font-size:20px}
-.jogoop:active{transform:scale(.99)}
+.jogoop{border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:12px 14px 6px;display:flex;flex-direction:column;gap:2px}
+.jogoopb{width:100%;text-align:left;border:0;background:transparent;color:var(--ink);padding:0;display:flex;flex-direction:column;gap:6px;cursor:pointer;touch-action:manipulation}
+.jogoopb b{font-family:var(--font-head);font-size:19px}
+.jogoopb:active{transform:scale(.99)}
+.fregras{margin:0 0 8px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.35;color:var(--ink)}
+.fmesa{position:relative;width:100%;max-width:400px;aspect-ratio:1;margin:30px auto 6px}
+.ftampo{position:absolute;inset:25%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8a5a2e,#5d3a1a);border:6px solid #3d2511;box-shadow:0 6px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:8px}
+.fas{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:66px;border:0;background:transparent;color:var(--ink);padding:0;font:inherit;touch-action:manipulation}
+button.fas{cursor:pointer}
+.fas svg{width:38px;height:53px;display:block;overflow:visible}
+.fas span{font-size:11px;font-weight:600;max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(0,0,0,.5);padding:1px 7px;border-radius:99px;margin-top:-2px}
+.fas i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--accent)}
+.fas em{font-style:normal;position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:22px;line-height:1;z-index:2}
+.fas.novo{animation:fsenta .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes fsenta{from{opacity:0;transform:translate(-50%,-90%) scale(.5)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.fas.alvo svg{filter:drop-shadow(0 0 7px var(--accent));animation:fpula .5s ease-in-out infinite alternate}
+.fas.alvo span{background:var(--accent);color:var(--accent-ink)}
+.fas.quem span{background:#3b6fd6;color:#fff}
+@keyframes fpula{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+.fseta{width:86%;color:#ffd27a;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));will-change:transform}
+.fseta svg{display:block;width:100%}
+.fbebe{border-radius:16px;background:var(--bad-bg);border:2px solid var(--bad);color:var(--bad);text-align:center;padding:12px;display:flex;flex-direction:column;gap:2px;animation:fsurge .35s ease both}
+.fbebe span{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.fbebe b{font-family:var(--font-head);font-size:26px;line-height:1.15}
+@keyframes fsurge{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.fpista{position:relative;border-radius:14px;background:#b6533a;border:1px solid #7a3323;overflow:hidden;padding:4px 0}
+.fraia{position:relative;height:50px;border-bottom:1px dashed rgba(255,255,255,.35)}
+.fraia:last-of-type{border-bottom:0}
+.fraian{position:absolute;left:8px;top:2px;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.85);z-index:1}
+.fcav{position:absolute;left:4px;bottom:2px;width:60px;height:44px;will-change:transform}
+.fcav b{position:absolute;left:0;bottom:-4px;font-size:38px;line-height:1;transform:scaleX(-1);font-weight:400}
+.fcav svg{position:absolute;left:17px;bottom:17px;width:20px;height:28px;overflow:visible}
+.fcav.corre b{animation:fgalope .28s ease-in-out infinite alternate}
+@keyframes fgalope{from{transform:scaleX(-1) translateY(0) rotate(0)}to{transform:scaleX(-1) translateY(-3px) rotate(-5deg)}}
+.fchegada{position:absolute;top:0;bottom:0;right:26px;width:8px;background:repeating-linear-gradient(0deg,#fff 0 6px,#111 6px 12px)}
+.fconta{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);font-family:var(--font-head);font-size:64px;font-weight:700;color:#fff}
+.fbomba{font-size:54px;line-height:1;animation:ftreme .6s ease-in-out infinite alternate}
+@keyframes ftreme{from{transform:rotate(-9deg) scale(.94)}to{transform:rotate(9deg) scale(1.06)}}
+.fbum{font-family:var(--font-head);font-size:34px;font-weight:700;color:#ffd27a;animation:fsurge .3s ease both}
+.fcarta{display:inline-flex;align-items:center;justify-content:center;width:30px;height:40px;border-radius:5px;background:#fff;color:#16181d;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 2px 5px rgba(0,0,0,.5);animation:fsurge .3s ease both}
+.fcarta.verm{color:#c62828}
+.fcarta.verso{background:repeating-linear-gradient(45deg,#1f3c88 0 5px,#2c52b3 5px 10px);border:2px solid #fff}
+.fas em:has(.fcarta){top:-30px}
+.fsinal{width:100%;min-height:300px;border-radius:22px;border:0;font-family:var(--font-head);font-size:34px;font-weight:700;color:#fff;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.fsinal.verm{background:#b3261e}
+.fsinal.verde{background:#1e9e55}
+.fsinal:disabled{opacity:.85;cursor:default}
+.fpassa{border-radius:18px;border:2px solid var(--accent);background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;text-align:center}
+.fpassa svg{width:60px;height:84px;overflow:visible}
+.fpassa b{font-family:var(--font-head);font-size:26px}
+.fmini{display:inline-flex;flex-direction:column;align-items:center;width:44px}
+.fmini svg{width:26px;height:36px;overflow:visible;display:block}
+.fmini i{font-style:normal;font-size:10px;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flados{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.flado{border-radius:14px;border:1px solid var(--line);background:var(--soft);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.flado b{font-family:var(--font-head);font-size:18px}
+.flado.perde{border-color:var(--bad);background:var(--bad-bg)}
 .tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:11px 16px;min-height:40px;touch-action:manipulation}
 .truco{background:var(--surface)}
 .tmao{display:flex;justify-content:center;gap:10px;min-height:86px;align-items:center}
@@ -1049,6 +1103,7 @@ function impScreen(e){
     const seg=iDec(g.seg)||{p:'?',i:[]};
     h+='<div class="segredo aberto" style="cursor:default"><span class="small">A palavra era</span><b>'+esc(seg.p)+'</b><span class="small">'+(seg.i.length>1?'Os impostores eram':'O impostor era')+'</span><b style="color:var(--bad)">'+esc(seg.i.map(iNome).join(' e '))+'</b></div>';
   }
+  h+=fRegrasHTML('imp');
   h+='<div><div class="small muted">Tema da próxima rodada</div><div class="avrow">'+Object.keys(IMP_NOMES).map(t=>'<button class="stl" data-act="iTema" data-v="'+t+'" data-e="'+E+'" aria-pressed="'+(tema===t)+'">'+IMP_NOMES[t]+'</button>').join('')+'</div></div>';
   h+='<div><div class="small muted">Participantes ('+js.length+')</div><div class="avrow">'+(js.length?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
   h+=dentro
@@ -1171,14 +1226,15 @@ const cLua='<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="
 const cDorme=(sub)=>'<div class="cidnoite">'+cLua+'<b>A cidade dorme</b><span class="small">'+(sub||'Olhos fechados e celular escondido. Espere o narrador chamar.')+'</span></div>';
 function cLista(ids,sel,bloq){return '<div class="cidlista">'+ids.map(m=>'<button class="stl" data-act="cSel" data-m="'+esc(m)+'" aria-pressed="'+(sel===m)+'"'+(bloq&&bloq[m]?' disabled':'')+'>'+esc(iNome(m))+(bloq&&bloq[m]?' <span class="small muted">('+bloq[m]+')</span>':'')+'</button>').join('')+'</div>';}
 function jogosTopo(e,qual){return '<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+(qual==='cid'?'A Cidade Dorme':'Impostor')+'</span></div>';}
-/* tela do botão Jogos: lista os jogos da sala presencial; a pessoa escolhe um e entra */
+/* tela do botão Jogos: lista os jogos da sala presencial com as regras de cada um; a pessoa escolhe um e entra */
 function jogosMenu(e){
-  const E=esc(e.id),gi=iGame(e)||{},gc=cGame(e)||{},ni=iJog(e,gi).length,nc=iJog(e,gc).length;
-  const cartao=(v,nome,desc,min,rolando,n)=>'<button class="jogoop" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+desc+'</span><span class="small muted">'+min+'</span></button>';
-  return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div><div class="card"><h2 style="margin:0">Escolha o jogo</h2>'+
-    cartao('imp','Impostor','Todos recebem a mesma palavra, menos o impostor. Descubram quem é pela conversa.','A partir de 3 pessoas',gi.status==='playing',ni)+
-    cartao('cid','A Cidade Dorme','Papéis secretos com narração: de noite o assassino ataca, o anjo protege e o detetive investiga. De dia a cidade vota.','A partir de '+CID_MIN+' pessoas',gc.status==='jogo',nc)+'</div>';
+  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span><span class="small muted">A partir de '+J.min+' pessoas'+(J.um===false?' · cada um no seu celular':J.um?' · dá para jogar em um celular só':'')+'</span></button>'+fRegrasHTML(k)+'</div>';};
+  const gi=iGame(e)||{},gc=cGame(e)||{};
+  return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>'+
+    '<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
+    '<div class="card"><h2 style="margin:0">Jogos de conversa</h2>'+cartao('imp','imp',gi.status==='playing',iJog(e,gi).length)+cartao('cid','cid',gc.status==='jogo',iJog(e,gc).length)+'</div>';
 }
+
 function cidScreen(e){
   const g=cGame(e)||{},st=g.status||'lobby',js=iJog(e,g),me=myMember(),dentro=!!(g.jog&&g.jog[state.uid]),E=esc(e.id),souHost=g.host===state.uid;
   if(g.fn!==state.cidFn){state.cidFn=g.fn;state.cidVer=false;state.cidSel=null;state.cidIni=Date.now();}
@@ -1186,7 +1242,7 @@ function cidScreen(e){
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(st!=='jogo'){
     const n=js.length,na=cQtdAss(n);
-    h+='<div class="small muted">Jogo de papéis secretos. De noite o assassino ataca, o anjo protege e o detetive investiga, cada um pelo próprio celular. De dia todos conversam e votam em quem eliminar.</div>'+
+    h+='<div class="small muted">Jogo de papéis secretos. De noite o assassino ataca, o anjo protege e o detetive investiga, cada um pelo próprio celular. De dia todos conversam e votam em quem eliminar.</div>'+fRegrasHTML('cid')+
       '<div><div class="small muted">Participantes ('+n+')</div><div class="avrow">'+(n?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
     if(dentro){
       h+='<div class="item"><b>O celular de quem começar vira o narrador</b><span class="small muted">Ele fala o jogo em voz alta. Fique com ele na mão, com o som no máximo e a tela ligada. Você joga normalmente.</span><button class="btn" data-act="cVoz">Testar a voz neste celular</button></div>'+
@@ -1267,9 +1323,278 @@ function cidScreen(e){
   return h+rodape()+'</div>';
 }
 
+/* ===================== JOGOS DE SHOT (sala presencial) =====================
+   Nove jogos rápidos que usam a mesma base: uma mesa com o boneco de cada participante, a partida guardada em
+   games/{evento}_f{jogo} (todos os celulares veem a mesma cena) e dois modos de jogar:
+   cada um no seu celular, ou um celular só passando de mão em mão (campo `um`).
+   As animações são calculadas pelo tempo desde que o aparelho viu a rodada começar, então sobrevivem a redesenhos da tela. */
+const F_FRASES=['dormir no meio do rolê','perder o celular hoje','mandar mensagem para o ex','chorar de tanto rir','esquecer onde estacionou','puxar o parabéns sem ter aniversário','pedir a saideira e não ir embora','sumir sem se despedir','contar a mesma história duas vezes','virar amigo do garçom','dançar em cima da cadeira','pedir comida às três da manhã','acordar sem lembrar de nada','postar story e apagar depois','chegar atrasado no próximo evento','cantar no karaokê sem saber a letra','fazer amizade na fila do banheiro','dar em cima de alguém hoje','pagar a conta sem conferir','levar bronca em casa amanhã','cair sem ter tropeçado em nada','ficar filosofando depois do terceiro copo','ligar para alguém de madrugada','prometer que nunca mais bebe','perder a carteira','tirar foto de todo mundo e não mandar','brigar com o motorista do aplicativo','esquecer o nome de alguém da mesa','virar o DJ da festa','dormir de roupa e sapato'];
+const F_ESCOLHAS=[['Praia','Sítio'],['Cerveja','Drinque'],['Churrasco','Pizza'],['Sexta à noite','Sábado de dia'],['Sertanejo','Funk'],['Bar','Balada'],['Doce','Salgado'],['Frio','Calor'],['Cachorro','Gato'],['Dormir cedo','Virar a noite'],['Viajar de carro','Viajar de avião'],['Caipirinha','Gin tônica'],['Filme','Série'],['Café','Energético'],['Feijoada','Lasanha'],['Praia cheia','Cachoeira vazia'],['Carnaval','Réveillon'],['Tequila','Cachaça'],['Pagode','Rock'],['Cozinhar','Pedir delivery'],['Acordar cedo','Dormir até tarde'],['Coxinha','Pastel'],['Whatsapp','Ligação'],['Festa em casa','Festa na rua'],['Vinho','Chope'],['Montanha','Cidade grande'],['Karaokê','Pista de dança'],['Hambúrguer','Sushi'],['Sol','Chuva'],['Rodízio','À la carte']];
+const F_REGRAS_CHEFE=['Ninguém pode falar o nome de ninguém da mesa.','Só pode beber com a mão esquerda.','Proibido falar a palavra "não".','Antes de beber, tem que brindar com alguém.','Ninguém pode apontar com o dedo.','Proibido falar palavrão.','Quem pegar no celular (fora do jogo) bebe.','Toda frase tem que terminar com "meu rei".','Ninguém pode rir alto.','Proibido falar "eu".','Para falar, tem que levantar a mão antes.','Ninguém pode encostar o cotovelo na mesa.','Proibido falar números.','Quem falar o nome de uma bebida, bebe.','Só pode chamar os outros de "doutor" ou "doutora".','Ninguém pode cruzar os braços.','Proibido responder com "sim".','Quem levantar da cadeira tem que dar uma voltinha.','Proibido falar inglês.','O chefe faz um gesto: o último a imitar, bebe.'];
+const F_VERDADES=['Qual foi o maior mico que você já pagou em uma festa?','Quem desta mesa você chamaria para uma viagem de última hora?','Qual mentira você já contou para faltar em um compromisso?','Qual foi a pior ressaca da sua vida?','Qual é a sua mania mais estranha?','Do que você tem medo e ninguém imagina?','Qual foi a última coisa que você pesquisou no celular?','Quem desta mesa dá o melhor conselho? E o pior?','Qual foi o presente mais esquisito que você já ganhou?','Qual apelido você já teve e odiava?','Qual foi a maior loucura que você já fez por amor?','Qual música você escuta escondido?','O que você faria se ganhasse na loteria amanhã?','Qual foi a desculpa mais esfarrapada que você já deu?','Qual comida você finge que gosta?','Qual foi o seu pior encontro?','Quem desta mesa você acha que mais mudou nos últimos anos?','Qual é a sua pior qualidade como amigo?','Qual foi a última vez que você chorou, e por quê?','Qual segredo de infância seus pais nunca souberam?','Em quem desta mesa você confiaria a senha do celular?','Qual foi a compra mais inútil que você já fez?','Qual é o seu maior arrependimento de festa?','O que você nunca teve coragem de falar para alguém desta mesa?','Qual talento inútil você tem?'];
+const F_DESAFIOS=['Imite alguém da mesa até adivinharem quem é.','Fale só cantando até a próxima rodada.','Faça dez polichinelos agora.','Mande um áudio cantando parabéns para a última pessoa da sua conversa.','Dance por 20 segundos sem música.','Conte uma piada. Se ninguém rir, beba.','Fique de olhos fechados até a sua próxima vez.','Troque de lugar com a pessoa à sua direita.','Faça um brinde em homenagem a alguém da mesa.','Fale com sotaque de outro estado até a próxima rodada.','Mostre a última foto da sua galeria.','Faça uma declaração de amor para o seu copo.','Imite um animal e deixe a mesa adivinhar.','Deixe a pessoa à sua esquerda postar um story no seu celular.','Faça o seu melhor passo de dança.','Fale o alfabeto de trás para frente a partir do J.','Sirva a bebida de todo mundo da mesa.','Diga um elogio sincero para cada pessoa da mesa.','Fique em um pé só até a próxima rodada.','Cante o refrão de uma música escolhida pela mesa.','Faça uma pose de modelo e deixe tirarem uma foto.','Ligue para alguém e diga que está com saudade.','Narre o que a mesa está fazendo como locutor de futebol por 30 segundos.','Fale três qualidades suas sem rir.','Deixe a mesa escolher o seu próximo gole.'];
+const F_JOGOS={
+  cav:{nome:'Corrida de cavalos',min:2,um:true,desc:'Cada um monta em um cavalo e a sorte decide. O último colocado bebe.',
+    regras:['Cada pessoa que entra ganha um cavalo com o seu boneco.','Alguém toca em Largar. Depois da contagem, os cavalos correm sozinhos: o resultado é sorteado pelo app.','Todos os celulares mostram a mesma corrida.','Quem chegar por último bebe um shot.']},
+  rol:{nome:'Roleta do shot',min:2,um:true,desc:'A roleta gira no meio da mesa. Em quem ela parar, bebe.',
+    regras:['Cada pessoa que entra senta na mesa com o seu boneco.','Alguém toca em Girar a roleta.','A seta roda e para apontando para uma pessoa.','Essa pessoa bebe um shot. Depois é só girar de novo.']},
+  vod:{nome:'Verdade ou desafio',min:2,um:true,desc:'A seta escolhe quem responde e quem pergunta. Quem recebe escolhe: verdade ou desafio.',
+    regras:['Todos sentam na mesa. Alguém toca em Girar.','A ponta da seta aponta para quem recebe. A traseira da seta aponta para quem pergunta ou desafia.','Quem recebe escolhe Verdade ou Desafio.','Quem está na traseira faz a pergunta ou inventa o desafio. Sem ideia? Toque em Sortear uma sugestão.','Quem se recusar a responder ou a cumprir, bebe.']},
+  bom:{nome:'Bomba',min:2,um:true,desc:'A bomba passa de mão em mão e estoura em um momento surpresa. Quem estiver com ela, bebe.',
+    regras:['A bomba começa com uma pessoa sorteada.','Quem está com a bomba toca no boneco de outra pessoa para passar.','Ela estoura em um tempo aleatório, que ninguém sabe.','Quem estiver com a bomba na hora, bebe.','Em um celular só: o celular é a bomba. Toque em quem vai receber e entregue o aparelho.']},
+  car:{nome:'Carta mais baixa',min:2,um:true,desc:'Cada um recebe uma carta. A mais baixa bebe, e o rei manda mais alguém beber.',
+    regras:['Alguém toca em Dar as cartas. Cada pessoa recebe uma carta virada para baixo.','As cartas viram todas ao mesmo tempo.','Quem tiver a carta mais baixa bebe. O ás é a mais baixa de todas. Empatou, bebem os dois.','Quem tirar um rei escolhe mais uma pessoa para beber junto.']},
+  sin:{nome:'Sinal verde',min:2,um:false,desc:'Jogo de reflexo: a tela fica vermelha e, de repente, verde. O último a tocar bebe.',
+    regras:['Este jogo precisa que cada um esteja no próprio celular.','Alguém toca em Começar. A tela de todos fica vermelha.','Em um momento surpresa ela fica verde. Toque o mais rápido que puder.','O mais lento bebe. Quem não tocar conta como o mais lento.','Quem tocar antes de ficar verde queimou a largada e bebe também.']},
+  pro:{nome:'Quem é mais provável',min:3,um:true,desc:'Aparece uma frase e todos votam em quem mais combina com ela. O mais votado bebe.',
+    regras:['O app mostra uma frase, por exemplo "Quem é mais provável de dormir no meio do rolê?".','Cada um vota em uma pessoa da mesa. O voto é secreto até todos votarem.','Quando todos votaram, os votos aparecem.','O mais votado bebe. Empatou, bebem todos os empatados.','Em um celular só: o aparelho passa de mão em mão e cada um vota na sua vez.']},
+  mai:{nome:'Maioria manda',min:3,um:true,desc:'Duas opções, voto secreto. Quem ficar no lado com menos gente, bebe.',
+    regras:['O app mostra duas opções, por exemplo "Praia ou sítio?".','Cada um escolhe a sua em segredo.','Quando todos escolheram, aparece quem votou em quê.','O lado com menos votos bebe. Se empatar, todo mundo bebe. Se todos escolherem igual, ninguém bebe.','Em um celular só: o aparelho passa de mão em mão e cada um vota na sua vez.']},
+  che:{nome:'Chefe da rodada',min:3,um:true,desc:'O app coroa um chefe, que cria uma regra para a mesa. Quem quebrar a regra, bebe.',
+    regras:['O app sorteia uma pessoa, que ganha a coroa.','O chefe inventa uma regra para todos, ou toca em Sortear uma regra.','A regra vale até o próximo chefe ser sorteado.','Quem quebrar a regra bebe. O chefe é o juiz.']},
+  imp:{nome:'Impostor',min:3,desc:'Todos recebem a mesma palavra, menos o impostor. Descubram quem é pela conversa.',
+    regras:['Cada um entra pelo próprio celular e alguém escolhe o tema.','Ao começar, todos veem a mesma palavra, menos o impostor, que só vê que é o impostor.','Em roda, cada um fala uma dica sobre a palavra, sem entregar demais.','O impostor tenta se passar por quem sabe. O grupo tenta descobrir quem é.','Quando decidirem, toquem em Revelar o impostor.']},
+  cid:{nome:'A Cidade Dorme',min:5,desc:'Papéis secretos com narração: de noite o assassino ataca, o anjo protege e o detetive investiga. De dia a cidade vota.',
+    regras:['Cada um entra pelo próprio celular. O celular de quem começa vira o narrador e fala o jogo em voz alta.','No começo, o papel de cada um aparece por 10 segundos e some: cidadão, assassino, anjo ou detetive.','De noite todos fecham os olhos. O narrador chama um por vez: o assassino escolhe quem morre, o anjo escolhe quem protege e o detetive investiga uma pessoa.','De manhã o narrador conta o que aconteceu. A cidade conversa e cada um vota no celular em quem eliminar. A noite volta quando todos votam ou em 5 minutos.','A cidade vence se eliminar todos os assassinos. Os assassinos vencem se ficarem em número igual ou maior que os outros.','Quem morre ou é eliminado fica em silêncio até o fim.']}
+};
+const F_ORDEM=['cav','rol','vod','bom','car','sin','pro','mai','che'];
+const fGid=(e,k)=>e.id+'_f'+k;
+const fGame=(e,k)=>state.games[fGid(e,k)]||null;
+const fM=mid=>state.members.concat(state.guests).find(m=>m.id===mid)||{id:mid,name:'?'};
+const fPresentes=e=>state.members.concat(guestsOf(e)).filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id);
+const fJog=(e,g)=>{if(!g)return [];const p=fPresentes(e);return g.um?(Array.isArray(g.lista)?g.lista:[]).filter(m=>p.includes(m)):iJog(e,g).map(x=>x.mid);};
+const fPosso=(g,mid)=>{const me=myMember();return !!(g&&(g.um||(me&&me.id===mid)));};
+const fSorteia=a=>{const u=new Uint32Array(1);crypto.getRandomValues(u);return a[u[0]%a.length];};
+const fEmbaralha=a=>{const u=new Uint32Array(a.length);crypto.getRandomValues(u);return a.map((x,i)=>({x,k:u[i]})).sort((p,q)=>p.k-q.k).map(o=>o.x);};
+const fRnd=seed=>{let t=seed>>>0;return ()=>{t=(t+0x6D2B79F5)>>>0;let r=Math.imul(t^(t>>>15),1|t);r=(r+Math.imul(r^(r>>>7),61|r))^r;return ((r^(r>>>14))>>>0)/4294967296;};};
+function fSet(e,k,d){return db.doc('games/'+fGid(e,k)).set(d,{merge:true}).catch(()=>toast('Não consegui gravar. Confira a internet.'));}
+function fUp(e,k,d){return db.doc('games/'+fGid(e,k)).update(d).catch(()=>toast('Não consegui gravar. Confira a internet.'));}
+/* relógio local de cada rodada: quando este aparelho viu a rodada n começar */
+function fRel(e,k,g){
+  state.fIni=state.fIni||{};const id=fGid(e,k),L=state.fIni[id];
+  if(!L||L.n!==g.n){const velho=g.at&&Date.now()-g.at>20000;state.fIni[id]={n:g.n,t:velho?Date.now()-600000:Date.now(),est:-1,mandou:false};}
+  return state.fIni[id];
+}
+function fRegrasHTML(k){
+  const j=F_JOGOS[k],ab=state.fRegras===k;
+  return '<button class="tfim" style="align-self:flex-start;padding-left:0" data-act="fRegras" data-v="'+k+'" aria-expanded="'+ab+'">'+(ab?'Esconder as regras':'Como funciona')+'</button>'+(ab?'<ol class="fregras">'+j.regras.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ol>':'');
+}
+/* mesa redonda com o boneco de cada participante */
+function fMesa(e,k,mids,o){
+  o=o||{};const n=mids.length,id=fGid(e,k);state.fVistos=state.fVistos||{};const vistos=state.fVistos[id]||(state.fVistos[id]={});
+  const h='<div class="fmesa"><div class="ftampo">'+(o.centro||'')+'</div>'+mids.map((m,i)=>{
+    const a=(-90+360*i/n)*Math.PI/180,x=50+40*Math.cos(a),y=50+40*Math.sin(a),novo=!vistos[m];vistos[m]=1;
+    const tag=o.act&&!(o.semAct||{})[m]?'button':'div';
+    return '<'+tag+' class="fas'+(novo?' novo':'')+((o.marca||{})[m]?' '+o.marca[m]:'')+'"'+(tag==='button'?' data-act="'+o.act+'" data-e="'+esc(e.id)+'" data-k="'+k+'" data-m="'+esc(m)+'"':'')+' style="left:'+x.toFixed(1)+'%;top:'+y.toFixed(1)+'%">'+((o.topo||{})[m]?'<em>'+o.topo[m]+'</em>':'')+fig(fM(m))+'<span>'+esc(iNome(m))+'</span>'+((o.sub||{})[m]?'<i>'+o.sub[m]+'</i>':'')+'</'+tag+'>';
+  }).join('')+'</div>';
+  return h;
+}
+const fAng=(mids,m)=>-90+360*Math.max(0,mids.indexOf(m))/mids.length;
+const fSetaSVG=cauda=>'<svg viewBox="0 0 120 30" aria-hidden="true"><path d="M'+(cauda?24:14)+' 15h74" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><path d="M92 3l24 12-24 12z" fill="currentColor"/>'+(cauda?'<circle cx="14" cy="15" r="10" fill="none" stroke="currentColor" stroke-width="5"/>':'')+'</svg>';
+const fBebe=mids=>'<div class="fbebe"><span>'+(mids.length>1?'Bebem o shot':'Bebe o shot')+'</span><b>'+esc(mids.map(iNome).join(', '))+'</b></div>';
+const fEase=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3);
+const F_GIRO=4600,F_CAV_ESPERA=3200;
+const fCavT=(i)=>10500+i*850; /* tempo de chegada do colocado i */
+/* ---------- começo de rodada de cada jogo ---------- */
+function fNovaRodada(e,k,g,rod){
+  const d={};
+  if(k==='cav'){d.ordem=fEmbaralha(rod);d.seed=fSorteia([...Array(9000).keys()])+1;}
+  if(k==='rol'){const alvo=fSorteia(rod),base=fAng(rod,alvo),de=+g.ang||0;d.alvo=alvo;d.de=de;d.ang=base+360*Math.ceil((de+1440-base)/360);}
+  if(k==='vod'){const alvo=fSorteia(rod),i=rod.indexOf(alvo),n=rod.length,op=n%2?fSorteia([Math.floor(n/2),Math.ceil(n/2)]):n/2,quem=rod[(i+op)%n],base=fAng(rod,alvo),de=+g.ang||0;
+    d.alvo=alvo;d.quem=quem===alvo?rod[(i+1)%n]:quem;d.de=de;d.ang=base+360*Math.ceil((de+1440-base)/360);d.esc='';d.sug=-1;}
+  if(k==='bom'){d.com=fSorteia(rod);d.dur=8000+fSorteia([...Array(200).keys()])*100;d.est=false;d.perdeu='';}
+  if(k==='car'){const c={};rod.forEach(m=>{c[m]={v:1+fSorteia([...Array(13).keys()]),s:fSorteia([0,1,2,3])};});d.cartas=c;d.extra={};}
+  if(k==='sin'){d.esp=2500+fSorteia([...Array(50).keys()])*100;d.tempos={};d.queimou={};d.fim=false;}
+  if(k==='pro'){const us=Array.isArray(g.usadas)?g.usadas:[];let l=F_FRASES.map((x,i)=>i).filter(i=>!us.includes(i));if(!l.length)l=F_FRASES.map((x,i)=>i);d.fr=fSorteia(l);d.usadas=us.concat(d.fr).slice(-24);d.votos={};d.rev=false;}
+  if(k==='mai'){const us=Array.isArray(g.usadas)?g.usadas:[];let l=F_ESCOLHAS.map((x,i)=>i).filter(i=>!us.includes(i));if(!l.length)l=F_ESCOLHAS.map((x,i)=>i);d.q=fSorteia(l);d.usadas=us.concat(d.q).slice(-24);d.votos={};d.rev=false;}
+  if(k==='che'){const l=rod.filter(m=>m!==g.chefe);d.chefe=fSorteia(l.length?l:rod);d.regra=-1;}
+  return d;
+}
+/* em que etapa da animação a rodada está (muda de etapa = redesenha a tela) */
+function fEtapa(k,g,el){
+  if(k==='cav'){const fim=F_CAV_ESPERA+fCavT((g.rod||[]).length-1)+900;return el<F_CAV_ESPERA?Math.floor(el/1000):el<fim?5:6;}
+  if(k==='rol'||k==='vod')return el<F_GIRO?0:1;
+  if(k==='car')return el<1900?0:1;
+  if(k==='sin')return g.fim?2:el<(g.esp||0)?0:1;
+  return 0;
+}
+const fCartaTxt=c=>(['A','2','3','4','5','6','7','8','9','10','J','Q','K'][c.v-1])+['♠','♥','♦','♣'][c.s];
+/* votação: cada um no seu celular, ou passando um celular só */
+function fVotoHTML(e,k,g,rod,opcoes){
+  const me=myMember(),v=g.votos||{},nv=rod.filter(m=>m in v).length,E=esc(e.id);
+  let quem=null;
+  if(g.um){const prox=rod.find(m=>!(m in v));if(prox){if(state.fPronto!==prox)return '<div class="fpassa">'+fig(fM(prox))+'<span class="small muted">Passe o celular para</span><b>'+esc(iNome(prox))+'</b><button class="btn primary" data-act="fPronto" data-m="'+esc(prox)+'">Sou eu, votar</button><span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';quem=prox;}}
+  else if(me&&rod.includes(me.id)&&!(me.id in v))quem=me.id;
+  if(!quem)return '<div class="empty">'+(me&&rod.includes(me.id)||g.um?'Voto registrado. ':'')+nv+' de '+rod.length+' já votaram.</div>'+(nv?'<button class="btn" data-act="fRev" data-e="'+E+'" data-k="'+k+'">Encerrar a votação agora</button>':'');
+  return '<div class="cidvez"><b>'+esc(iNome(quem))+', escolha em segredo</b>'+opcoes(quem)+'<span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';
+}
+/* ---------- tela de um jogo ---------- */
+function fScreen(e,k){
+  const J=F_JOGOS[k],g=fGame(e,k)||{},me=myMember(),E=esc(e.id),jog=fJog(e,g),dentro=g.um||!!(g.jog&&g.jog[state.uid]),attr=' data-e="'+E+'" data-k="'+k+'"';
+  let h='<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+J.nome+'</span></div><div class="card"><div class="row between"><h2 style="margin:0">'+J.nome+'</h2>'+(g.st==='jogo'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
+  if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
+  if(g.st!=='jogo'){
+    h+='<div class="small muted">'+J.desc+'</div>'+fRegrasHTML(k);
+    if(J.um)h+='<div class="seg2"><button data-act="fModo" data-v="0"'+attr+' aria-pressed="'+!g.um+'">Cada um no seu celular</button><button data-act="fModo" data-v="1"'+attr+' aria-pressed="'+!!g.um+'">Um celular só</button></div>';
+    h+=jog.length?fMesa(e,k,jog,{centro:'<span class="small muted" style="text-align:center">'+jog.length+(jog.length===1?' na mesa':' na mesa')+'</span>'}):'<div class="empty">Ninguém sentou na mesa ainda.</div>';
+    if(g.um){
+      const pres=fPresentes(e),li=Array.isArray(g.lista)?g.lista:[];
+      h+='<div><div class="small muted">Toque em quem vai jogar ('+jog.length+')</div><div class="avrow">'+pres.map(m=>'<button class="stl" data-act="fLista"'+attr+' data-m="'+esc(m)+'" aria-pressed="'+li.includes(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div></div>';
+    }else h+=g.jog&&g.jog[state.uid]?'':'<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>';
+    if(dentro)h+='<button class="btn primary" data-act="fStart"'+attr+(jog.length>=J.min?'':' disabled')+'>'+({cav:'Largar',rol:'Girar a roleta',vod:'Girar',bom:'Acender a bomba',car:'Dar as cartas',sin:'Começar',pro:'Sortear a frase',mai:'Sortear a pergunta',che:'Sortear o chefe'})[k]+'</button>'+(jog.length<J.min?'<div class="small muted" style="text-align:center">Mínimo de '+J.min+' pessoas</div>':'');
+    if(!g.um&&g.jog&&g.jog[state.uid])h+='<button class="tfim" data-act="fSair"'+attr+'>Sair da mesa</button>';
+    return h+'</div>';
+  }
+  const rod=(Array.isArray(g.rod)?g.rod:[]),L=fRel(e,k,g),el=Date.now()-L.t,et=fEtapa(k,g,el);L.est=et;
+  const denovo=t=>(dentro?'<button class="btn primary" data-act="fStart"'+attr+'>'+t+'</button>':'')+'<button class="tfim" data-act="fLobby"'+attr+'>Voltar para a entrada do jogo</button>';
+  if(k==='cav'){
+    const ordem=g.ordem||rod;
+    h+='<div class="fpista" data-e="'+E+'">'+rod.map((m,i)=>'<div class="fraia"><span class="fraian">'+esc(iNome(m))+'</span><div class="fcav" data-m="'+esc(m)+'"><b>🐎</b>'+fig(fM(m))+'</div></div>').join('')+'<i class="fchegada"></i>'+(et<5?'<div class="fconta">'+(et>=3?'Já!':3-et)+'</div>':'')+'</div>';
+    if(et===6){const ult=ordem[ordem.length-1];
+      h+=fBebe([ult])+'<div class="list" style="gap:4px">'+ordem.map((m,i)=>'<div class="row between small"><span>'+(i+1)+'º '+esc(iNome(m))+'</span><span class="muted">'+(i===0?'venceu':i===ordem.length-1?'último':'')+'</span></div>').join('')+'</div>'+denovo('Nova corrida');
+    }else h+='<div class="small muted" style="text-align:center">'+(et<5?'Preparar...':'Valendo! O último bebe.')+'</div>';
+    return h+'</div>';
+  }
+  if(k==='rol'||k==='vod'){
+    const vod=k==='vod',marca={};
+    if(et===1){marca[g.alvo]='alvo';if(vod)marca[g.quem]='quem';}
+    h+=fMesa(e,k,rod,{marca,centro:'<div id="fSeta" class="fseta'+(vod?' vod':'')+'" style="transform:rotate('+(et===1?g.ang:g.de||0)+'deg)">'+fSetaSVG(vod)+'</div>'});
+    if(et===0)return h+'<div class="small muted" style="text-align:center">Girando...</div></div>';
+    if(!vod)return h+fBebe([g.alvo])+denovo('Girar de novo')+'</div>';
+    if(!g.esc){
+      h+='<div class="cidfala"><b>'+esc(iNome(g.alvo))+'</b> recebe. <b>'+esc(iNome(g.quem))+'</b> pergunta ou desafia.</div>';
+      h+=fPosso(g,g.alvo)?'<div class="row" style="flex-wrap:nowrap"><button class="btn primary grow" data-act="fVodEsc" data-v="v"'+attr+'>Verdade</button><button class="btn danger grow" data-act="fVodEsc" data-v="d"'+attr+'>Desafio</button></div>':'<div class="small muted" style="text-align:center">Esperando '+esc(iNome(g.alvo))+' escolher...</div>';
+      return h+'</div>';
+    }
+    const lista=g.esc==='v'?F_VERDADES:F_DESAFIOS;
+    h+='<div class="segredo aberto'+(g.esc==='d'?' imp':'')+'" style="cursor:default;min-height:120px"><span class="small">'+esc(iNome(g.alvo))+' escolheu</span><b>'+(g.esc==='v'?'VERDADE':'DESAFIO')+'</b><span class="small">'+esc(iNome(g.quem))+(g.esc==='v'?' faz a pergunta':' dá o desafio')+'</span></div>'+
+      (g.sug>=0&&lista[g.sug]?'<div class="cidfala">'+esc(lista[g.sug])+'</div>':'')+
+      (dentro?'<button class="btn" data-act="fVodSug"'+attr+'>'+(g.sug>=0?'Sortear outra sugestão':'Sem ideia? Sortear uma sugestão')+'</button>':'')+
+      '<div class="small muted" style="text-align:center">Quem se recusar, bebe.</div>'+denovo('Girar de novo');
+    return h+'</div>';
+  }
+  if(k==='bom'){
+    if(g.est){h+=fMesa(e,k,rod,{marca:{[g.perdeu]:'alvo'},topo:{[g.perdeu]:'💥'},centro:'<div class="fbum">BUM!</div>'})+fBebe([g.perdeu])+denovo('Acender outra bomba');return h+'</div>';}
+    const pode=fPosso(g,g.com),sem={[g.com]:1};
+    h+=fMesa(e,k,rod,{act:pode?'fBomPassa':'',semAct:sem,marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'});
+    h+='<div class="cidfala">'+(pode?(g.um?'A bomba está com <b>'+esc(iNome(g.com))+'</b>. Toque em quem vai receber e passe o celular.':'<b>A bomba está com você!</b> Toque em alguém para passar.'):'A bomba está com <b>'+esc(iNome(g.com))+'</b>.')+'</div>';
+    return h+'</div>';
+  }
+  if(k==='car'){
+    const c=g.cartas||{},topo={},marca={};
+    if(et===0){rod.forEach(m=>{topo[m]='<u class="fcarta verso"></u>';});h+=fMesa(e,k,rod,{topo})+'<div class="small muted" style="text-align:center">Virando as cartas...</div>';return h+'</div>';}
+    const menor=Math.min(...rod.map(m=>(c[m]||{v:99}).v)),baixos=rod.filter(m=>(c[m]||{}).v===menor),reis=rod.filter(m=>(c[m]||{}).v===13),ex=g.extra||{};
+    rod.forEach(m=>{const x=c[m];if(x)topo[m]='<u class="fcarta'+(x.s===1||x.s===2?' verm':'')+'">'+fCartaTxt(x)+'</u>';});
+    baixos.forEach(m=>{marca[m]='alvo';});Object.values(ex).forEach(m=>{if(m)marca[m]='alvo';});
+    h+=fMesa(e,k,rod,{topo,marca})+fBebe([...new Set(baixos.concat(Object.values(ex).filter(Boolean)))]);
+    reis.forEach(rei=>{
+      if(ex[rei])h+='<div class="small" style="text-align:center">👑 '+esc(iNome(rei))+' tirou o rei e mandou <b>'+esc(iNome(ex[rei]))+'</b> beber junto.</div>';
+      else if(fPosso(g,rei))h+='<div class="item"><b>👑 '+esc(iNome(rei))+' tirou o rei</b><span class="small muted">Escolha mais uma pessoa para beber:</span><div class="avrow">'+rod.filter(m=>m!==rei).map(m=>'<button class="stl" data-act="fCarExtra"'+attr+' data-de="'+esc(rei)+'" data-m="'+esc(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div></div>';
+      else h+='<div class="small muted" style="text-align:center">👑 '+esc(iNome(rei))+' tirou o rei e vai escolher mais alguém para beber.</div>';
+    });
+    return h+denovo('Dar as cartas de novo')+'</div>';
+  }
+  if(k==='sin'){
+    const tp=g.tempos||{},qm=g.queimou||{},eu=me&&rod.includes(me.id)?me.id:null;
+    if(et<2){
+      const ja=eu&&((eu in tp)||qm[eu]);
+      h+='<button class="fsinal '+(et===1?'verde':'verm')+'" data-act="fSinTap"'+attr+(eu&&!ja?'':' disabled')+'>'+(!eu?'Você não está nesta rodada':qm[eu]?'Queimou a largada!':(eu in tp)?tp[eu]+' ms':et===1?'TOQUE!':'Espere o verde...')+'</button>';
+      return h+'<div class="small muted" style="text-align:center">'+rod.filter(m=>(m in tp)||qm[m]).length+' de '+rod.length+' já tocaram</div></div>';
+    }
+    const lin=rod.map(m=>({m,t:qm[m]?-1:(m in tp)?tp[m]:99999})).sort((a,b)=>(a.t<0?1e9:a.t)-(b.t<0?1e9:b.t)),val=lin.filter(x=>x.t>=0),pior=val.length?Math.max(...val.map(x=>x.t)):0;
+    const bebem=lin.filter(x=>x.t<0||(val.length>1&&x.t===pior)||x.t===99999).map(x=>x.m);
+    h+=fBebe(bebem.length?bebem:[lin[lin.length-1].m])+'<div class="list" style="gap:6px">'+lin.map((x,i)=>'<div class="row between"><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="fmini">'+fig(fM(x.m))+'</span>'+esc(iNome(x.m))+'</span><span class="chip'+(x.t<0?' bad':x.t===99999?' warn':i===0?' ok':'')+'">'+(x.t<0?'queimou':x.t===99999?'não tocou':x.t+' ms')+'</span></div>').join('')+'</div>'+denovo('Jogar de novo');
+    return h+'</div>';
+  }
+  if(k==='pro'||k==='mai'){
+    const v=g.votos||{},pro=k==='pro',par=F_ESCOLHAS[g.q]||['A','B'],todos=rod.length>0&&rod.every(m=>m in v),rev=g.rev||todos;
+    h+='<div class="cidfala">'+(pro?'Quem é mais provável de <b>'+esc(F_FRASES[g.fr]||'')+'</b>?':'<b>'+esc(par[0])+'</b> ou <b>'+esc(par[1])+'</b>?')+'</div>';
+    if(!rev){
+      h+=fVotoHTML(e,k,g,rod,quem=>pro
+        ?'<div class="cidlista">'+rod.map(m=>'<button class="stl" data-act="fVoto"'+attr+' data-de="'+esc(quem)+'" data-v="'+esc(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div>'
+        :'<div class="row" style="flex-wrap:nowrap"><button class="btn primary grow" data-act="fVoto"'+attr+' data-de="'+esc(quem)+'" data-v="0">'+esc(par[0])+'</button><button class="btn primary grow" data-act="fVoto"'+attr+' data-de="'+esc(quem)+'" data-v="1">'+esc(par[1])+'</button></div>');
+      return h+'</div>';
+    }
+    if(pro){
+      const cont={};rod.forEach(m=>{const x=v[m];if(x&&rod.includes(x))cont[x]=(cont[x]||0)+1;});
+      const mx=Math.max(0,...Object.values(cont)),top=rod.filter(m=>mx>0&&cont[m]===mx),marca={},sub={};
+      top.forEach(m=>{marca[m]='alvo';});rod.forEach(m=>{if(cont[m])sub[m]=cont[m]+(cont[m]===1?' voto':' votos');});
+      h+=fMesa(e,k,rod,{marca,sub})+(top.length?fBebe(top):'<div class="empty">Ninguém votou. Ninguém bebe.</div>');
+    }else{
+      const a=rod.filter(m=>v[m]===0||v[m]==='0'),b=rod.filter(m=>v[m]===1||v[m]==='1');
+      const bebem=!a.length||!b.length?[]:a.length===b.length?a.concat(b):a.length<b.length?a:b;
+      const lado=(t,l,perde)=>'<div class="flado'+(perde?' perde':'')+'"><b>'+esc(t)+'</b><span class="small muted">'+l.length+(l.length===1?' voto':' votos')+'</span><div class="avrow" style="justify-content:center">'+l.map(m=>'<span class="fmini" title="'+esc(iNome(m))+'">'+fig(fM(m))+'<i>'+esc(iNome(m))+'</i></span>').join('')+'</div></div>';
+      h+='<div class="flados">'+lado(par[0],a,bebem.includes(a[0]))+lado(par[1],b,bebem.includes(b[0]))+'</div>'+(bebem.length?fBebe(bebem):'<div class="empty">'+(a.length+b.length?'Todo mundo escolheu igual. Ninguém bebe.':'Ninguém votou. Ninguém bebe.')+'</div>')+(a.length&&a.length===b.length?'<div class="small muted" style="text-align:center">Empate: todo mundo bebe.</div>':'');
+    }
+    return h+denovo(pro?'Próxima frase':'Próxima pergunta')+'</div>';
+  }
+  if(k==='che'){
+    h+=fMesa(e,k,rod,{marca:{[g.chefe]:'alvo'},topo:{[g.chefe]:'👑'},centro:'<span style="font-size:34px">👑</span>'})+
+      '<div class="cidfala"><b>'+esc(iNome(g.chefe))+'</b> é o chefe da rodada. Crie uma regra para a mesa: quem quebrar, bebe.</div>'+
+      (g.regra>=0&&F_REGRAS_CHEFE[g.regra]?'<div class="segredo aberto" style="cursor:default;min-height:100px"><span class="small">Regra do chefe</span><b style="font-size:20px">'+esc(F_REGRAS_CHEFE[g.regra])+'</b></div>':'')+
+      (fPosso(g,g.chefe)?'<button class="btn" data-act="fCheRegra"'+attr+'>'+(g.regra>=0?'Sortear outra regra':'Sem ideia? Sortear uma regra')+'</button>':'')+denovo('Sortear o próximo chefe');
+    return h+'</div>';
+  }
+  return h+'</div>';
+}
+/* animações e relógios: roda várias vezes por segundo, só mexe em posição/ângulo (não redesenha a tela) */
+function fTick(){
+  if(!state.jogoP||!String(state.jogoQual||'').startsWith('f:'))return;
+  const k=state.jogoQual.slice(2),e=state.events.find(x=>x.id===state.jogoP),g=e&&fGame(e,k);
+  if(!g||g.st!=='jogo')return;
+  const L=fRel(e,k,g),el=Date.now()-L.t,rod=g.rod||[];
+  if(k==='cav'){
+    const t=el-F_CAV_ESPERA,ordem=g.ordem||rod,pista=document.querySelector('.fpista');
+    if(pista){const larg=pista.clientWidth-96;document.querySelectorAll('.fcav').forEach(elc=>{
+      const m=elc.dataset.m,pos=ordem.indexOf(m),T=fCavT(pos),r=fRnd((g.seed||1)*31+rod.indexOf(m)*977),per=2200+r()*1800,fase=r()*6.28,amp=.05+r()*.05;
+      let p=t<=0?0:t>=T?1:t/T+amp*Math.sin(t/per*6.28+fase)*(1-t/T)*Math.min(1,t/1500);
+      p=Math.max(0,Math.min(1,p));elc.style.transform='translateX('+(p*larg).toFixed(1)+'px)';elc.classList.toggle('corre',t>0&&t<T);
+    });}
+  }
+  if(k==='rol'||k==='vod'){const s=document.getElementById('fSeta');if(s&&el<F_GIRO)s.style.transform='rotate('+((+g.de||0)+((+g.ang||0)-(+g.de||0))*fEase(el/F_GIRO)).toFixed(1)+'deg)';}
+  if(k==='bom'&&!g.est){
+    const b=document.querySelector('.fbomba');if(b)b.style.animationDuration=Math.max(.12,.6-el/(g.dur||1)*.48).toFixed(2)+'s';
+    if(el>=(g.dur||0)&&!L.mandou&&(g.host===state.uid||el>=(g.dur||0)+4000)){L.mandou=true;fUp(e,k,{est:true,perdeu:g.com});}
+  }
+  if(k==='sin'&&!g.fim){
+    const tp=g.tempos||{},qm=g.queimou||{},todos=rod.every(m=>(m in tp)||qm[m]);
+    if((todos||el>=(g.esp||0)+5000)&&!L.mandou&&(g.host===state.uid||el>=(g.esp||0)+8000)){L.mandou=true;fUp(e,k,{fim:true});}
+  }
+  const et=fEtapa(k,g,el);if(et!==L.est){L.est=et;scheduleRender();}
+}
+setInterval(fTick,60);
+function fAcao(act,d,evn){
+  const k=d.k,J=F_JOGOS[k];if(act==='fRegras'){state.fRegras=state.fRegras===d.v?null:d.v;render();return;}
+  if(act==='fPronto'){state.fPronto=d.m;render();return;}
+  if(!evn||!J||!F_ORDEM.includes(k)||!iPode(evn))return;
+  const g=fGame(evn,k)||{},me=myMember(),rod=g.rod||[];
+  if(act==='fModo'){if(g.st==='jogo'||!J.um)return;const um=d.v==='1',li=Array.isArray(g.lista)&&g.lista.length?g.lista:(me?[me.id]:[]);fSet(evn,k,um?{um:true,lista:li}:{um:false});return;}
+  if(act==='fEntrar'){if(me)fSet(evn,k,{jog:{[state.uid]:me.id}});return;}
+  if(act==='fSair'){fSet(evn,k,{jog:{[state.uid]:null}});return;}
+  if(act==='fLista'){if(!g.um||g.st==='jogo')return;const li=Array.isArray(g.lista)?g.lista.slice():[],i=li.indexOf(d.m);if(i>=0)li.splice(i,1);else if(fPresentes(evn).includes(d.m))li.push(d.m);fSet(evn,k,{lista:li});return;}
+  if(act==='fLobby'){fUp(evn,k,{st:'lobby'});return;}
+  if(act==='fStart'){
+    const jog=fJog(evn,g);if(!(g.um||(g.jog&&g.jog[state.uid])))return toast('Sente na mesa primeiro.');
+    if(jog.length<J.min)return toast('Este jogo precisa de pelo menos '+J.min+' pessoas.');
+    state.fPronto=null;fUp(evn,k,{st:'jogo',n:(g.n||0)+1,at:Date.now(),host:state.uid,rod:jog,...fNovaRodada(evn,k,g,jog)});return;
+  }
+  if(g.st!=='jogo')return;
+  const L=fRel(evn,k,g),el=Date.now()-L.t;
+  if(act==='fVodEsc'&&k==='vod'&&!g.esc&&fPosso(g,g.alvo)){fUp(evn,k,{esc:d.v==='d'?'d':'v',sug:-1});return;}
+  if(act==='fVodSug'&&k==='vod'&&g.esc){const l=g.esc==='v'?F_VERDADES:F_DESAFIOS;fUp(evn,k,{sug:fSorteia(l.map((x,i)=>i).filter(i=>i!==g.sug))});return;}
+  if(act==='fBomPassa'&&k==='bom'&&!g.est&&fPosso(g,g.com)&&rod.includes(d.m)&&d.m!==g.com){fUp(evn,k,{com:d.m});return;}
+  if(act==='fCarExtra'&&k==='car'&&fPosso(g,d.de)&&(g.cartas||{})[d.de]&&g.cartas[d.de].v===13&&rod.includes(d.m)&&!(g.extra||{})[d.de]){fUp(evn,k,{['extra.'+d.de]:d.m});return;}
+  if(act==='fSinTap'&&k==='sin'&&!g.fim&&me&&rod.includes(me.id)&&!((me.id in (g.tempos||{}))||(g.queimou||{})[me.id])){
+    if(el<(g.esp||0))fUp(evn,k,{['queimou.'+me.id]:true});else fUp(evn,k,{['tempos.'+me.id]:Math.round(el-g.esp)});return;}
+  if(act==='fVoto'&&(k==='pro'||k==='mai')&&fPosso(g,d.de)&&rod.includes(d.de)&&!(d.de in (g.votos||{}))){
+    const val=k==='pro'?(rod.includes(d.v)?d.v:null):(d.v==='1'?1:0);if(val===null)return;state.fPronto=null;fUp(evn,k,{['votos.'+d.de]:val});return;}
+  if(act==='fRev'&&(k==='pro'||k==='mai')){fUp(evn,k,{rev:true});return;}
+  if(act==='fCheRegra'&&k==='che'&&fPosso(g,g.chefe)){fUp(evn,k,{regra:fSorteia(F_REGRAS_CHEFE.map((x,i)=>i).filter(i=>i!==g.regra))});return;}
+}
+
 function roomScreen(e){
   if(isOnline(e))return onlineScreen(e);
-  if(state.jogoP===e.id){if(iPode(e))return state.jogoQual==='cid'?cidScreen(e):state.jogoQual==='imp'?impScreen(e):jogosMenu(e);state.jogoP=null;}
+  if(state.jogoP===e.id){if(iPode(e)){const q=String(state.jogoQual||'');return q==='cid'?cidScreen(e):q==='imp'?impScreen(e):(q.startsWith('f:')&&F_ORDEM.includes(q.slice(2)))?fScreen(e,q.slice(2)):jogosMenu(e);}state.jogoP=null;}
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
   const jogo=isJogos(e)?trucoHTML(e):'';
@@ -2155,7 +2480,8 @@ app.addEventListener('click',async ev=>{
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
   if(act==='leave'){state.jogoP=null;state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
   if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
-  if(act==='jogoQual'){state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
+  if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
+  if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':(String(d.v).startsWith('f:')&&F_ORDEM.includes(String(d.v).slice(2)))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   /* A Cidade Dorme */
   if(act==='cEntrar'&&evn){if(iPode(evn))cEntrar(evn,true);return;}
   if(act==='cSair'&&evn){cEntrar(evn,false);return;}
@@ -2510,7 +2836,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113173454';
+const VER='20261113180342';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
