@@ -189,7 +189,7 @@ function genCode(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const u=new Uint32A
 
 /* regra de faltas, calculada sempre do zero a partir dos registros */
 function analyze(m){
-  const evs=state.events.filter(e=>getStatus(e)==='encerrado'&&(!m.since||e.date>=m.since)).sort((a,b)=>evTime(a)-evTime(b));
+  const evs=state.events.filter(e=>!isOnline(e)&&getStatus(e)==='encerrado'&&(!m.since||e.date>=m.since)).sort((a,b)=>evTime(a)-evTime(b));
   const cnt={};let until=0;const hist=[];
   for(const e of evs){
     const t=evTime(e);
@@ -329,7 +329,7 @@ const seatedAt=(eid,t)=>Object.values(state.checkins).filter(c=>c.eventId===eid&
 function onlineHTML(e){
   if(getStatus(e)!=='aberto')return '';
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
-  if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, entre como membro e confirme a sua presença neste evento.</p></div>';
+  if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, volte em Eventos e toque em Entrar na sala online.</p></div>';
   const t=tableOf(e,c);
   if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Toque em uma mesa para sentar e entrar na chamada dela.</p></div>';
   const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
@@ -353,7 +353,7 @@ function roomHTML(e){
   const st=getStatus(e),live=st==='aberto',th=themeOf(e);
   const inRoom=[],outside=[];
   state.members.concat(guestsOf(e)).forEach(m=>{(state.checkins[e.id+'_'+m.id]?inRoom:outside).push(m);});
-  const susp=m=>{const a=analyze(m);const h=a.hist.find(x=>x.e.id===e.id);return h?h.s==='suspenso':(st!=='encerrado'&&a.suspenso);};
+  const susp=m=>{if(isOnline(e))return false;const a=analyze(m);const h=a.hist.find(x=>x.e.id===e.id);return h?h.s==='suspenso':(st!=='encerrado'&&a.suspenso);};
   const mk=(m,cls,i)=>{
     const stage=cls==='in';
     let pos='';
@@ -388,15 +388,15 @@ function roomScreen(e){
   if(canManage(e)&&!readOnly()){
     let box='<div class="card"><h3>'+(isOnline(e)?'Controle do evento online':'QR code do líder')+'</h3>';
     if(st==='agendado')box+='<p class="muted small" style="margin:0">A sala abre sozinha no horário do evento. Se quiser, abra agora.</p><button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
-    if(st==='aberto'&&isOnline(e))box+='<p class="muted small" style="margin:0">Evento online: não precisa de QR code. Quem entra na sala já fica com presença.</p><button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar presença</button>';
+    if(st==='aberto'&&isOnline(e))box+='<p class="muted small" style="margin:0">Evento online é só para conversar: não tem QR code e não conta presença nem falta.</p><button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar sala</button>';
     else if(st==='aberto'){
       const link=state.rules.appLink||(location.origin+location.pathname);
       box+='<p class="muted small" style="margin:0">Mostre este QR code para o pessoal escanear. Quem escanear entra na sala.</p><div class="codebox" aria-label="Código do evento">'+esc(e.code||'------')+'</div>'+
         (link?'<div class="row" style="justify-content:center"><div class="qrwrap"><div id="qr" data-text="'+esc(link.replace(/#.*$/,'')+'#v-'+e.id+'-'+(e.code||''))+'"></div></div></div>':'<p class="muted small" style="margin:0">Para mostrar o QR code, o administrador precisa colar o link do app em Admin.</p>')+
         '<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar presença</button>';
     }
-    if(st==='encerrado')box+='<p class="muted small" style="margin:0">Presença encerrada. As faltas já foram contadas.</p>'+(adm()?'<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir presença</button>':'');
-    if(adm())box+='<p class="muted small" style="margin:0">Como administrador, toque em um bonequinho para marcar ou desmarcar a presença dele.</p>';
+    if(st==='encerrado')box+='<p class="muted small" style="margin:0">'+(isOnline(e)?'Sala encerrada.':'Presença encerrada. As faltas já foram contadas.')+'</p>'+(adm()?'<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">'+(isOnline(e)?'Reabrir sala':'Reabrir presença')+'</button>':'');
+    if(adm()&&!isOnline(e))box+='<p class="muted small" style="margin:0">Como administrador, toque em um bonequinho para marcar ou desmarcar a presença dele.</p>';
     if(adm()&&st!=='encerrado'){
       const gs=guestsOf(e);
       box+='<h3>Convidados deste evento</h3><p class="muted small" style="margin:0">Convidados entram só nesta sala, não contam faltas e são removidos sozinhos quando a presença é encerrada.</p>'+
@@ -404,7 +404,7 @@ function roomScreen(e){
         '<div class="row"><input class="grow" id="gn_'+esc(e.id)+'" placeholder="Nome do convidado" value="'+esc(val('gn_'+e.id))+'"><button class="btn primary" data-act="addGuest" data-e="'+esc(e.id)+'">Adicionar convidado</button></div>';
     }
     h+=box+'</div>';
-  }else h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
+  }else if(!isOnline(e))h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
   return h;
 }
 function faltasHTML(){
@@ -450,7 +450,7 @@ function eventosHTML(){
     else if(st==='aberto'&&me&&!present&&!isLeader(e)&&!readOnly())codeBox='<div class="small muted">Escaneie o QR code do líder com a câmera do celular. Se não conseguir, digite o código:</div><div class="row"><input id="code_'+esc(e.id)+'" class="grow" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="8" placeholder="Código de 6 letras" value="'+esc(val('code_'+e.id))+'"><button class="btn primary" data-act="validate" data-e="'+esc(e.id)+'">Validar</button></div>';
     return '<div class="item"><div class="row between"><h3>'+esc(e.title)+'</h3><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
       '<div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+' - '+esc(isOnline(e)?'online':(e.local||'local a definir'))+'</div>'+
-      '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?' - '+n+' de '+state.members.length+' presentes':'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?' - <b>você está presente</b>':'')+'</div>'+codeBox+
+      '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?(isOnline(e)?' - '+n+' na sala':' - '+n+' de '+state.members.length+' presentes'):'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?(isOnline(e)?' - <b>você está na sala</b>':' - <b>você está presente</b>'):'')+'</div>'+codeBox+
       (btns?'<div class="row">'+btns+'</div>':'')+'</div>';
   }).join('')+'</div>':'<div class="empty">Nenhum evento marcado ainda.</div>')+'</div>';
   return out;
@@ -523,7 +523,7 @@ function render(){
   if(state.room){
     const re=state.events.find(x=>x.id===state.room);
     const ok=re&&(canManage(re)||!!(myMember()&&state.checkins[re.id+'_'+myMember().id]));
-    if(!ok||(!canManage(re)&&getStatus(re)!=='aberto')){if(re&&ok)toast('A presença foi encerrada.');state.room=null;state.tab='eventos';}
+    if(!ok||(!canManage(re)&&getStatus(re)!=='aberto')){if(re&&ok)toast(isOnline(re)?'A sala foi encerrada.':'A presença foi encerrada.');state.room=null;state.tab='eventos';}
   }
   if(state.room){
     h+=roomScreen(state.events.find(x=>x.id===state.room));app.innerHTML=h;
@@ -711,8 +711,7 @@ app.addEventListener('click',async ev=>{
   if(act==='joinOnline'&&evn){
     const me=myMember();if(!me)return toast('Escolha quem você é primeiro.');
     if(getStatus(evn)!=='aberto')return toast('A sala deste evento não está aberta.');
-    const a=analyze(me);if(a.suspenso)return toast('Você está suspenso até '+fmtShort(a.until)+'.');
-    if(await w(()=>db.doc('checkins/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,at:Date.now(),by:'online'}),'Presença confirmada!')){state.room=evn.id;render();}
+    if(await w(()=>db.doc('checkins/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,at:Date.now(),by:'online'}),'Você entrou na sala.')){state.room=evn.id;render();}
     return;
   }
   if(act==='addGuest'&&evn){
@@ -872,7 +871,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112210322';
+const VER='20261112210553';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
