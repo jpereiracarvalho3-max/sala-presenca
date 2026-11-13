@@ -185,6 +185,10 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .placar2{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;text-align:center}
 .pt{display:flex;flex-direction:column;align-items:center;min-width:0}.pt .small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.pt b{font-size:30px;line-height:1.1;font-family:var(--font-head)}
 .px{font-family:var(--font-head);font-weight:700;font-size:20px;color:var(--muted)}
+.segredo{width:100%;min-height:190px;border-radius:18px;border:2px dashed var(--line);background:var(--soft);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.segredo b{font-family:var(--font-head);font-size:32px;line-height:1.15;text-align:center}
+.segredo.aberto{border-style:solid;border-color:var(--accent);background:#fff}
+.segredo.imp{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
 .tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:11px 16px;min-height:40px;touch-action:manipulation}
 .truco{background:linear-gradient(180deg,#FFFFFF,#F6FAF7)}
 .tmao{display:flex;justify-content:center;gap:10px;min-height:86px;align-items:center}
@@ -233,7 +237,7 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -806,8 +810,73 @@ function avatarHTML(){
     '<div><div class="small muted">Cor da roupa</div>'+sw('shirt',SHIRTS,SHIRT_N)+'</div>'+
     opt('Roupa','roupa',ROUPAS)+opt('Na mão','mao',MAOS)+opt('Na boca','boca',BOCAS)+opt('Óculos','oculos',OCULOS)+opt('Na cabeça','chapeu',CHAPEUS)+opt('Rosto','rosto',ROSTOS)+opt('Colar','colar',COLARES)+opt('Anel e pulso','anel',ANEIS)+'</div>';
 }
+/* ===================== JOGOS PRESENCIAIS: IMPOSTOR =====================
+   Todos os participantes recebem a mesma palavra no celular, menos o impostor (2 impostores a partir de 6 jogadores).
+   O jogo acontece na conversa; o app só mostra a palavra e, no fim, revela quem era o impostor. */
+const IMP_NOMES={lugar:'Lugar',comida:'Comida',bebida:'Bebida',objeto:'Objeto',animal:'Animal'};
+const IMP_TEMAS={
+  lugar:['Praia','Shopping','Aeroporto','Hospital','Escola','Cinema','Academia','Igreja','Estádio','Fazenda','Supermercado','Padaria','Farmácia','Boteco','Balada','Cemitério','Zoológico','Circo','Museu','Biblioteca','Delegacia','Posto de gasolina','Rodoviária','Barbearia','Feira','Parque de diversões','Cachoeira','Cartório','Lava-jato','Motel'],
+  comida:['Pizza','Feijoada','Churrasco','Pão de queijo','Coxinha','Brigadeiro','Lasanha','Hambúrguer','Sushi','Tapioca','Pastel','Açaí','Estrogonofe','Macarrão','Farofa','Torresmo','Cuscuz','Moqueca','Pamonha','Feijão tropeiro','Empada','Cachorro-quente','Batata frita','Panqueca','Sorvete','Pudim','Paçoca','Acarajé','Vaca atolada','Miojo'],
+  bebida:['Cerveja','Cachaça','Caipirinha','Vinho','Whisky','Vodca','Gin tônica','Tequila','Chope','Champanhe','Café','Refrigerante','Suco de laranja','Água de coco','Energético','Chá gelado','Leite','Guaraná','Batida de coco','Licor','Conhaque','Saquê','Quentão','Cerveja sem álcool','Vitamina','Milk-shake','Chimarrão','Limonada','Catuaba','Água com gás'],
+  objeto:['Celular','Chinelo','Guarda-chuva','Controle remoto','Escova de dentes','Geladeira','Cadeira de praia','Abridor de garrafa','Isopor','Churrasqueira','Violão','Baralho','Óculos escuros','Travesseiro','Carteira','Chave','Relógio','Ventilador','Micro-ondas','Mochila','Espelho','Tesoura','Caixa de som','Copo americano','Panela de pressão','Garrafa térmica','Rede de dormir','Capacete','Bola de futebol','Carregador'],
+  animal:['Cachorro','Gato','Galinha','Vaca','Cavalo','Porco','Macaco','Jacaré','Capivara','Onça','Papagaio','Tucano','Tartaruga','Cobra','Sapo','Tubarão','Baleia','Golfinho','Elefante','Girafa','Leão','Pinguim','Coruja','Morcego','Formiga','Abelha','Barata','Mosquito','Tatu','Bicho-preguiça']
+};
+const iGid=e=>e.id+'_imp';
+const iGame=e=>state.games[iGid(e)]||null;
+/* só joga quem está presente na sala presencial, com a presença aberta */
+const iPode=e=>{const me=myMember();return !!(me&&e&&!isOnline(e)&&getStatus(e)==='aberto'&&state.checkins[e.id+'_'+me.id]);};
+const iJog=(e,g)=>g&&g.jog?Object.keys(g.jog).filter(u=>g.jog[u]&&state.checkins[e.id+'_'+g.jog[u]]).map(u=>({uid:u,mid:g.jog[u]})):[];
+const iQtdImp=n=>n>=6?2:1;
+const iCod=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).split('').reverse().join('');
+const iDec=s=>{try{return JSON.parse(decodeURIComponent(escape(atob(String(s||'').split('').reverse().join('')))));}catch(e){return null;}};
+const iNome=mid=>(state.members.concat(state.guests).find(m=>m.id===mid)||{}).name||'?';
+function iSalvar(e,dados,msg){const gid=iGid(e),at=state.games[gid]||{};state.games[gid]={...at,...dados,jog:{...(at.jog||{}),...(dados.jog||{})}};render();return w(()=>db.doc('games/'+gid).set(dados,{merge:true}),msg);}
+function iComecar(e){
+  const g=iGame(e)||{},js=iJog(e,g),me=myMember();
+  if(!me||!(g.jog&&g.jog[state.uid]))return toast('Entre no jogo primeiro.');
+  if(js.length<3)return toast('O Impostor precisa de pelo menos 3 participantes.');
+  const tema=IMP_TEMAS[g.tema]?g.tema:'lugar',usadas=Array.isArray(g.usadas)?g.usadas:[];
+  let livres=IMP_TEMAS[tema].filter(p=>!usadas.includes(p));if(!livres.length)livres=IMP_TEMAS[tema].slice();
+  const u=new Uint32Array(js.length+1);crypto.getRandomValues(u);
+  const palavra=livres[u[0]%livres.length],ordem=js.map((x,i)=>({mid:x.mid,k:u[i+1]})).sort((a,b)=>a.k-b.k);
+  const imps=ordem.slice(0,iQtdImp(js.length)).map(x=>x.mid);
+  state.impVer=false;
+  return iSalvar(e,{status:'playing',tema,n:(g.n||0)+1,rod:js.map(x=>x.mid),seg:iCod({p:palavra,i:imps}),usadas:usadas.concat(palavra).slice(-40),at:Date.now()},'Rodada começou.');
+}
+function impScreen(e){
+  const g=iGame(e)||{},st=g.status||'lobby',js=iJog(e,g),me=myMember(),dentro=!!(g.jog&&g.jog[state.uid]),E=esc(e.id),tema=IMP_TEMAS[g.tema]?g.tema:'lugar';
+  if(g.n!==state.impN){state.impN=g.n;state.impVer=false;}
+  let h='<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div><div class="card"><div class="row between"><h2 style="margin:0">Impostor</h2>'+(st==='playing'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
+  if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
+  if(st==='playing'){
+    const rod=Array.isArray(g.rod)?g.rod:[],naRodada=!!me&&rod.includes(me.id),seg=iDec(g.seg)||{p:'?',i:[]},k=seg.i.length;
+    h+='<div class="small muted" style="text-align:center">Tema: <b>'+IMP_NOMES[tema]+'</b> · '+rod.length+' jogadores · '+k+(k===1?' impostor':' impostores')+'</div>';
+    if(naRodada){
+      const sou=seg.i.includes(me.id);
+      h+=state.impVer
+        ?'<button class="segredo aberto'+(sou?' imp':'')+'" data-act="iVer">'+(sou?'<span class="small">Você é o</span><b>IMPOSTOR</b><span class="small">Descubra a palavra sem se entregar</span>':'<span class="small">A palavra é</span><b>'+esc(seg.p)+'</b>')+'<span class="small muted">Toque para esconder</span></button>'
+        :'<button class="segredo" data-act="iVer"><b>Toque para ver</b><span class="small muted">Não deixe ninguém olhar o seu celular</span></button>';
+      h+='<button class="btn primary" data-act="iRevelar" data-e="'+E+'">Revelar o impostor</button><button class="tfim" data-act="iSair" data-e="'+E+'">Sair do jogo</button>';
+    }else{
+      h+='<div class="empty">Rodada em andamento.</div>'+(dentro?'<div class="small muted" style="text-align:center">Você entra na próxima rodada.</div><button class="tfim" data-act="iSair" data-e="'+E+'">Sair do jogo</button>':'<button class="btn primary" data-act="iEntrar" data-e="'+E+'">Participar da próxima rodada</button>');
+    }
+    return h+'</div>';
+  }
+  if(st==='revealed'){
+    const seg=iDec(g.seg)||{p:'?',i:[]};
+    h+='<div class="segredo aberto" style="cursor:default"><span class="small">A palavra era</span><b>'+esc(seg.p)+'</b><span class="small">'+(seg.i.length>1?'Os impostores eram':'O impostor era')+'</span><b style="color:var(--bad)">'+esc(seg.i.map(iNome).join(' e '))+'</b></div>';
+  }
+  h+='<div><div class="small muted">Tema da próxima rodada</div><div class="avrow">'+Object.keys(IMP_NOMES).map(t=>'<button class="stl" data-act="iTema" data-v="'+t+'" data-e="'+E+'" aria-pressed="'+(tema===t)+'">'+IMP_NOMES[t]+'</button>').join('')+'</div></div>';
+  h+='<div><div class="small muted">Participantes ('+js.length+')</div><div class="avrow">'+(js.length?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
+  h+=dentro
+    ?'<button class="btn primary" data-act="iComecar" data-e="'+E+'"'+(js.length>=3?'':' disabled')+'>'+(st==='revealed'?'Nova rodada':'Começar rodada')+'</button>'+(js.length<3?'<div class="small muted" style="text-align:center">Mínimo de 3 participantes</div>':'<div class="small muted" style="text-align:center">'+iQtdImp(js.length)+(iQtdImp(js.length)===1?' impostor':' impostores')+' nesta rodada</div>')+'<button class="tfim" data-act="iSair" data-e="'+E+'">Sair do jogo</button>'
+    :'<button class="btn primary" data-act="iEntrar" data-e="'+E+'">Participar</button>';
+  return h+'</div>';
+}
+
 function roomScreen(e){
   if(isOnline(e))return onlineScreen(e);
+  if(state.jogoP===e.id){if(iPode(e))return impScreen(e);state.jogoP=null;}
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
   const jogo=isJogos(e)?trucoHTML(e):'';
@@ -816,6 +885,7 @@ function roomScreen(e){
   /* com a partida rolando a tela fica só com o jogo e as reações; a sala volta quando a partida acaba */
   if(emJogo)return h+jogo+reactBar(e);
   h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+(jogo?jogo+roomHTML(e)+reactBar(e):roomHTML(e)+(isOnline(e)?onlineHTML(e)+reactBar(e):''));
+  if(iPode(e))h+='<button class="btn primary" data-act="jogosP" data-e="'+esc(e.id)+'">Jogos</button>';
   if(canManage(e)&&!readOnly()){
     const head0='<div class="card">'+(isOnline(e)?'':'<h3>QR code</h3>');let box=head0;
     if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
@@ -1114,7 +1184,15 @@ app.addEventListener('click',async ev=>{
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
-  if(act==='leave'){state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
+  if(act==='leave'){state.jogoP=null;state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
+  if(act==='jogosP'&&evn){state.jogoP=evn.id;state.impVer=false;render();window.scrollTo(0,0);return;}
+  if(act==='jogosPSair'){state.jogoP=null;state.impVer=false;render();return;}
+  if(act==='iEntrar'&&evn){const me=myMember();if(!me||!iPode(evn))return;iSalvar(evn,{jog:{[state.uid]:me.id}});return;}
+  if(act==='iSair'&&evn){state.impVer=false;iSalvar(evn,{jog:{[state.uid]:null}},'Você saiu do jogo.');return;}
+  if(act==='iTema'&&evn){if(!IMP_TEMAS[d.v]||(iGame(evn)||{}).status==='playing')return;iSalvar(evn,{tema:d.v});return;}
+  if(act==='iComecar'&&evn){iComecar(evn);return;}
+  if(act==='iVer'){state.impVer=!state.impVer;clearTimeout(state.impT);if(state.impVer)state.impT=setTimeout(()=>{state.impVer=false;scheduleRender();},7000);render();return;}
+  if(act==='iRevelar'&&evn){if(!state.draft['ir_'+evn.id]){state.draft['ir_'+evn.id]=1;el.textContent='Toque de novo para revelar';return;}delete state.draft['ir_'+evn.id];state.impVer=false;iSalvar(evn,{status:'revealed'});return;}
   if(act==='reactToggle'){state.reactOpen=!state.reactOpen;render();return;}
   if(act==='painel'){state.painel=d.v==='1'?1:0;render();return;}
   if(act==='enter'&&evn){
@@ -1399,7 +1477,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112231742';
+const VER='20261113092407';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
