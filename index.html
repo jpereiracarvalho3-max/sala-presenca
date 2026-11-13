@@ -326,14 +326,13 @@ function tablePos(i,n){
 }
 const tableOf=(e,c)=>(c&&Number.isInteger(c.table)&&c.table>=0&&c.table<mesasOf(e))?c.table:-1;
 const seatedAt=(eid,t)=>Object.values(state.checkins).filter(c=>c.eventId===eid&&c.table===t).map(c=>c.memberId).sort();
-function callLink(e,i){const own=(e.links||[])[i];return (typeof own==='string'&&/^https:\/\//.test(own))?own:'';}
 function onlineHTML(e){
   if(getStatus(e)!=='aberto')return '';
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
   if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, entre como membro e confirme a sua presença neste evento.</p></div>';
   const t=tableOf(e,c);
   if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Toque em uma mesa para sentar e entrar na chamada dela.</p></div>';
-  const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t,ext=callLink(e,t);
+  const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
   const rows=seatedAt(e.id,t).map(id=>{
     const nm=(all.find(m=>m.id===id)||{}).name;if(!nm)return '';
     const oc=state.checkins[e.id+'_'+id]||{},p=rtc.peers[id];
@@ -347,7 +346,6 @@ function onlineHTML(e){
   return '<div class="card"><h3>Mesa '+(t+1)+'</h3>'+rows+
     (inCall?'<div class="row"><button class="btn" data-act="callMute">'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'</button><button class="btn danger" data-act="callLeave">Sair da chamada</button></div>'
            :'<button class="btn primary" data-act="callJoin" data-e="'+esc(e.id)+'">Entrar na chamada de voz</button>')+
-    (ext?'<a class="btn" href="'+esc(ext)+'" target="_blank" rel="noopener">Abrir chamada externa</a>':'')+
     '<button class="btn" data-act="stand" data-e="'+esc(e.id)+'">Levantar da mesa</button>'+
     '<p class="muted small" style="margin:0">A chamada é só de voz e fica dentro do app. Quem sentar nesta mesa e entrar na chamada fala com todos da mesa. Mantenha esta tela aberta.</p></div>';
 }
@@ -430,8 +428,8 @@ function eventosHTML(){
        (adm()?'<label>Líder do evento<select id="ev_leader"><option value="">Escolha o líder</option>'+state.members.map(m=>'<option value="'+esc(m.id)+'"'+(val('ev_leader',ed.leaderId||(state.editing==='new'&&myMember()?myMember().id:''))===m.id?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></label>'
               :'<div class="small muted">Líder do evento: <b>'+esc(((state.members.find(m=>m.id===(ed.leaderId||(myMember()||{}).id))||{}).name)||'você')+'</b>'+(state.editing==='new'?' (quem cria o evento é o líder; o administrador pode trocar)':'')+'</div>')+
        '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
-       '<div class="grid2"><label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label><label>Mesas (só no online)<input id="ev_mesas" type="number" min="1" max="6" value="'+esc(val('ev_mesas',ed.mesas||3))+'"></label></div>'+
-       '<label>Links próprios das chamadas (opcional, só no online)<textarea id="ev_links" rows="2" placeholder="Não precisa preencher: a chamada de voz já funciona dentro do app. Se quiser oferecer também um link de fora (vídeo, por exemplo), cole um por linha, na ordem das mesas.">'+esc(val('ev_links',(ed.links||[]).join('\n')))+'</textarea></label>'+
+       '<label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label>'+
+       (val('ev_modo',ed.modo)==='online'?'<label>Quantas mesas na sala online<input id="ev_mesas" type="number" min="1" max="6" value="'+esc(val('ev_mesas',ed.mesas||3))+'"></label>':'')+
        '<div class="row"><button class="btn primary" data-act="saveEvent">Salvar</button><button class="btn" data-act="cancelEdit">Cancelar</button></div></div>';
     }else out+='<button class="btn primary" data-act="newEvent">Novo evento</button>';
   }
@@ -657,7 +655,7 @@ app.addEventListener('click',async ev=>{
   if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
   if(act==='saveEvent'){
     const g=id=>(document.getElementById(id)||{}).value||'';
-    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(6,parseInt(g('ev_mesas'),10)||3)),links:g('ev_links').split(/\s+/).filter(x=>/^https:\/\//.test(x)).slice(0,6)};
+    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(6,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3))};
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
     if(!adm()){const me=myMember();if(!me)return;if(state.editing==='new')data.leaderId=me.id;else delete data.leaderId;}
     else if(!data.leaderId)return toast('Escolha o líder do evento.');
@@ -745,6 +743,7 @@ function onField(ev){
   const t=ev.target;
   if(t.id&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))state.draft[t.id]=t.value;
   if(t.id==='evsel'&&ev.type==='change'){state.eventId=t.value;render();}
+  if(t.id==='ev_modo'&&ev.type==='change')render();
 }
 app.addEventListener('input',onField);app.addEventListener('change',onField);
 
