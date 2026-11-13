@@ -38,10 +38,29 @@ def hoje_sp(agora=None):
     return (agora - datetime.timedelta(hours=3)).strftime('%Y-%m-%d')
 
 
-def na_hora(o, hoje):
-    """O aviso já pode sair? (racha com data de cobrança só sai no dia)"""
+def na_hora(o, hoje, agora_ms=None):
+    """O aviso já pode sair? (racha com data de cobrança só sai no dia; lembrete de evento só no horário `em`)"""
     q = o.get('quando') or ''
-    return not q or q <= hoje
+    if q and q > hoje:
+        return False
+    em = o.get('em')
+    return not em or agora_ms is None or int(em) <= agora_ms
+
+
+def perdeu_a_hora(o, agora_ms):
+    """Aviso que não faz mais sentido enviar: lembrete com mais de 45 min de atraso, ou aviso comum com mais de 3 dias."""
+    if o.get('em'):
+        return agora_ms - int(o['em']) > 45 * 60000
+    return not o.get('quando') and agora_ms - int(o.get('at') or 0) > VELHO_MS
+
+
+def inicio_ms(ev):
+    """Início do evento (data e hora de Brasília) em milissegundos."""
+    try:
+        d = datetime.datetime.strptime(f"{ev.get('date')} {ev.get('time') or '00:00'}", '%Y-%m-%d %H:%M')
+    except ValueError:
+        return 0
+    return int((d + datetime.timedelta(hours=3)).replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
 
 
 def destinos(o, aprov, avatars):
@@ -101,14 +120,20 @@ def main():
     hoje = hoje_sp()
     prontos = []
     for o in fila:
-        if not na_hora(o, hoje):
+        if not na_hora(o, hoje, agora_ms):
             continue
-        if not o.get('quando') and agora_ms - int(o.get('at') or 0) > VELHO_MS:
+        if perdeu_a_hora(o, agora_ms):
             apagar('outbox/' + o['_id'])
             continue
+        if o.get('lembrete'):  # evento apagado ou remarcado depois de agendar: não avisa
+            r = requests.get(f"{DOCS}/events/{o.get('eventId')}", headers=h, timeout=30)
+            ev = doc(r.json()) if r.ok else None
+            if not ev or abs(inicio_ms(ev) - 32 * 60000 - int(o['em'])) > 60000:
+                apagar('outbox/' + o['_id'])
+                continue
         prontos.append(o)
     if not prontos:
-        print(f'::notice::Chave aceita. {len(fila)} aviso(s) aguardando a data.')
+        print(f'::notice::Chave aceita. {len(fila)} aviso(s) aguardando a hora.')
         return 0
 
     aprov = {a['_id']: a.get('memberId') for a in listar('approvals') if a.get('status') == 'aprovado'}

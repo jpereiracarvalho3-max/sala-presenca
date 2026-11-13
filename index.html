@@ -1214,6 +1214,26 @@ function avisar(para,titulo,corpo,eventId,quando,id,teste){
   if(!db)return;
   try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',teste:!!teste,at:Date.now()}).catch(()=>{});}catch(e){}
 }
+/* lembrete de evento presencial: quem criou o evento (ou o administrador) deixa na fila um aviso para cerca de 30 minutos antes do início.
+   Guarda neste aparelho o que já agendou; se a data ou a hora mudar, agenda de novo. */
+let lembT=null;
+function lembretesSync(){
+  clearTimeout(lembT);
+  lembT=setTimeout(async()=>{
+    if(!db||!state.uid||!(myMember()||state.isOwner))return;
+    let feito={};try{feito=JSON.parse(localStorage.getItem('lemb_'+state.uid)||'{}')||{};}catch(e){}
+    let mudou=false;
+    for(const e of state.events){
+      if(isOnline(e)||!(e.createdBy===state.uid||state.isOwner))continue;
+      const em=evTime(e)-32*60000,ch=e.date+'T'+(e.time||'')+'|'+(e.title||'')+'|'+(e.local||'');
+      if(!(em>Date.now())||feito[e.id]===ch)continue;
+      const ref=db.doc('outbox/l_'+e.id);
+      try{await ref.delete();}catch(x){}
+      try{await ref.set({uid:state.uid,para:'todos',titulo:String(e.title||'Evento').slice(0,80),corpo:'Começa às '+(e.time||'--:--')+(e.local?', em '+e.local:'')+'.',eventId:e.id,quando:'',em,lembrete:true,teste:true,at:Date.now()});feito[e.id]=ch;mudou=true;}catch(x){}
+    }
+    if(mudou){try{localStorage.setItem('lemb_'+state.uid,JSON.stringify(feito));}catch(e){}}
+  },5000);
+}
 /* antes do login, no celular: convida a instalar o app na tela inicial (assim o login fica guardado); dá para pular */
 let instalarEv=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();instalarEv=e;if(state.needLogin)scheduleRender();});
@@ -1274,6 +1294,8 @@ function eventosHTML(){
         '<label>Nome<input id="ch_nome" value="'+esc(val('ch_nome',eu?'Chamada de '+eu.name:'Chamada'))+'" maxlength="40"></label>'+
         '<label>Tipo de sala<select id="ch_sala"><option value="conversa">Conversa (mesas)</option><option value="jogos"'+(jogos?' selected':'')+'>Sala de jogos (truco mineiro)</option></select></label>'+
         (jogos?'':'<label>Quantas mesas (até 3)<input id="ch_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ch_mesas',3),10)||3))+'"></label>')+
+        (()=>{const eu=myMember(),outros=state.members.filter(m=>!eu||m.id!==eu.id),sel=state.chamarSel||(state.chamarSel=Object.fromEntries(outros.map(m=>[m.id,true]))),n=outros.filter(m=>sel[m.id]).length;
+          return '<div><div class="small muted">Quem recebe a notificação ('+n+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="chamarSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>';})()+
         '<div class="row"><button class="btn primary" data-act="criarChamada">Começar agora</button><button class="btn" data-act="cancelChamada">Cancelar</button></div></div>';
     }else out+='<div class="grid2"><button class="btn primary" data-act="newEvent">Novo evento</button><button class="btn" data-act="novaChamada">Chamada online</button></div>';
   }
@@ -1735,7 +1757,8 @@ app.addEventListener('click',async ev=>{
     return;
   }
   if(act==='newEvent'){state.chamada=false;state.editing='new';state.draft={};render();return;}
-  if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=true;state.draft={};render();return;}
+  if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=true;state.chamarSel=null;state.draft={};render();return;}
+  if(act==='chamarSel'){state.chamarSel=state.chamarSel||{};state.chamarSel[d.m]=!state.chamarSel[d.m];render();return;}
   if(act==='cancelChamada'){state.chamada=false;state.draft={};render();return;}
   if(act==='criarChamada'){
     const me=myMember();if(!me)return;
@@ -1745,7 +1768,10 @@ app.addEventListener('click',async ev=>{
     const data={title:(g('ch_nome').trim()||'Chamada de '+me.name).slice(0,40),date:todayStr(),time:hm(agora),fim:hm(fim),local:'',leaderId:me.id,tema:sala==='jogos'?'jantar':'festa',modo:'online',sala,mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ch_mesas'),10)||3)),chamada:true,code:genCode(),createdAt:Date.now(),createdBy:state.uid};
     const ck={eventId:id,memberId:me.id,at:Date.now(),by:'online'};
     state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.draft={};state.tab='eventos';state.room=id;state.painel=0;render();
-    w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');return;
+    w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');
+    {const outros=state.members.filter(m=>m.id!==me.id),cs=state.chamarSel,ids=cs?outros.filter(m=>cs[m.id]).map(m=>m.id):outros.map(m=>m.id);state.chamarSel=null;
+     if(ids.length)avisar(ids.length===outros.length?'todos':ids,data.title,me.name+' está te chamando para uma chamada online'+(sala==='jogos'?' com jogos':'')+'. Toque para entrar.',id);}
+    return;
   }
   if(act==='editEvent'){state.editing=d.e;state.draft={};render();return;}
   if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
@@ -1962,7 +1988,7 @@ async function refreshProfiles(){
 }
 function subscribe(){
   sub('members',db.collection('members'),s=>{const all=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name));state.members=all.filter(m=>!m.guestOf);state.guests=all.filter(m=>m.guestOf);});
-  sub('events',db.collection('events'),s=>{state.events=s.docs.map(d=>({id:d.id,...d.data()}));});
+  sub('events',db.collection('events'),s=>{state.events=s.docs.map(d=>({id:d.id,...d.data()}));lembretesSync();});
   sub('ctl',db.collection('ctl'),s=>{state.ctl=toMap(s);});
   sub('checkins',db.collection('checkins'),s=>{state.checkins=toMap(s);trackReacts();});
   sub('justifs',db.collection('justifs'),s=>{state.justifs=toMap(s);});
@@ -2001,7 +2027,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113141646';
+const VER='20261113142047';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
