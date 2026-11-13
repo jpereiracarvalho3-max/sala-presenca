@@ -3251,7 +3251,7 @@ app.addEventListener('click',async ev=>{
     else if(!data.leaderId)return toast('Escolha o líder do evento.');
     const editing=state.editing;
     state.editing=null;state.draft={};state.tab='eventos';render();
-    if(editing==='new'){const id='e'+Date.now().toString(36);w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now(),createdBy:state.uid}),'Evento criado.');}
+    if(editing==='new'){const id='e'+Date.now().toString(36);w(()=>db.doc('events/'+id).set({...data,code:genCode(),createdAt:Date.now(),createdBy:state.uid}),'Evento criado.').then(ok=>{if(ok)avisar('todos','Novo evento: '+data.title,fmtDay(data.date)+' às '+data.time+(data.local?', em '+data.local:'')+'. Toque para dizer se você vai.',id);});}
     else w(()=>db.doc('events/'+editing).update(data),'Evento atualizado.');
     return;
   }
@@ -3264,7 +3264,7 @@ app.addEventListener('click',async ev=>{
   if(act==='sendJ'&&evn){
     const me=myMember(),t=(document.getElementById('jt_'+evn.id)||{}).value||'';
     if(!me)return;if(t.trim().length<5)return toast('Explique o motivo em uma frase.');
-    if(await w(()=>db.doc('justifs/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,text:t.trim(),at:Date.now(),votes:{},decision:null}),'Pedido enviado.'))delete state.draft['jt_'+evn.id];
+    if(await w(()=>db.doc('justifs/'+evn.id+'_'+me.id).set({eventId:evn.id,memberId:me.id,text:t.trim(),at:Date.now(),votes:{},decision:null}),'Pedido enviado.')){delete state.draft['jt_'+evn.id];avisar('todos','Abono de falta',me.name+' pediu abono da falta em '+evn.title+'. Toque para votar.','');}
     return;
   }
   if(act==='vote'){await w(()=>db.doc('justifs/'+d.k).update({['votes.'+state.uid]:d.v}),'Voto registrado.');return;}
@@ -3502,7 +3502,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113193503';
+const VER='20261113193923';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
