@@ -1228,7 +1228,7 @@ function cLista(ids,sel,bloq){return '<div class="cidlista">'+ids.map(m=>'<butto
 function jogosTopo(e,qual){return '<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+(qual==='cid'?'A Cidade Dorme':'Impostor')+'</span></div>';}
 /* tela do botão Jogos: lista os jogos da sala presencial com as regras de cada um; a pessoa escolhe um e entra */
 function jogosMenu(e){
-  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span><span class="small muted">A partir de '+J.min+' pessoas'+(J.um===false?' · cada um no seu celular':J.um?' · dá para jogar em um celular só':'')+'</span></button>'+fRegrasHTML(k)+'</div>';};
+  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span><span class="small muted">A partir de '+J.min+' pessoas'+(J.um?' · quem está sem celular também joga':' · cada um no seu celular')+'</span></button>'+fRegrasHTML(k)+'</div>';};
   const gi=iGame(e)||{},gc=cGame(e)||{};
   return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>'+
     '<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
@@ -1341,15 +1341,15 @@ const F_JOGOS={
   vod:{nome:'Verdade ou desafio',min:2,um:true,desc:'A seta escolhe quem responde e quem pergunta. Quem recebe escolhe: verdade ou desafio.',
     regras:['Todos sentam na mesa. Alguém toca em Girar.','A ponta da seta aponta para quem recebe. A traseira da seta aponta para quem pergunta ou desafia.','Quem recebe escolhe Verdade ou Desafio.','Quem está na traseira faz a pergunta ou inventa o desafio. Sem ideia? Toque em Sortear uma sugestão.','Quem se recusar a responder ou a cumprir, bebe.']},
   bom:{nome:'Bomba',min:2,um:true,desc:'A bomba passa de mão em mão e estoura em um momento surpresa. Quem estiver com ela, bebe.',
-    regras:['A bomba começa com uma pessoa sorteada.','Quem está com a bomba toca no boneco de outra pessoa para passar.','Ela estoura em um tempo aleatório, que ninguém sabe.','Quem estiver com a bomba na hora, bebe.','Em um celular só: o celular é a bomba. Toque em quem vai receber e entregue o aparelho.']},
+    regras:['A bomba começa com uma pessoa sorteada.','Quem está com a bomba toca no boneco de outra pessoa para passar.','Ela estoura em um tempo aleatório, que ninguém sabe.','Quem estiver com a bomba na hora, bebe.','Quem está sem celular joga pelo celular de quem acendeu a bomba.']},
   car:{nome:'Carta mais baixa',min:2,um:true,desc:'Cada um recebe uma carta. A mais baixa bebe, e o rei manda mais alguém beber.',
     regras:['Alguém toca em Dar as cartas. Cada pessoa recebe uma carta virada para baixo.','As cartas viram todas ao mesmo tempo.','Quem tiver a carta mais baixa bebe. O ás é a mais baixa de todas. Empatou, bebem os dois.','Quem tirar um rei escolhe mais uma pessoa para beber junto.']},
   sin:{nome:'Sinal verde',min:2,um:false,desc:'Jogo de reflexo: a tela fica vermelha e, de repente, verde. O último a tocar bebe.',
     regras:['Este jogo precisa que cada um esteja no próprio celular.','Alguém toca em Começar. A tela de todos fica vermelha.','Em um momento surpresa ela fica verde. Toque o mais rápido que puder.','O mais lento bebe. Quem não tocar conta como o mais lento.','Quem tocar antes de ficar verde queimou a largada e bebe também.']},
   pro:{nome:'Quem é mais provável',min:3,um:true,desc:'Aparece uma frase e todos votam em quem mais combina com ela. O mais votado bebe.',
-    regras:['O app mostra uma frase, por exemplo "Quem é mais provável de dormir no meio do rolê?".','Cada um vota em uma pessoa da mesa. O voto é secreto até todos votarem.','Quando todos votaram, os votos aparecem.','O mais votado bebe. Empatou, bebem todos os empatados.','Em um celular só: o aparelho passa de mão em mão e cada um vota na sua vez.']},
+    regras:['O app mostra uma frase, por exemplo "Quem é mais provável de dormir no meio do rolê?".','Cada um vota em uma pessoa da mesa. O voto é secreto até todos votarem.','Quando todos votaram, os votos aparecem.','O mais votado bebe. Empatou, bebem todos os empatados.','Quem está sem celular vota pelo celular de quem começou a rodada, na sua vez e em segredo.']},
   mai:{nome:'Maioria manda',min:3,um:true,desc:'Duas opções, voto secreto. Quem ficar no lado com menos gente, bebe.',
-    regras:['O app mostra duas opções, por exemplo "Praia ou sítio?".','Cada um escolhe a sua em segredo.','Quando todos escolheram, aparece quem votou em quê.','O lado com menos votos bebe. Se empatar, todo mundo bebe. Se todos escolherem igual, ninguém bebe.','Em um celular só: o aparelho passa de mão em mão e cada um vota na sua vez.']},
+    regras:['O app mostra duas opções, por exemplo "Praia ou sítio?".','Cada um escolhe a sua em segredo.','Quando todos escolheram, aparece quem votou em quê.','O lado com menos votos bebe. Se empatar, todo mundo bebe. Se todos escolherem igual, ninguém bebe.','Quem está sem celular vota pelo celular de quem começou a rodada, na sua vez e em segredo.']},
   che:{nome:'Chefe da rodada',min:3,um:true,desc:'O app coroa um chefe, que cria uma regra para a mesa. Quem quebrar a regra, bebe.',
     regras:['O app sorteia uma pessoa, que ganha a coroa.','O chefe inventa uma regra para todos, ou toca em Sortear uma regra.','A regra vale até o próximo chefe ser sorteado.','Quem quebrar a regra bebe. O chefe é o juiz.']},
   imp:{nome:'Impostor',min:3,desc:'Todos recebem a mesma palavra, menos o impostor. Descubram quem é pela conversa.',
@@ -1362,8 +1362,12 @@ const fGid=(e,k)=>e.id+'_f'+k;
 const fGame=(e,k)=>state.games[fGid(e,k)]||null;
 const fM=mid=>state.members.concat(state.guests).find(m=>m.id===mid)||{id:mid,name:'?'};
 const fPresentes=e=>state.members.concat(guestsOf(e)).filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id);
-const fJog=(e,g)=>{if(!g)return [];const p=fPresentes(e);return g.um?(Array.isArray(g.lista)?g.lista:[]).filter(m=>p.includes(m)):iJog(e,g).map(x=>x.mid);};
-const fPosso=(g,mid)=>{const me=myMember();return !!(g&&(g.um||(me&&me.id===mid)));};
+/* joga quem sentou pelo próprio celular e também quem foi colocado na mesa por outra pessoa (está sem celular) */
+const fProprios=(e,g)=>iJog(e,g).map(x=>x.mid);
+const fJog=(e,g)=>{if(!g)return [];const p=fPresentes(e),pr=fProprios(e,g);return pr.concat((Array.isArray(g.lista)?g.lista:[]).filter(m=>p.includes(m)&&!pr.includes(m)));};
+const fSemCel=(g,mid)=>!Object.values((g&&g.jog)||{}).includes(mid);
+/* cada um age pelo próprio celular; quem está sem celular age pelo celular de quem começou a rodada */
+const fPosso=(g,mid)=>{const me=myMember();return !!(g&&((me&&me.id===mid)||(fSemCel(g,mid)&&g.host===state.uid)));};
 const fSorteia=a=>{const u=new Uint32Array(1);crypto.getRandomValues(u);return a[u[0]%a.length];};
 const fEmbaralha=a=>{const u=new Uint32Array(a.length);crypto.getRandomValues(u);return a.map((x,i)=>({x,k:u[i]})).sort((p,q)=>p.k-q.k).map(o=>o.x);};
 const fRnd=seed=>{let t=seed>>>0;return ()=>{t=(t+0x6D2B79F5)>>>0;let r=Math.imul(t^(t>>>15),1|t);r=(r+Math.imul(r^(r>>>7),61|r))^r;return ((r^(r>>>14))>>>0)/4294967296;};};
@@ -1423,26 +1427,26 @@ const fCartaTxt=c=>(['A','2','3','4','5','6','7','8','9','10','J','Q','K'][c.v-1
 function fVotoHTML(e,k,g,rod,opcoes){
   const me=myMember(),v=g.votos||{},nv=rod.filter(m=>m in v).length,E=esc(e.id);
   let quem=null;
-  if(g.um){const prox=rod.find(m=>!(m in v));if(prox){if(state.fPronto!==prox)return '<div class="fpassa">'+fig(fM(prox))+'<span class="small muted">Passe o celular para</span><b>'+esc(iNome(prox))+'</b><button class="btn primary" data-act="fPronto" data-m="'+esc(prox)+'">Sou eu, votar</button><span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';quem=prox;}}
-  else if(me&&rod.includes(me.id)&&!(me.id in v))quem=me.id;
-  if(!quem)return '<div class="empty">'+(me&&rod.includes(me.id)||g.um?'Voto registrado. ':'')+nv+' de '+rod.length+' já votaram.</div>'+(nv?'<button class="btn" data-act="fRev" data-e="'+E+'" data-k="'+k+'">Encerrar a votação agora</button>':'');
+  if(me&&rod.includes(me.id)&&!(me.id in v))quem=me.id;
+  else if(g.host===state.uid){const prox=rod.find(m=>!(m in v)&&fSemCel(g,m));if(prox){if(state.fPronto!==prox)return '<div class="fpassa">'+fig(fM(prox))+'<span class="small muted">Passe o celular para</span><b>'+esc(iNome(prox))+'</b><button class="btn primary" data-act="fPronto" data-m="'+esc(prox)+'">Sou eu, votar</button><span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';quem=prox;}}
+  if(!quem)return '<div class="empty">'+(me&&rod.includes(me.id)?'Voto registrado. ':'')+nv+' de '+rod.length+' já votaram.</div>'+(nv?'<button class="btn" data-act="fRev" data-e="'+E+'" data-k="'+k+'">Encerrar a votação agora</button>':'');
   return '<div class="cidvez"><b>'+esc(iNome(quem))+', escolha em segredo</b>'+opcoes(quem)+'<span class="small muted">'+nv+' de '+rod.length+' já votaram</span></div>';
 }
 /* ---------- tela de um jogo ---------- */
 function fScreen(e,k){
-  const J=F_JOGOS[k],g=fGame(e,k)||{},me=myMember(),E=esc(e.id),jog=fJog(e,g),dentro=g.um||!!(g.jog&&g.jog[state.uid]),attr=' data-e="'+E+'" data-k="'+k+'"';
+  const J=F_JOGOS[k],g=fGame(e,k)||{},me=myMember(),E=esc(e.id),jog=fJog(e,g),dentro=!!(g.jog&&g.jog[state.uid]),attr=' data-e="'+E+'" data-k="'+k+'"';
   let h='<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+J.nome+'</span></div><div class="card"><div class="row between"><h2 style="margin:0">'+J.nome+'</h2>'+(g.st==='jogo'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(g.st!=='jogo'){
     h+='<div class="small muted">'+J.desc+'</div>'+fRegrasHTML(k);
-    if(J.um)h+='<div class="seg2"><button data-act="fModo" data-v="0"'+attr+' aria-pressed="'+!g.um+'">Cada um no seu celular</button><button data-act="fModo" data-v="1"'+attr+' aria-pressed="'+!!g.um+'">Um celular só</button></div>';
     h+=jog.length?fMesa(e,k,jog,{centro:'<span class="small muted" style="text-align:center">'+jog.length+(jog.length===1?' na mesa':' na mesa')+'</span>'}):'<div class="empty">Ninguém sentou na mesa ainda.</div>';
-    if(g.um){
-      const pres=fPresentes(e),li=Array.isArray(g.lista)?g.lista:[];
-      h+='<div><div class="small muted">Toque em quem vai jogar ('+jog.length+')</div><div class="avrow">'+pres.map(m=>'<button class="stl" data-act="fLista"'+attr+' data-m="'+esc(m)+'" aria-pressed="'+li.includes(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div></div>';
-    }else h+=g.jog&&g.jog[state.uid]?'':'<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>';
+    if(!dentro)h+='<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>'+(J.um?'<div class="small muted" style="text-align:center">Está sem celular? Peça para alguém que já sentou colocar você na mesa.</div>':'');
+    else if(J.um){
+      const pr=fProprios(e,g),li=Array.isArray(g.lista)?g.lista:[],fora=fPresentes(e).filter(m=>!pr.includes(m));
+      if(fora.length)h+='<div class="item"><b>Alguém sem celular?</b><span class="small muted">Toque no nome para colocar na mesa. Essa pessoa joga pelo celular de quem começar a rodada.</span><div class="avrow">'+fora.map(m=>'<button class="stl" data-act="fLista"'+attr+' data-m="'+esc(m)+'" aria-pressed="'+li.includes(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div></div>';
+    }
     if(dentro)h+='<button class="btn primary" data-act="fStart"'+attr+(jog.length>=J.min?'':' disabled')+'>'+({cav:'Largar',rol:'Girar a roleta',vod:'Girar',bom:'Acender a bomba',car:'Dar as cartas',sin:'Começar',pro:'Sortear a frase',mai:'Sortear a pergunta',che:'Sortear o chefe'})[k]+'</button>'+(jog.length<J.min?'<div class="small muted" style="text-align:center">Mínimo de '+J.min+' pessoas</div>':'');
-    if(!g.um&&g.jog&&g.jog[state.uid])h+='<button class="tfim" data-act="fSair"'+attr+'>Sair da mesa</button>';
+    if(dentro)h+='<button class="tfim" data-act="fSair"'+attr+'>Sair da mesa</button>';
     return h+'</div>';
   }
   const rod=(Array.isArray(g.rod)?g.rod:[]),L=fRel(e,k,g),el=Date.now()-L.t,et=fEtapa(k,g,el);L.est=et;
@@ -1477,7 +1481,7 @@ function fScreen(e,k){
     if(g.est){h+=fMesa(e,k,rod,{marca:{[g.perdeu]:'alvo'},topo:{[g.perdeu]:'💥'},centro:'<div class="fbum">BUM!</div>'})+fBebe([g.perdeu])+denovo('Acender outra bomba');return h+'</div>';}
     const pode=fPosso(g,g.com),sem={[g.com]:1};
     h+=fMesa(e,k,rod,{act:pode?'fBomPassa':'',semAct:sem,marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'});
-    h+='<div class="cidfala">'+(pode?(g.um?'A bomba está com <b>'+esc(iNome(g.com))+'</b>. Toque em quem vai receber e passe o celular.':'<b>A bomba está com você!</b> Toque em alguém para passar.'):'A bomba está com <b>'+esc(iNome(g.com))+'</b>.')+'</div>';
+    h+='<div class="cidfala">'+(pode?(!(me&&me.id===g.com)?'A bomba está com <b>'+esc(iNome(g.com))+'</b>, que joga por este celular. Toque em quem vai receber.':'<b>A bomba está com você!</b> Toque em alguém para passar.'):'A bomba está com <b>'+esc(iNome(g.com))+'</b>.')+'</div>';
     return h+'</div>';
   }
   if(k==='car'){
@@ -1568,13 +1572,12 @@ function fAcao(act,d,evn){
   if(act==='fPronto'){state.fPronto=d.m;render();return;}
   if(!evn||!J||!F_ORDEM.includes(k)||!iPode(evn))return;
   const g=fGame(evn,k)||{},me=myMember(),rod=g.rod||[];
-  if(act==='fModo'){if(g.st==='jogo'||!J.um)return;const um=d.v==='1',li=Array.isArray(g.lista)&&g.lista.length?g.lista:(me?[me.id]:[]);fSet(evn,k,um?{um:true,lista:li}:{um:false});return;}
   if(act==='fEntrar'){if(me)fSet(evn,k,{jog:{[state.uid]:me.id}});return;}
   if(act==='fSair'){fSet(evn,k,{jog:{[state.uid]:null}});return;}
-  if(act==='fLista'){if(!g.um||g.st==='jogo')return;const li=Array.isArray(g.lista)?g.lista.slice():[],i=li.indexOf(d.m);if(i>=0)li.splice(i,1);else if(fPresentes(evn).includes(d.m))li.push(d.m);fSet(evn,k,{lista:li});return;}
+  if(act==='fLista'){if(!J.um||g.st==='jogo'||!(g.jog&&g.jog[state.uid]))return;const li=Array.isArray(g.lista)?g.lista.slice():[],i=li.indexOf(d.m);if(i>=0)li.splice(i,1);else if(fPresentes(evn).includes(d.m))li.push(d.m);fSet(evn,k,{lista:li});return;}
   if(act==='fLobby'){fUp(evn,k,{st:'lobby'});return;}
   if(act==='fStart'){
-    const jog=fJog(evn,g);if(!(g.um||(g.jog&&g.jog[state.uid])))return toast('Sente na mesa primeiro.');
+    const jog=fJog(evn,g);if(!(g.jog&&g.jog[state.uid]))return toast('Sente na mesa primeiro.');
     if(jog.length<J.min)return toast('Este jogo precisa de pelo menos '+J.min+' pessoas.');
     state.fPronto=null;fUp(evn,k,{st:'jogo',n:(g.n||0)+1,at:Date.now(),host:state.uid,rod:jog,...fNovaRodada(evn,k,g,jog)});return;
   }
@@ -2836,7 +2839,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113180707';
+const VER='20261113181355';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
