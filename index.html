@@ -2288,10 +2288,9 @@ function sorteioHTML(e){
   const q=stDoc(e),E=esc(e.id),me=myMember();
   if(!q){
     if(!canManage(e)||readOnly()||Date.now()>stFim(e))return '';
-    if(state.stNovo!==e.id)return '<button class="tfim" data-act="stNovo" data-e="'+E+'">Criar um sorteio (amigo oculto)</button>';
+    if(state.stNovo!==e.id)return '<button class="tfim" data-act="stNovo" data-e="'+E+'">Criar um sorteio neste evento</button>';
     const sel=state.stSel||(state.stSel=Object.fromEntries(state.members.map(m=>[m.id,(((state.avatars[avUid(m)]||{}).rsvp||{})[e.id])==='sim'||(me&&m.id===me.id)]))),n=state.members.filter(m=>sel[m.id]).length+rachaFora(val('st_fora','')).length;
     return '<div class="card"><h2 style="margin:0">Novo sorteio</h2><div class="item">'+
-      '<label>Nome do sorteio<input id="st_nome" maxlength="30" value="'+esc(val('st_nome','Amigo oculto'))+'"></label><div class="avrow">'+['Amigo oculto','Amigo bebida','Amigo chocolate'].map(t=>'<button class="stl" data-act="stNome" data-v="'+t+'">'+t+'</button>').join('')+'</div>'+
       '<label>Valor do presente (R$)<input id="st_valor" inputmode="decimal" placeholder="Ex.: 50,00" value="'+esc(val('st_valor',''))+'"></label>'+
       '<div><div class="small muted">Quem participa ('+n+')</div><div class="avrow">'+state.members.map(m=>'<button class="stl" data-act="stSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
       '<label>Pessoas de fora do grupo (opcional)<input id="st_fora" maxlength="200" placeholder="Nomes separados por vírgula" value="'+esc(val('st_fora',''))+'"></label><div class="small muted">Cada pessoa de fora recebe um link só dela para ver quem tirou e deixar as dicas.</div>'+
@@ -2299,7 +2298,7 @@ function sorteioHTML(e){
       '<div class="row"><button class="btn primary" data-act="stCriar" data-e="'+E+'"'+(n>=3?'':' disabled')+'>Sortear</button><button class="btn" data-act="stCancelar">Cancelar</button></div></div></div>';
   }
   const sou=stSou(q),dono=q.uid===state.uid||state.isOwner,nomes=(q.membros||[]).map(nomeDe).concat((q.fora||[]).map(f=>f.nome)),vi=stVi(q);
-  let h='<div class="card" id="cardSorteio"><div class="row between"><h2 style="margin:0">'+esc(q.titulo||'Sorteio')+'</h2>'+(q.valor?'<span class="chip info">'+brl(q.valor)+'</span>':'')+'</div>'+
+  let h='<div class="card" id="cardSorteio"><div class="row between"><h2 style="margin:0">Sorteio</h2>'+(q.valor?'<span class="chip info">até '+brl(q.valor)+'</span>':'')+'</div>'+
     '<div class="small muted">Sorteado por '+esc(q.nome||nomeDe(q.mid))+' · '+nomes.length+' participantes</div><div class="avrow" style="gap:6px">'+nomes.map(n=>'<span class="chip">'+esc(n)+'</span>').join('')+'</div>';
   if(sou){
     const t=stMao(e);
@@ -2315,14 +2314,14 @@ function sorteioHTML(e){
     h+='<label>'+(minha?'Editar o que você quer ganhar':'O que você quer ganhar?')+'<textarea id="st_dica" rows="2" maxlength="300" placeholder="Ex.: gosto de cerveja artesanal, uso M, não gosto de perfume">'+esc(val('st_dica',minha))+'</textarea></label><button class="btn" data-act="stDicaSalvar" data-e="'+E+'">Salvar o que eu quero ganhar</button>';
   }else h+='<div class="small muted">Você não está neste sorteio.</div>';
   if(dono){
-    if((q.fora||[]).length)h+='<div class="item"><b>Pessoas de fora</b><span class="small muted">Envie para cada uma o link dela. Só ela deve abrir.</span>'+(q.fora||[]).map(f=>'<div class="row between"><span>'+esc(f.nome)+'</span><button class="btn" data-act="stLink" data-k="'+esc(f.k)+'" data-n="'+esc(f.nome)+'" data-d="'+esc(q.titulo||'Sorteio')+'">Link</button></div>').join('')+'</div>';
+    if((q.fora||[]).length)h+='<div class="item"><b>Pessoas de fora</b><span class="small muted">Envie para cada uma o link dela. Só ela deve abrir.</span>'+(q.fora||[]).map(f=>'<div class="row between"><span>'+esc(f.nome)+'</span><button class="btn" data-act="stLink" data-k="'+esc(f.k)+'" data-n="'+esc(f.nome)+'" data-d="'+esc('sorteio do evento '+e.title)+'">Link</button></div>').join('')+'</div>';
     h+='<button class="tfim" data-act="stApagar" data-e="'+E+'">Apagar o sorteio</button>';
   }
   return h+'</div>';
 }
 /* página do link de quem é de fora */
 function amigoHTML(c){
-  let h='<div class="card"><h2 style="margin:0">'+esc(c.titulo||'Sorteio')+'</h2><div class="small muted">Olá, '+esc(c.nome||'')+'. '+esc(c.evento||'')+(c.valor?' · presente de até '+brl(c.valor):'')+'</div>';
+  let h='<div class="card"><h2 style="margin:0">Sorteio: '+esc(c.evento||'')+'</h2><div class="small muted">Olá, '+esc(c.nome||'')+'.'+(c.valor?' Presente de até '+brl(c.valor)+'.':'')+'</div>';
   h+=state.stVer==='link'
     ?'<button class="segredo aberto" data-act="stVer" data-e="link" style="min-height:130px"><span class="small">Você tirou</span><b>'+esc((c.tirou||{}).nome||'?')+'</b><span class="small muted">Toque para esconder</span></button><div class="item"><b>Dicas de '+esc((c.tirou||{}).nome||'')+'</b><span>'+(c.dicaDele?esc(c.dicaDele):'<span class="muted">Ainda não deixou dicas. Volte a este link mais tarde.</span>')+'</span></div>'
     :'<button class="segredo" data-act="stVer" data-e="link" style="min-height:130px"><b style="font-size:22px">Ver quem eu tirei</b><span class="small muted">Não deixe ninguém olhar o seu celular</span></button>';
@@ -2373,7 +2372,7 @@ function alertasLista(){
     if(r.uid===state.uid)for(const [mid,q] of Object.entries(r.partes||{}))if(parteSt(q)==='avisou')add(q.at||r.at,'🔔',parteNome(r,mid)+' disse que pagou '+brl(q.v)+'. Confirme no racha.',r.eventId,true);
     if(r.uid===state.uid){const dv=Object.keys(r.partes||{}).filter(m=>r.partes[m].st==='devendo');if(dv.length)add(r.at,'🧾',(r.desc||'Racha')+': falta'+(dv.length>1?'m ':' ')+dv.map(m=>parteNome(r,m)).join(', ')+' pagar.',r.eventId);}
   }
-  for(const x of state.events){const q=stDoc(x);if(q&&stSou(q)&&Date.now()<stFim(x)){if(!stVi(q))add(q.at,'🎁','Realize o seu sorteio: '+(q.titulo||'sorteio')+'.',x.id,true);else if(!stTemDica(q))add(q.at,'🎁','Escreva o que você quer ganhar no '+(q.titulo||'sorteio')+'.',x.id,true);}}
+  for(const x of state.events){const q=stDoc(x);if(q&&stSou(q)&&Date.now()<stFim(x)){if(!stVi(q))add(q.at,'🎁','Realize o seu sorteio.',x.id,true);else if(!stTemDica(q))add(q.at,'🎁','Escreva o que você quer ganhar no sorteio.',x.id,true);}}
   grupo='geral';
   for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&vouNo(p.eventId))add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
   for(const q of Object.values(state.feats.polls||{}))if(!q.tipo&&q.uid!==state.uid&&vouNo(q.eventId))add(q.at,'📊','Enquete: '+q.q,q.eventId);
@@ -2384,7 +2383,7 @@ function alertasHTML(){
   const v=state.alertasVistoAntes||0,me=myMember(),de14=Date.now()-14*864e5,ev=id=>state.events.find(x=>x.id===id&&!isOnline(x));
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
   const sts=state.events.filter(x=>{const q=stDoc(x);return q&&stSou(q)&&(!stVi(q)||!stTemDica(q))&&Date.now()<stFim(x);});
-  const stCard=sts.length?'<div class="card"><h2 style="margin:0">Sorteio</h2><div class="list" style="gap:8px">'+sts.map(x=>{const q=stDoc(x);return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(q.titulo||'Sorteio')+'</h3>'+(q.valor?'<span class="chip info">'+brl(q.valor)+'</span>':'')+'</div><div class="small muted">'+esc(x.title)+' · '+esc(fmtDay(x.date))+'</div>'+(stVi(q)?'':'<button class="btn primary" data-act="stIr" data-e="'+esc(x.id)+'">Realize o seu sorteio</button>')+(stTemDica(q)?'':'<label>O que você quer ganhar?<textarea id="st_dn_'+esc(x.id)+'" rows="2" maxlength="300" placeholder="Escreva dicas para quem tirou você">'+esc(val('st_dn_'+x.id,''))+'</textarea></label><button class="btn'+(stVi(q)?' primary':'')+'" data-act="stDicaSalvar" data-e="'+esc(x.id)+'" data-c="st_dn_'+esc(x.id)+'">Salvar o que eu quero ganhar</button>')+'</div>';}).join('')+'</div></div>':'';
+  const stCard=sts.length?'<div class="card"><h2 style="margin:0">Sorteio</h2><div class="list" style="gap:8px">'+sts.map(x=>{const q=stDoc(x);return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(x.title)+'</h3>'+(q.valor?'<span class="chip info">até '+brl(q.valor)+'</span>':'')+'</div><div class="small muted">Sorteio do evento · '+esc(fmtDay(x.date))+'</div>'+(stVi(q)?'':'<button class="btn primary" data-act="stIr" data-e="'+esc(x.id)+'">Realize o seu sorteio</button>')+(stTemDica(q)?'':'<label>O que você quer ganhar?<textarea id="st_dn_'+esc(x.id)+'" rows="2" maxlength="300" placeholder="Escreva dicas para quem tirou você">'+esc(val('st_dn_'+x.id,''))+'</textarea></label><button class="btn'+(stVi(q)?' primary':'')+'" data-act="stDicaSalvar" data-e="'+esc(x.id)+'" data-c="st_dn_'+esc(x.id)+'">Salvar o que eu quero ganhar</button>')+'</div>';}).join('')+'</div></div>':'';
   const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;if(r.aberto)return true;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
   const ge=[];
   for(const [id,q] of Object.entries(state.feats.polls||{}))if(!q.tipo&&ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
@@ -3066,9 +3065,8 @@ app.addEventListener('click',async ev=>{
   if(act==='stVer'){state.stVer=state.stVer===d.e?null:d.e;clearTimeout(state.stVerT);if(state.stVer)state.stVerT=setTimeout(()=>{state.stVer=null;scheduleRender();},10000);render();return;}
   if(act==='stDicaLink'){if(!state.convK||!state.conv||state.conv.tipo!=='amigo')return;const t=((document.getElementById('st_dica')||{}).value||'').trim().slice(0,300);delete state.draft.st_dica;
     db.doc('convites/'+state.convK).update({dica:t}).then(()=>{state.conv={...state.conv,dica:t};toast('Dicas salvas.');render();}).catch(()=>toast('Não consegui salvar. Confira a internet e tente de novo.'));return;}
-  if(act==='stNome'){state.draft.st_nome=d.v;render();return;}
   if(act==='stSel'){state.stSel=state.stSel||{};state.stSel[d.m]=!state.stSel[d.m];render();return;}
-  if(act==='stCancelar'){state.stNovo=null;state.stSel=null;['st_nome','st_valor','st_fora'].forEach(k=>delete state.draft[k]);render();return;}
+  if(act==='stCancelar'){state.stNovo=null;state.stSel=null;['st_valor','st_fora'].forEach(k=>delete state.draft[k]);render();return;}
   if(act==='stLink'){const url=convLinkDe(d.k);if(navigator.share){navigator.share({title:d.d,text:(d.n?d.n+', ':'')+'este é o seu link do '+d.d+'. Abra para ver quem você tirou. Não mostre para ninguém!',url}).catch(()=>{});}else copiar(url,'Link copiado. Envie só para '+(d.n||'a pessoa')+'.');return;}
   if(['stNovo','stCriar','stRevelar','stDicaSalvar','stApagar','stIr'].includes(act)&&evn){
     const q=stDoc(evn),me=myMember(),id=stId(evn),g=i=>((document.getElementById(i)||{}).value||'').trim();
@@ -3083,12 +3081,12 @@ app.addEventListener('click',async ev=>{
       if(todos.length<3)return toast('O sorteio precisa de pelo menos 3 pessoas.');
       /* sorteio em roda: embaralha e cada um tira o seguinte, assim ninguém tira a si mesmo */
       const u=new Uint32Array(todos.length);crypto.getRandomValues(u);const roda=todos.map((x,i)=>({x,k:u[i]})).sort((a,b)=>a.k-b.k).map(o=>o.x);
-      const valor=Math.round((parseFloat(g('st_valor').replace(/\./g,'').replace(',','.'))||parseFloat(g('st_valor').replace(',','.'))||0)*100)/100,titulo=g('st_nome').slice(0,30)||'Amigo oculto',exp=stFim(evn);
-      state.stNovo=null;state.stSel=null;['st_nome','st_valor','st_fora'].forEach(k=>delete state.draft[k]);
+      const valor=Math.round((parseFloat(g('st_valor').replace(/\./g,'').replace(',','.'))||parseFloat(g('st_valor').replace(',','.'))||0)*100)/100,titulo='Sorteio',exp=stFim(evn);
+      state.stNovo=null;state.stSel=null;['st_valor','st_fora'].forEach(k=>delete state.draft[k]);
       const grava=roda.map((x,i)=>{const t=roda[(i+1)%roda.length],tir={id:t.id,nome:t.nome,fora:t.fora};
         if(x.fora){const f=fora.find(y=>y.id===x.id);return db.doc('convites/'+f.k).set({tipo:'amigo',sid:id,pid:x.id,uid:state.uid,nome:x.nome,tirou:tir,titulo,valor,evento:evn.title,dica:'',dicaDele:'',st:'amigo',at:Date.now(),exp});}
         return db.doc('hands/'+id+'_'+avUid({id:x.id})).set({t:tir,at:Date.now()});});
-      w(()=>Promise.all(grava).then(()=>db.doc('polls/'+id).set({eventId:evn.id,tipo:'sorteio',uid:state.uid,mid:me.id,nome:meuNome(),titulo,q:titulo,ops:[],valor,membros:mids,fora,votos:{},at:Date.now()})),'Sorteio feito. Cada um já pode ver quem tirou.').then(ok=>{if(ok)avisar(mids,titulo+': '+evn.title,'O sorteio saiu. Toque para ver quem você tirou.',evn.id);});
+      w(()=>Promise.all(grava).then(()=>db.doc('polls/'+id).set({eventId:evn.id,tipo:'sorteio',uid:state.uid,mid:me.id,nome:meuNome(),titulo,q:titulo,ops:[],valor,membros:mids,fora,votos:{},at:Date.now()})),'Sorteio feito. Cada um já pode ver quem tirou.').then(ok=>{if(ok)avisar(mids,'Sorteio: '+evn.title,'O sorteio saiu. Toque para ver quem você tirou.',evn.id);});
       return;
     }
     if(!q)return;
@@ -3504,7 +3502,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113193057';
+const VER='20261113193503';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
