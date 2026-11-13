@@ -871,6 +871,18 @@ function boot(){
     let sig='';setInterval(()=>{const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;scheduleRender();}},30000);
   });
 }
+/* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
+const VER='20261112210322';
+async function checkVer(){
+  try{
+    const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const nv=(await r.text()).trim();
+    if(!nv||nv===VER||state.room||rtc.on||state.editing)return;
+    if(new URLSearchParams(location.search).get('v')===nv)return;
+    location.replace(location.pathname+'?v='+encodeURIComponent(nv)+location.hash);
+  }catch(e){}
+}
+checkVer();setInterval(checkVer,120000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkVer();});
 boot();
 })();
 </script>
