@@ -1289,10 +1289,10 @@ function jogosTopo(e,qual){return '<div class="row between"><button class="btn" 
 /* tela do botão Jogos: lista os jogos da sala presencial com as regras de cada um; a pessoa escolhe um e entra */
 function jogosMenu(e){
   const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span></button>'+fReqHTML(k,e)+fRegrasHTML(k)+'</div>';};
-  const gi=iGame(e)||{},gc=cGame(e)||{};
-  return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>'+
-    '<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">'+(isOnline(e)?'Para a mesa da chamada: joga quem está sentado nela, cada um no seu celular. Quem perde, bebe.':'Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.')+'</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
-    '<div class="card"><h2 style="margin:0">Jogos de conversa</h2>'+cartao('imp','imp',gi.status==='playing',iJog(e,gi).length)+cartao('cid','cid',gc.status==='jogo',iJog(e,gc).length)+'</div>'+(isOnline(e)?'<div class="card"><h2 style="margin:0">Jogos de mesa</h2><span class="small muted">Só na chamada online. Cada um joga no próprio celular.</span>'+F_MESA.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+cartao('tru','tru',(tGame(e)||{}).status==='playing',0)+'</div>':'');
+  const gi=iGame(e)||{},gc=cGame(e)||{},topo='<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>';
+  if(isOnline(e))return topo+'<div class="card"><h2 style="margin:0">Jogos da chamada</h2><span class="small muted">Joga quem está sentado nesta mesa, cada um no seu celular. A ligação continua durante o jogo.</span>'+F_MESA.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+cartao('tru','tru',(tGame(e)||{}).status==='playing',0)+'</div>';
+  return topo+'<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
+    '<div class="card"><h2 style="margin:0">Jogos de conversa</h2>'+cartao('imp','imp',gi.status==='playing',iJog(e,gi).length)+cartao('cid','cid',gc.status==='jogo',iJog(e,gc).length)+'</div>';
 }
 
 function cidScreen(e){
@@ -1436,7 +1436,8 @@ const fReq=k=>{const J=F_JOGOS[k];return !J.um?'Um celular por pessoa':J.lim?'At
 const fReqHTML=(k,e)=>{const on=!!(e&&isOnline(e)),J=F_JOGOS[k];return '<div class="avrow" style="gap:6px;margin:4px 0 2px"><span class="chip">'+(J.max?(J.max===J.min?J.min+' pessoas':'De '+J.min+' a '+J.max+' pessoas'):J.min+'+ pessoas')+'</span><span class="chip'+(on||F_JOGOS[k].um?' info':' warn')+'">'+(on?(k==='tru'?'2 ou 4 nesta mesa':'Só quem está nesta mesa'):fReq(k))+'</span></div>';};
 const fGid=(e,k)=>jEsc(e)+'_f'+k;
 const fGame=(e,k)=>state.games[fGid(e,k)]||null;
-const fValido=(e,k)=>F_ORDEM.includes(k)||(F_MESA.includes(k)&&!!e&&isOnline(e));
+/* cada sala tem os seus jogos: na presencial os de shot e de conversa; na chamada online só os de mesa */
+const fValido=(e,k)=>!!e&&(isOnline(e)?F_MESA.includes(k):F_ORDEM.includes(k));
 const fM=mid=>state.members.concat(state.guests).find(m=>m.id===mid)||{id:mid,name:'?'};
 const fPresentes=e=>state.members.concat(guestsOf(e)).filter(m=>jNaSala(e,m.id)).map(m=>m.id);
 /* joga quem sentou pelo próprio celular e também quem foi colocado na mesa por outra pessoa (está sem celular) */
@@ -2008,7 +2009,7 @@ function roomScreen(e){
   if(state.jogoP===e.id){
     if(iPode(e)){
       const q=String(state.jogoQual||''),on=isOnline(e);
-      const tela=q==='cid'?cidScreen(e):q==='imp'?impScreen(e):(q==='tru'&&on)?truScreen(e):(q.startsWith('f:')&&fValido(e,q.slice(2)))?fScreen(e,q.slice(2)):jogosMenu(e);
+      const tela=(q==='cid'&&!on)?cidScreen(e):(q==='imp'&&!on)?impScreen(e):(q==='tru'&&on)?truScreen(e):(q.startsWith('f:')&&fValido(e,q.slice(2)))?fScreen(e,q.slice(2)):jogosMenu(e);
       /* na chamada o microfone continua à mão enquanto a mesa joga */
       return on?'<div class="row between" style="flex-wrap:nowrap"><span class="small muted">'+esc(mesaNome(e,jMesa(e)))+' · a ligação continua</span><span class="row">'+micBtn(e,jMesa(e))+'</span></div>'+tela:tela;
     }
@@ -2899,7 +2900,7 @@ app.addEventListener('click',async ev=>{
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
   if(act==='leave'){state.jogoP=null;state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
-  if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
+  if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=!isOnline(evn)&&cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
   if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.fAdd=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':d.v==='tru'?'tru':(String(d.v).startsWith('f:')&&(F_ORDEM.includes(String(d.v).slice(2))||F_MESA.includes(String(d.v).slice(2))))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   /* A Cidade Dorme */
@@ -3254,7 +3255,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113185537';
+const VER='20261113190120';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
