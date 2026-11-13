@@ -375,6 +375,14 @@ const fmtDay=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'sho
 const fmtShort=t=>new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
 const endTime=e=>{if(!e.fim)return null;let t=new Date(e.date+'T'+e.fim+':00').getTime();if(!(t>evTime(e)))t+=864e5;return t;};
 /* o evento abre no horário de início e encerra sozinho no horário de término; o administrador pode encerrar antes ou reabrir depois */
+/* ao entrar na sala: na chamada online todo mundo fica presente; no evento presencial o líder ganha a presença sozinho,
+   mas só a partir do horário marcado (abrir a sala antes da hora não dá presença adiantada: ela entra quando o evento começar) */
+function entraPresente(evn){
+  const me=myMember();if(!me||!evn||readOnly()||getStatus(evn)!=='aberto'||state.checkins[evn.id+'_'+me.id])return;
+  if(!isOnline(evn)&&!(isLeader(evn)&&Date.now()>=evTime(evn)&&!analyze(me).suspenso))return;
+  const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),by:isOnline(evn)?'online':'leader'};
+  state.checkins[key]=data;w(()=>db.doc('checkins/'+key).set(data));scheduleRender();
+}
 const getStatus=e=>{
   const c=state.ctl[e.id]||{},now=Date.now(),end=endTime(e);
   if(c.status==='encerrado')return 'encerrado';
@@ -1899,11 +1907,7 @@ app.addEventListener('click',async ev=>{
   if(act==='reactToggle'){state.reactOpen=!state.reactOpen;render();return;}
   if(act==='painel'){state.painel=d.v==='1'?1:0;render();return;}
   if(act==='enter'&&evn){
-    const me=myMember();
-    if(me&&getStatus(evn)==='aberto'&&(isOnline(evn)||isLeader(evn))&&!readOnly()&&!state.checkins[evn.id+'_'+me.id]&&(isOnline(evn)||!analyze(me).suspenso)){
-      const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),by:isOnline(evn)?'online':'leader'};
-      state.checkins[key]=data;w(()=>db.doc('checkins/'+key).set(data));
-    }
+    entraPresente(evn);
     state.room=evn.id;render();return;
   }
   if(act==='joinMe'){state.skipClaim=false;render();return;}
@@ -2210,11 +2214,11 @@ function boot(){
     }catch(e){}
     try{if(localStorage.getItem('presenca_adm')==='0')state.adminOn=false;}catch(e){}
     subscribe();
-    let sig='';setInterval(()=>{const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;sweepGuests();rtcSync();scheduleRender();}else if(state.tab==='eventos'&&!state.room&&!state.editing&&Date.now()-(state.cdAt||0)>55000){state.cdAt=Date.now();scheduleRender();}},15000);
+    let sig='';setInterval(()=>{if(state.room){const er=state.events.find(x=>x.id===state.room);if(er&&!isOnline(er))entraPresente(er);}const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;sweepGuests();rtcSync();scheduleRender();}else if(state.tab==='eventos'&&!state.room&&!state.editing&&Date.now()-(state.cdAt||0)>55000){state.cdAt=Date.now();scheduleRender();}},15000);
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113155845';
+const VER='20261113160949';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
