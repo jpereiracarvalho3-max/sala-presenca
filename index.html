@@ -215,7 +215,9 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 /* faixa do relógio do celular: o conteúdo que rola não passa por baixo dela */
 body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:70;pointer-events:none}
 .chat-topo{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:0 4px}
-.chat-l{display:flex;flex-direction:column;gap:3px;min-height:calc(100dvh - 300px);justify-content:flex-end;padding:4px 0}
+.chat-l{display:flex;flex-direction:column;gap:3px;min-height:140px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 2px}
+.chat-l>:first-child{margin-top:auto}
+html.so-chat,html.so-chat body{overflow:hidden;overscroll-behavior:none}
 .chat-ln{display:flex;align-items:flex-end;gap:6px}
 .chat-ln.pri{margin-top:9px}
 .chat-ln.meu{justify-content:flex-end}
@@ -239,8 +241,8 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 .chat-onda.toc i{background:var(--accent);animation:chatOnda .6s ease-in-out infinite alternate}
 .chat-onda.toc i:nth-child(2n){animation-delay:.15s}.chat-onda.toc i:nth-child(3n){animation-delay:.3s}
 @keyframes chatOnda{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
-.chat-esp{height:72px}
-.chat-enqs{position:sticky;top:0;z-index:20;background:#15110E;display:flex;flex-direction:column;gap:6px;padding:6px 0 8px;max-height:70dvh;overflow-y:auto}
+.chat-esp{height:0}
+.chat-enqs{position:sticky;top:0;z-index:20;background:#15110E;display:flex;flex-direction:column;gap:6px;padding:6px 0 8px;max-height:45dvh;overflow-y:auto}
 .chat-enq{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);padding:9px 12px;font-weight:600;cursor:pointer;touch-action:manipulation}
 .chat-enq.ab{border-color:var(--accent)}
 .chat-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(760px,100%);display:flex;gap:8px;align-items:center;padding:8px 10px;background:#15110E;z-index:59}
@@ -2402,7 +2404,18 @@ const chatVisto=()=>{try{return +localStorage.getItem('chat_'+state.uid)||0;}cat
 const chatViu=()=>{try{localStorage.setItem('chat_'+state.uid,String(Date.now()));}catch(e){}};
 const chatNovas=()=>{if(state.tab==='chat'&&!state.room)return 0;const v=chatVisto();return chatMsgs().filter(m=>m.uid!==state.uid&&m.at>v).length;};
 const hora=ms=>{const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes());};
-const chatFim=()=>{try{window.scrollTo(0,document.documentElement.scrollHeight);}catch(e){}};
+/* no chat só a lista de mensagens rola: o título, as enquetes e a barra de escrever ficam parados.
+   A altura da lista é o espaço entre o que está acima dela e a barra de escrever. */
+let chatPos={fim:true,top:0};
+function chatAjusta(){
+  const no=state.tab==='chat'&&!state.room&&!state.needLogin;document.documentElement.classList.toggle('so-chat',!!no);
+  const el=document.getElementById('chatLista'),bar=document.querySelector('.chat-bar');if(!no||!el||!bar)return;
+  try{window.scrollTo(0,0);const h=bar.getBoundingClientRect().top-el.getBoundingClientRect().top-6;el.style.height=Math.max(140,h)+'px';el.scrollTop=chatPos.fim?el.scrollHeight:chatPos.top;}catch(e){}
+}
+const chatFim=()=>{chatPos.fim=true;chatAjusta();};
+document.addEventListener('scroll',ev=>{const t=ev.target;if(t&&t.id==='chatLista')chatPos={fim:t.scrollHeight-t.scrollTop-t.clientHeight<40,top:t.scrollTop};},true);
+window.addEventListener('resize',()=>chatAjusta());
+try{if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>chatAjusta());}catch(e){}
 const CHAT_CORES=['#F5A623','#7ED6A5','#7FB8FF','#FF9E9E','#D7A6FF','#FFD36E','#6EE0E0','#FFAD7A'];
 const chatCor=id=>CHAT_CORES[(hash(String(id||'x'))>>>0)%CHAT_CORES.length];
 let chatJaVi={};
@@ -2436,13 +2449,13 @@ function chatHTML(){
   /* cada enquete vira uma faixa presa no topo do chat; tocar abre para votar e ver o resultado */
   const faixa=q=>{const n=Object.values(q.votos||{}).filter(v=>Number.isInteger(v)).length,ab=state.chatEnqAb===q.id,votei=Number.isInteger((q.votos||{})[state.uid]);
     return '<button class="chat-enq'+(ab?' ab':'')+'" data-act="chatEnqAbre" data-id="'+esc(q.id)+'" aria-expanded="'+ab+'"><span class="grow" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left">📊 '+esc(q.q)+'</span><span class="chip'+(votei?' ok':' warn')+'" style="flex-shrink:0">'+(votei?n+(n===1?' voto':' votos'):'votar')+'</span></button>'+(ab?enqCard(q):'');};
-  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted" style="flex:1">somem em 2 horas</span>'+(myMember()&&!state.chatEnq?'<button class="chip" data-act="chatEnq" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Enquete</button>':'')+'</div>'+(enqForm||enqs.length?'<div class="chat-enqs">'+enqForm+enqs.map(faixa).join('')+'</div>':'')+'<div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
+  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted" style="flex:1;white-space:nowrap">some em 2 h</span>'+(myMember()&&!state.chatEnq?'<button class="chip" data-act="chatEnq" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Enquete</button>':'')+'</div>'+(enqForm||enqs.length?'<div class="chat-enqs">'+enqForm+enqs.map(faixa).join('')+'</div>':'')+'<div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
     '<div class="chat-bar'+(tem?' tem':'')+'">'+(state.chatGrav
       ?'<button class="chat-b" data-act="chatGravCancel" aria-label="Cancelar gravação">'+LIXO+'</button><span class="chat-rec"><span class="chat-pt"></span>Gravando <b id="chatSeg">0</b>s</span><button class="chat-b env" data-act="chatGravEnviar" aria-label="Enviar áudio">'+ENV+'</button>'
       :'<input id="chat_txt" maxlength="300" placeholder="Mensagem" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" value="'+esc(val('chat_txt',''))+'"><button class="chat-b env so-mic" data-act="chatGravar" aria-label="Gravar áudio">'+MIC+'</button><button class="chat-b env so-env" data-act="chatEnviar" aria-label="Enviar mensagem">'+ENV+'</button>')+'</div>';
 }
 /* atualiza só a lista (sem redesenhar a tela inteira, para não fechar o teclado de quem está digitando) */
-function chatPinta(rola){const el=document.getElementById('chatLista');if(!el||state.tab!=='chat'||state.room)return false;el.innerHTML=chatListaHTML();if(rola)chatFim();chatViu();return true;}
+function chatPinta(rola){const el=document.getElementById('chatLista');if(!el||state.tab!=='chat'||state.room)return false;el.innerHTML=chatListaHTML();if(rola)chatFim();else chatAjusta();chatViu();return true;}
 function chatGrava(dados,audio){
   const id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),me=myMember(),at=Date.now();
   const comeca=!chatMsgs().some(m=>m.at>at-30*60000);
@@ -2862,6 +2875,7 @@ function render(){
   if(window.QRCode)app.querySelectorAll('.qrpix').forEach(el=>{try{new QRCode(el,{text:el.dataset.text,width:168,height:168,correctLevel:QRCode.CorrectLevel.M});}catch(e){el.textContent='Use o botão de copiar.';}});
   const q=document.getElementById('qr');
   if(q&&window.QRCode){try{new QRCode(q,{text:q.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q.textContent='Não foi possível gerar o QR code.';}}
+  chatAjusta();
   autoValidate();
 }
 let pressing=false,pressT=null;
@@ -3506,7 +3520,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113194533';
+const VER='20261113194728';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
