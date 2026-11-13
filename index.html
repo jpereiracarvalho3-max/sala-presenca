@@ -180,7 +180,7 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 #app:has(.tabs){padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 #toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .item.ev{--evc:#F5A623;border-left:5px solid var(--evc)}
-.evt-festa{--evc:#9B6BFF}.evt-cinema{--evc:#E5484D}.evt-jantar{--evc:#E0A458}.evt-churrasco{--evc:#4CC38A}.evt-online{--evc:#5AA9FF}
+.item.ev.evt-festa{--evc:#9B6BFF}.item.ev.evt-cinema{--evc:#E5484D}.item.ev.evt-jantar{--evc:#E0A458}.item.ev.evt-churrasco{--evc:#4CC38A}.item.ev.evt-online{--evc:#5AA9FF}
 .item.ev.fim{opacity:.72}
 .evtop{display:flex;gap:12px;align-items:center}
 .evdata{flex:none;width:54px;height:58px;border-radius:12px;background:var(--evc);color:#1B1206;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
@@ -285,7 +285,7 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={conqSel:null,evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={chamada:false,conqSel:null,evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -1010,14 +1010,32 @@ function eventosHTML(){
        (adm()?'<label>Líder do evento<select id="ev_leader"><option value="">Escolha o líder</option>'+state.members.map(m=>'<option value="'+esc(m.id)+'"'+(val('ev_leader',ed.leaderId||(state.editing==='new'&&myMember()?myMember().id:''))===m.id?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></label>'
               :'<div class="small muted">Líder do evento: <b>'+esc(((state.members.find(m=>m.id===(ed.leaderId||(myMember()||{}).id))||{}).name)||'você')+'</b>'+(state.editing==='new'?' (quem cria o evento é o líder; o administrador pode trocar)':'')+'</div>')+
        '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
-       '<label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label>'+
-       (val('ev_modo',ed.modo)==='online'?'<label>Sala online<select id="ev_sala"><option value="conversa">Conversa (mesas)</option><option value="jogos"'+(val('ev_sala',ed.sala)==='jogos'?' selected':'')+'>Sala de jogos (truco mineiro)</option></select></label>'+(val('ev_sala',ed.sala)==='jogos'?'':'<label>Quantas mesas na sala online (até 3)<input id="ev_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ev_mesas',ed.mesas||3),10)||3))+'"></label>'):'')+
        '<div class="row"><button class="btn primary" data-act="saveEvent">Salvar</button><button class="btn" data-act="cancelEdit">Cancelar</button></div></div>';
-    }else out+='<button class="btn primary" data-act="newEvent">Novo evento</button>';
+    }else if(state.chamada){
+      const eu=myMember(),jogos=val('ch_sala','conversa')==='jogos';
+      out+='<div class="card"><h2>Chamada online</h2>'+
+        '<label>Nome<input id="ch_nome" value="'+esc(val('ch_nome',eu?'Chamada de '+eu.name:'Chamada'))+'" maxlength="40"></label>'+
+        '<label>Tipo de sala<select id="ch_sala"><option value="conversa">Conversa (mesas)</option><option value="jogos"'+(jogos?' selected':'')+'>Sala de jogos (truco mineiro)</option></select></label>'+
+        (jogos?'':'<label>Quantas mesas (até 3)<input id="ch_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ch_mesas',3),10)||3))+'"></label>')+
+        '<div class="row"><button class="btn primary" data-act="criarChamada">Começar agora</button><button class="btn" data-act="cancelChamada">Cancelar</button></div></div>';
+    }else out+='<div class="grid2"><button class="btn primary" data-act="newEvent">Novo evento</button><button class="btn" data-act="novaChamada">Chamada online</button></div>';
   }
   const me=myMember();
+  /* chamadas online: ficam à parte dos eventos, não contam presença e somem quando encerradas */
+  const chamadas=state.events.filter(e=>isOnline(e)&&getStatus(e)!=='encerrado').sort((a,b)=>evTime(b)-evTime(a));
+  if(chamadas.length)out+='<div class="card"><h2 style="margin:0">Chamadas online</h2><div class="list">'+chamadas.map(e=>{
+    const st=getStatus(e),E=esc(e.id),n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length,l=state.members.find(m=>m.id===e.leaderId),dentro=!!(me&&state.checkins[e.id+'_'+me.id]);
+    let b='';
+    if(st==='aberto'){
+      if(me&&!dentro&&!readOnly())b+='<button class="btn primary" data-act="joinOnline" data-e="'+E+'">Entrar</button>';
+      else if(dentro||adm())b+='<button class="btn primary" data-act="enter" data-e="'+E+'">'+(dentro?'Voltar para a sala':'Entrar')+'</button>';
+    }else if(canManage(e)&&!readOnly())b+='<button class="btn primary" data-act="open" data-e="'+E+'">Abrir agora</button>';
+    if(st==='aberto'&&(adm()||isLeader(e))&&!readOnly())b+='<button class="btn danger" data-act="close" data-e="'+E+'">Encerrar</button>';
+    return '<div class="item ev evt-online"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(e.title)+'</h3><span class="chip '+(st==='aberto'?'ok':'info')+'">'+(st==='aberto'?'Ao vivo':'Agendada')+'</span></div>'+
+      '<div class="small muted">'+(isJogos(e)?'Sala de jogos':'Conversa')+' · '+(st==='aberto'?n+(n===1?' pessoa na sala':' pessoas na sala'):esc(fmtDay(e.date))+' às '+esc(e.time||'--:--'))+(l?' · criada por '+esc(l.name):'')+'</div>'+(b?'<div class="row">'+b+'</div>':'')+'</div>';
+  }).join('')+'</div></div>';
   const rank=e=>({aberto:0,agendado:1,encerrado:2})[getStatus(e)];
-  const todosEv=state.events.slice().sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?evTime(a)-evTime(b):evTime(b)-evTime(a)));
+  const todosEv=state.events.filter(e=>!isOnline(e)).sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?evTime(a)-evTime(b):evTime(b)-evTime(a)));
   const verEnc=state.evAba==='enc',nEnc=todosEv.filter(e=>getStatus(e)==='encerrado').length,nAtv=todosEv.length-nEnc;
   const evs=todosEv.filter(e=>(getStatus(e)==='encerrado')===verEnc);
   out+='<div class="card"><div class="seg2"><button data-act="evAba" data-v="atv" aria-pressed="'+!verEnc+'">Próximos'+(nAtv?' ('+nAtv+')':'')+'</button><button data-act="evAba" data-v="enc" aria-pressed="'+verEnc+'">Encerrados'+(nEnc?' ('+nEnc+')':'')+'</button></div>'+(evs.length?'<div class="list">'+evs.map(e=>{
@@ -1295,7 +1313,7 @@ app.addEventListener('click',async ev=>{
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
   if(act==='logout'){firebase.auth().signOut();return;}
-  if(act==='tab'){state.telaAt=Date.now();state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
+  if(act==='tab'){state.telaAt=Date.now();setTimeout(scheduleRender,520);state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='tComecar'&&evn){await tComecar(evn);return;}
   if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
@@ -1369,7 +1387,7 @@ app.addEventListener('click',async ev=>{
   if(act==='refuse'){await w(()=>db.doc('approvals/'+d.u).set({status:'recusado',at:Date.now()}),'Pedido recusado.');return;}
   if(act==='open'&&evn){await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Presença aberta.');return;}
   if(act==='close'&&evn){
-    if(!adm())return;
+    if(!(adm()||(isOnline(evn)&&isLeader(evn))))return;
     if(!state.draft['cl_'+evn.id]){state.draft['cl_'+evn.id]=1;el.textContent='Toque de novo para encerrar';return;}
     delete state.draft['cl_'+evn.id];
     const data={status:'encerrado',at:Date.now()};
@@ -1385,12 +1403,25 @@ app.addEventListener('click',async ev=>{
     else await w(()=>db.doc('checkins/'+key).set({eventId:evn.id,memberId:d.m,at:Date.now(),by:'admin'}),'Presença marcada.');
     return;
   }
-  if(act==='newEvent'){state.editing='new';state.draft={};render();return;}
+  if(act==='newEvent'){state.chamada=false;state.editing='new';state.draft={};render();return;}
+  if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=true;state.draft={};render();return;}
+  if(act==='cancelChamada'){state.chamada=false;state.draft={};render();return;}
+  if(act==='criarChamada'){
+    const me=myMember();if(!me)return;
+    const g=id=>(document.getElementById(id)||{}).value||'';
+    const agora=new Date(),fim=new Date(agora.getTime()+6*36e5),hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+    const sala=g('ch_sala')==='jogos'?'jogos':'conversa',id='e'+Date.now().toString(36),key=id+'_'+me.id;
+    const data={title:(g('ch_nome').trim()||'Chamada de '+me.name).slice(0,40),date:todayStr(),time:hm(agora),fim:hm(fim),local:'',leaderId:me.id,tema:sala==='jogos'?'jantar':'festa',modo:'online',sala,mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ch_mesas'),10)||3)),chamada:true,code:genCode(),createdAt:Date.now(),createdBy:state.uid};
+    const ck={eventId:id,memberId:me.id,at:Date.now(),by:'online'};
+    state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.draft={};state.tab='eventos';state.room=id;state.painel=0;render();
+    w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');return;
+  }
   if(act==='editEvent'){state.editing=d.e;state.draft={};render();return;}
   if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
   if(act==='saveEvent'){
     const g=id=>(document.getElementById(id)||{}).value||'';
-    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3)),sala:(g('ev_modo')==='online'&&g('ev_sala')==='jogos')?'jogos':'conversa'};
+    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto'};
+    if(state.editing==='new')data.modo='presencial';
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
     if(!data.time||!data.fim)return toast('Preencha a hora de início e a de término.');
     if(!adm()){const me=myMember();if(!me)return;if(state.editing==='new')data.leaderId=me.id;else delete data.leaderId;}
@@ -1474,7 +1505,7 @@ function onField(ev){
   const t=ev.target;
   if(t.id&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))state.draft[t.id]=t.value;
   if(t.id==='evsel'&&ev.type==='change'){state.eventId=t.value;render();}
-  if((t.id==='ev_modo'||t.id==='ev_sala')&&ev.type==='change')render();
+  if(t.id==='ch_sala'&&ev.type==='change')render();
 }
 let sw=null,swAt=0;
 app.addEventListener('pointerdown',ev=>{sw=ev.target.closest('[data-swipe]')?{x:ev.clientX,y:ev.clientY}:null;},true);
@@ -1577,6 +1608,16 @@ window.addEventListener('pagehide',()=>{if(rtc.on)hangup();});
 const sweeping=new Set();
 function sweepGuests(){
   if(!state.isOwner||!state.loaded||state.err)return;
+  for(const e of state.events){
+    if(!isOnline(e)||getStatus(e)!=='encerrado'||sweeping.has(e.id))continue;
+    const fim=Math.max(endTime(e)||0,(state.ctl[e.id]||{}).at||0,evTime(e));
+    if(Date.now()-fim<12*36e5)continue;
+    sweeping.add(e.id);
+    (async()=>{try{
+      for(const k of Object.keys(state.checkins))if(state.checkins[k].eventId===e.id)await db.doc('checkins/'+k).delete();
+      await db.doc('ctl/'+e.id).delete();await db.doc('games/'+e.id+'_truco').delete();await db.doc('events/'+e.id).delete();
+    }catch(x){sweeping.delete(e.id);}})();
+  }
   for(const g of state.guests){
     const ev=state.events.find(e=>e.id===g.guestOf);
     if((ev&&getStatus(ev)!=='encerrado')||sweeping.has(g.id))continue;
@@ -1627,7 +1668,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113125733';
+const VER='20261113130350';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
