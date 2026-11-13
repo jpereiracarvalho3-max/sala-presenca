@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Eventos dos Bêbados</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="theme-color" content="#2457F5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bêbados">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -49,7 +57,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px}
 .tabs button{border:0;background:transparent;padding:9px 4px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted);font-size:14px}
 .tabs button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:0 1px 2px rgba(27,33,64,.04),0 10px 28px rgba(27,33,64,.07)}
+.top h1{background:linear-gradient(90deg,var(--accent),#7048E8);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.01em}
+.room{box-shadow:0 10px 28px rgba(27,33,64,.10)}
+.btn{transition:transform .08s ease,filter .12s ease}
+.btn:active{transform:scale(.97)}
+.item{transition:box-shadow .15s ease}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
 .row.between{justify-content:space-between}
 .grow{flex:1;min-width:0}
@@ -133,6 +146,11 @@ a.btn{text-decoration:none;text-align:center;display:block}
 .stage .fig{flex-direction:column-reverse;justify-content:flex-start;gap:4px}
 .room .floor.stage .fig span{background:rgba(255,255,255,.9);color:#1B2140;padding:1px 7px;border-radius:9px;text-shadow:none;box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .fig.guest span{font-style:italic}
+.react{position:absolute;left:50%;top:-10px;font-size:28px;font-style:normal;line-height:1;pointer-events:none;z-index:6;animation:reactUp 4s ease-out forwards}
+@keyframes reactUp{0%{opacity:0;transform:translate(-50%,12px) scale(.5)}12%{opacity:1;transform:translate(-50%,-6px) scale(1.2)}75%{opacity:1;transform:translate(-50%,-18px) scale(1)}100%{opacity:0;transform:translate(-50%,-36px) scale(1)}}
+.emo{font-size:24px;line-height:1;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--soft);cursor:pointer;touch-action:manipulation}
+.emo:active{transform:scale(1.2)}
+.btn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
 .smk{animation:smk 2.4s ease-in-out infinite}
 .led{animation:led 1s steps(1) infinite}
 .led2{animation-delay:.5s}
@@ -171,7 +189,7 @@ a.btn{text-decoration:none;text-align:center;display:block}
 (function(){
 const app=document.getElementById('app');
 const state={tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
-  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},nodb:false,needLogin:false,slow:false,err:null,deferred:false};
+  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -354,7 +372,7 @@ function head(){
   if(me)who='<span class="chip info">Você: '+esc(me.name)+'</span>';
   if(state.uid)who+='<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer">Sair</button>';
   if(state.isOwner)who+='<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>';
-  return '<div class="top"><div><h1>Eventos dos Bêbados</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
+  return '<div class="top"><div><h1>Eventos dos Bêbados</h1></div><div class="who">'+who+'</div></div>';
 }
 function tabsHTML(){
   const t=[['faltas','Painel'],['eventos','Eventos'],['avatar','Avatar']];
@@ -389,6 +407,33 @@ function pendHTML(){
   return h;
 }
 const guestsOf=e=>state.guests.filter(g=>g.guestOf===e.id);
+/* quem disse que vai / não vai a um evento */
+function rsvpOf(e){
+  const r={sim:[],nao:[],mine:null};
+  for(const u in state.approvals){
+    const a=state.approvals[u];if(!a||a.status!=='aprovado')continue;
+    const v=((state.avatars[u]||{}).rsvp||{})[e.id];if(v!=='sim'&&v!=='nao')continue;
+    const m=state.members.find(x=>x.id===a.memberId);if(!m)continue;
+    r[v].push(m.name);if(u===state.uid)r.mine=v;
+  }
+  r.sim.sort((a,b)=>a.localeCompare(b));r.nao.sort((a,b)=>a.localeCompare(b));return r;
+}
+const EMO=['🍻','😂','❤️','🔥','👏','🎉'];
+/* reações: cada um grava a sua no próprio registro de presença; aqui só detectamos as novas para mostrar por alguns segundos */
+function trackReacts(){
+  const now=Date.now();
+  for(const k in state.checkins){
+    const c=state.checkins[k],r=c&&c.react;if(!r||typeof r.at!=='number')continue;
+    if(state.reactSeen[k]===r.at)continue;
+    state.reactSeen[k]=r.at;
+    if(state.reactInit&&Number.isInteger(r.e)&&EMO[r.e]){state.reactShow[c.memberId]={e:r.e,until:now+4000,ev:c.eventId};setTimeout(scheduleRender,4100);}
+  }
+  state.reactInit=true;
+}
+function download(name,type,text){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+}
 /* eventos online: mesas, lugares e link da chamada */
 const isOnline=e=>!!e&&e.modo==='online';
 const MAX_MESAS=3;
@@ -403,9 +448,9 @@ const seatedAt=(eid,t)=>Object.values(state.checkins).filter(c=>c.eventId===eid&
 function onlineHTML(e){
   if(getStatus(e)!=='aberto')return '';
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
-  if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, volte em Eventos e toque em Entrar na sala online.</p></div>';
+  if(!c)return '<div class="card"><p class="muted" style="margin:0">Volte em Eventos e toque em Entrar na sala online.</p></div>';
   const t=tableOf(e,c);
-  if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Para sentar e entrar na chamada de voz da mesa, toque nela ou use os botões abaixo.</p><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
+  if(t<0)return '<div class="card"><h3>Mesas</h3><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
   const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
   const rows=seatedAt(e.id,t).map(id=>{
     const nm=(all.find(m=>m.id===id)||{}).name;if(!nm)return '';
@@ -421,7 +466,17 @@ function onlineHTML(e){
     (inCall?'<button class="btn" data-act="callMute">'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'</button>'
            :'<p class="small" style="margin:0"><span class="chip warn">Você está na mesa, mas fora da chamada</span></p><button class="btn primary" data-act="callJoin" data-e="'+esc(e.id)+'">Ligar o microfone</button>')+
     '<button class="btn danger" data-act="stand" data-e="'+esc(e.id)+'">Levantar da mesa'+(inCall?' (sai da chamada)':'')+'</button>'+
-    '<p class="muted small" style="margin:0">Sentar na mesa já coloca você na chamada de voz dela. Para sair da chamada, levante da mesa ou toque no chão. Mantenha esta tela aberta.</p></div>';
+    '</div>';
+}
+function react(m,e,stage){
+  const r=state.reactShow[m.id];if(!stage||!isOnline(e)||!r||r.ev!==e.id)return '';
+  const left=r.until-Date.now();if(left<=0)return '';
+  return '<i class="react" style="animation-delay:-'+((4000-left)/1000).toFixed(2)+'s">'+EMO[r.e]+'</i>';
+}
+function reactBar(e){
+  const me=myMember();
+  if(!me||getStatus(e)!=='aberto'||!state.checkins[e.id+'_'+me.id]||readOnly())return '';
+  return '<div class="card"><h3>Reagir</h3><div class="row">'+EMO.map((x,i)=>'<button class="emo" data-act="react" data-v="'+i+'" data-e="'+esc(e.id)+'" aria-label="Reagir com '+x+'">'+x+'</button>').join('')+'</div></div>';
 }
 function roomHTML(e){
   const st=getStatus(e),live=st==='aberto',th=themeOf(e);
@@ -432,7 +487,7 @@ function roomHTML(e){
     const stage=cls==='in';
     let pos='';
     if(stage){const p=state.pos[m.id];if(p)pos=' left:'+(p.x*100).toFixed(2)+'%;top:'+(p.y*100).toFixed(2)+'%;';}
-    return '<button class="fig '+cls+(m.guestOf?' guest':'')+(adm()?' clickable':'')+'" data-pid="'+esc(m.id)+'"'+(pos?' style="'+pos+'"':'')+' '+(adm()?'data-act="toggle" data-m="'+esc(m.id)+'" data-e="'+esc(e.id)+'" title="Marcar ou desmarcar presença"':'tabindex="-1"')+' aria-label="'+esc(m.name)+(m.guestOf?', convidado':'')+(stage?', presente':', fora da sala')+'"><div class="bw">'+fig(m)+'</div><span>'+esc(m.name)+'</span></button>';
+    return '<button class="fig '+cls+(m.guestOf?' guest':'')+(adm()?' clickable':'')+'" data-pid="'+esc(m.id)+'"'+(pos?' style="'+pos+'"':'')+' '+(adm()?'data-act="toggle" data-m="'+esc(m.id)+'" data-e="'+esc(e.id)+'" title="Marcar ou desmarcar presença"':'tabindex="-1"')+' aria-label="'+esc(m.name)+(m.guestOf?', convidado':'')+(stage?', presente':', fora da sala')+'">'+react(m,e,stage)+'<div class="bw">'+fig(m)+'</div><span>'+esc(m.name)+'</span></button>';
   };
   const on=isOnline(e),nt=on?mesasOf(e):0,meM=myMember(),myC=meM&&state.checkins[e.id+'_'+meM.id],walk=on&&live&&!!myC&&!readOnly(),myT=on?tableOf(e,myC):-1;
   let mesas='';
@@ -458,26 +513,25 @@ function avatarHTML(){
 function roomScreen(e){
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
-  h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+roomHTML(e)+(isOnline(e)?onlineHTML(e):'');
+  h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+roomHTML(e)+(isOnline(e)?onlineHTML(e)+reactBar(e):'');
   if(canManage(e)&&!readOnly()){
-    let box='<div class="card"><h3>'+(isOnline(e)?'Controle do evento online':'QR code do líder')+'</h3>';
-    if(st==='agendado')box+='<p class="muted small" style="margin:0">A sala abre sozinha no horário do evento. Se quiser, abra agora.</p><button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
-    if(st==='aberto'&&isOnline(e))box+='<p class="muted small" style="margin:0">Evento online é só para conversar: não tem QR code e não conta presença nem falta.'+(e.fim?' A sala fecha sozinha às '+esc(e.fim)+'.':'')+'</p>'+(adm()?'<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>':'');
+    const head0='<div class="card">'+(isOnline(e)?'':'<h3>QR code</h3>');let box=head0;
+    if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
+    if(st==='aberto'&&isOnline(e))box+=(adm()?'<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>':'');
     else if(st==='aberto'){
       const link=state.rules.appLink||(location.origin+location.pathname);
-      box+='<p class="muted small" style="margin:0">Mostre este QR code para o pessoal escanear. Quem escanear entra na sala.</p><div class="codebox" aria-label="Código do evento">'+esc(e.code||'------')+'</div>'+
+      box+='<div class="codebox" aria-label="Código do evento">'+esc(e.code||'------')+'</div>'+
         (link?'<div class="row" style="justify-content:center"><div class="qrwrap"><div id="qr" data-text="'+esc(link.replace(/#.*$/,'')+'#v-'+e.id+'-'+(e.code||''))+'"></div></div></div>':'<p class="muted small" style="margin:0">Para mostrar o QR code, o administrador precisa colar o link do app em Admin.</p>')+
-        (e.fim?'<p class="muted small" style="margin:0">A presença encerra sozinha às '+esc(e.fim)+'.</p>':'')+(adm()?'<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>':'');
+        (adm()?'<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>':'');
     }
     if(st==='encerrado')box+='<p class="muted small" style="margin:0">'+(isOnline(e)?'Sala encerrada.':'Presença encerrada. As faltas já foram contadas.')+'</p>'+(adm()?'<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">'+(isOnline(e)?'Reabrir sala':'Reabrir presença')+'</button>':'');
-    if(adm()&&!isOnline(e))box+='<p class="muted small" style="margin:0">Como administrador, toque em um bonequinho para marcar ou desmarcar a presença dele.</p>';
     if(adm()&&st!=='encerrado'){
       const gs=guestsOf(e);
-      box+='<h3>Convidados deste evento</h3><p class="muted small" style="margin:0">Convidados entram só nesta sala, não contam faltas e são removidos sozinhos quando a presença é encerrada.</p>'+
+      box+='<h3>Convidados</h3>'+
         (gs.length?'<div class="list">'+gs.map(g=>'<div class="item"><div class="row between"><b>'+esc(g.name)+'</b><button class="btn danger" data-act="delGuest" data-m="'+esc(g.id)+'" data-e="'+esc(e.id)+'">Remover</button></div></div>').join('')+'</div>':'')+
         '<div class="row"><input class="grow" id="gn_'+esc(e.id)+'" placeholder="Nome do convidado" value="'+esc(val('gn_'+e.id))+'"><button class="btn primary" data-act="addGuest" data-e="'+esc(e.id)+'">Adicionar convidado</button></div>';
     }
-    h+=box+'</div>';
+    if(box!==head0)h+=box+'</div>';
   }else if(!isOnline(e))h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
   return h;
 }
@@ -486,7 +540,7 @@ function faltasHTML(){
   if(me){
     const a=analyze(me),lim=state.rules.limite;
     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
-    out+='<div class="card"><div class="row between"><h2 style="margin:0">Minhas faltas</h2>'+chip+'</div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
+    out+='<div class="card"><div class="row between"><h2 style="margin:0">Minhas faltas</h2>'+chip+'</div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
   }
   return out+rankHTML()+placarHTML()+abonoHTML();
 }
@@ -522,12 +576,18 @@ function eventosHTML(){
     if(st==='encerrado'&&adm()&&!readOnly())btns+='<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir evento</button>';
     if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
     if(adm()&&!readOnly())btns+='<button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
+    let rsvp='';
+    if(st!=='encerrado'){
+      const r=rsvpOf(e);
+      rsvp='<div class="small">Vão: <b>'+r.sim.length+'</b>'+(r.sim.length?' ('+esc(r.sim.join(', '))+')':'')+' - Não vão: <b>'+r.nao.length+'</b>'+(r.nao.length?' ('+esc(r.nao.join(', '))+')':'')+'</div>'+
+        (me&&!present&&!readOnly()?'<div class="row"><button class="btn'+(r.mine==='sim'?' good':'')+'" aria-pressed="'+(r.mine==='sim')+'" data-act="rsvp" data-v="sim" data-e="'+esc(e.id)+'">'+(r.mine==='sim'?'✓ Vou':'Vou')+'</button><button class="btn'+(r.mine==='nao'?' danger':'')+'" aria-pressed="'+(r.mine==='nao')+'" data-act="rsvp" data-v="nao" data-e="'+esc(e.id)+'">'+(r.mine==='nao'?'✓ Não vou':'Não vou')+'</button>'+(st==='agendado'?'<button class="btn" data-act="ics" data-e="'+esc(e.id)+'">Adicionar à agenda</button>':'')+'</div>':'');
+    }
     let codeBox='';
     if(isOnline(e)){if(st==='aberto'&&me&&!present&&!readOnly()&&!adm()&&!isLeader(e))codeBox='<button class="btn primary" data-act="joinOnline" data-e="'+esc(e.id)+'">Entrar na sala online</button>';}
     else if(st==='aberto'&&me&&!present&&!isLeader(e)&&!readOnly())codeBox='<div class="small muted">Escaneie o QR code do líder com a câmera do celular. Se não conseguir, digite o código:</div><div class="row"><input id="code_'+esc(e.id)+'" class="grow" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="8" placeholder="Código de 6 letras" value="'+esc(val('code_'+e.id))+'"><button class="btn primary" data-act="validate" data-e="'+esc(e.id)+'">Validar</button></div>';
     return '<div class="item"><div class="row between"><h3>'+esc(e.title)+'</h3><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
       '<div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+' - '+esc(isOnline(e)?'online':(e.local||'local a definir'))+'</div>'+
-      '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?(isOnline(e)?' - '+n+' na sala':' - '+n+' de '+state.members.length+' presentes'):'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?(isOnline(e)?' - <b>você está na sala</b>':' - <b>você está presente</b>'):'')+'</div>'+codeBox+
+      '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?(isOnline(e)?' - '+n+' na sala':' - '+n+' de '+state.members.length+' presentes'):'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?(isOnline(e)?' - <b>você está na sala</b>':' - <b>você está presente</b>'):'')+'</div>'+rsvp+codeBox+
       (btns?'<div class="row">'+btns+'</div>':'')+'</div>';
   }).join('')+'</div>':'<div class="empty">Nenhum evento marcado ainda.</div>')+'</div>';
   return out;
@@ -535,16 +595,18 @@ function eventosHTML(){
 /* ranking de participação: só eventos presenciais contam */
 function rankHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
-  const evs=state.events.filter(e=>!isOnline(e)).sort((a,b)=>evTime(b)-evTime(a));
+  const mes=state.rankMode!=='total',mk=todayStr().slice(0,7);
+  const evs=state.events.filter(e=>!isOnline(e)&&(!mes||String(e.date).slice(0,7)===mk)).sort((a,b)=>evTime(b)-evTime(a));
   const rows=state.members.map(m=>({m,evs:evs.filter(e=>state.checkins[e.id+'_'+m.id])})).sort((x,y)=>y.evs.length-x.evs.length||x.m.name.localeCompare(y.m.name));
   const total=evs.filter(e=>getStatus(e)!=='agendado').length,medal=['🥇','🥈','🥉'];
   let pos=0,last=-1;
-  return '<div class="card"><h2>Ranking de presença</h2><p class="muted small" style="margin:0">Conta só eventos presenciais. Eventos presenciais já realizados ou em andamento: <b>'+total+'</b>. Toque em um nome para ver em quais ele esteve.</p><div class="list">'+
+  return '<div class="card"><h2>Ranking de presença</h2><div class="row"><button class="btn'+(mes?' primary':'')+'" data-act="rankMode" data-v="mes" aria-pressed="'+mes+'">Este mês</button><button class="btn'+(mes?'':' primary')+'" data-act="rankMode" data-v="total" aria-pressed="'+!mes+'">Desde o início</button></div>'+
+    '<div class="small muted">'+total+(total===1?' evento presencial':' eventos presenciais')+'</div><div class="list">'+
     rows.map((r,i)=>{
       if(r.evs.length!==last){pos=i;last=r.evs.length;}
       const open=!!state.rankOpen[r.m.id],n=r.evs.length;
       return '<div class="item"><button class="row between" data-act="rankToggle" data-m="'+esc(r.m.id)+'" aria-expanded="'+open+'" style="border:0;background:transparent;padding:0;width:100%;cursor:pointer;color:inherit;font:inherit;text-align:left"><h3>'+(n&&pos<3?medal[pos]+' ':'')+(pos+1)+'º '+esc(r.m.name)+'</h3><span class="chip '+(n?'ok':'')+'">'+n+(n===1?' presença':' presenças')+'</span></button>'+
-        (open?(n?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">Ainda não esteve em nenhum evento presencial.</div>'):'')+'</div>';
+        (open?(n?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">'+(mes?'Ainda não esteve em nenhum evento presencial neste mês.':'Ainda não esteve em nenhum evento presencial.')+'</div>'):'')+'</div>';
     }).join('')+'</div></div>';
 }
 function placarHTML(){
@@ -560,13 +622,13 @@ function placarHTML(){
    }).join('')+'</div></div>';
 }
 function abonoHTML(){
-  const me=myMember();let out='';
+  const me=myMember();let pedir='';
   if(me&&!readOnly()){
     const mine=analyze(me).hist.filter(h=>h.s==='falta'&&!state.justifs[h.e.id+'_'+me.id]);
-    out+='<div class="card"><h2>Pedir abono de falta</h2>'+(mine.length?'<div class="list">'+mine.map(h=>'<div class="item"><b>'+esc(h.e.title)+'</b><span class="small muted">'+esc(fmtDay(h.e.date))+'</span><label>Motivo<textarea id="jt_'+esc(h.e.id)+'" placeholder="Explique o que aconteceu">'+esc(val('jt_'+h.e.id))+'</textarea></label><button class="btn primary" data-act="sendJ" data-e="'+esc(h.e.id)+'">Enviar pedido</button></div>').join('')+'</div>':'<div class="empty">Você não tem faltas para justificar.</div>')+'<p class="muted small" style="margin:0">O grupo vota e o líder do evento decide se a falta é abonada. O administrador pode corrigir a decisão.</p></div>';
+    if(mine.length)pedir='<h3>Suas faltas sem justificativa</h3>'+'<div class="list">'+mine.map(h=>'<div class="item"><b>'+esc(h.e.title)+'</b><span class="small muted">'+esc(fmtDay(h.e.date))+'</span><label>Motivo<textarea id="jt_'+esc(h.e.id)+'" placeholder="Explique o que aconteceu">'+esc(val('jt_'+h.e.id))+'</textarea></label><button class="btn primary" data-act="sendJ" data-e="'+esc(h.e.id)+'">Enviar pedido</button></div>').join('')+'</div>';
   }
   const js=Object.entries(state.justifs).map(([k,j])=>({k,j})).sort((a,b)=>(b.j.at||0)-(a.j.at||0));
-  out+='<div class="card"><h2>Pedidos de abono</h2>'+(js.length?'<div class="list">'+js.map(({k,j})=>{
+  return '<div class="card"><h2>Abono de faltas</h2>'+pedir+(js.length?(pedir?'<h3>Pedidos do grupo</h3>':'')+'<div class="list">'+js.map(({k,j})=>{
     const ev=state.events.find(e=>e.id===j.eventId),mem=state.members.find(m=>m.id===j.memberId);if(!ev||!mem)return '';
     const votes=Object.values(j.votes||{}),sim=votes.filter(v=>v==='sim').length,nao=votes.filter(v=>v==='nao').length,mine=(j.votes||{})[state.uid];
     const dec=j.decision;
@@ -575,14 +637,14 @@ function abonoHTML(){
     if(!dec&&me&&j.memberId!==me.id&&!readOnly())h+='<div class="row"><button class="btn'+(mine==='sim'?' primary':'')+'" data-act="vote" data-k="'+esc(k)+'" data-v="sim">Votar a favor</button><button class="btn'+(mine==='nao'?' primary':'')+'" data-act="vote" data-k="'+esc(k)+'" data-v="nao">Votar contra</button></div>';
     if((adm()||isLeader(ev))&&!readOnly()&&(!dec||adm()))h+='<div class="row"><span class="small muted">'+(isLeader(ev)?'Você é o líder deste evento:':'Decisão do administrador:')+'</span><button class="btn good" data-act="decide" data-k="'+esc(k)+'" data-v="abonada">Abonar</button><button class="btn danger" data-act="decide" data-k="'+esc(k)+'" data-v="negada">Negar</button></div>';
     return h+'</div>';
-  }).join('')+'</div>':'<div class="empty">Nenhum pedido de abono ainda.</div>')+'</div>';
-  return out;
+  }).join('')+'</div>':(pedir?'':'<div class="empty">Nenhum pedido de abono.</div>'))+'</div>';
 }
 function adminHTML(){
   if(!adm())return '<div class="card"><div class="empty">Só o administrador vê esta aba.</div></div>';
   const r=state.rules;
   let out=pendHTML()+'<div class="card"><h2>Regras</h2><div class="grid2"><label>Faltas no mês para suspender<input id="r_lim" type="number" min="1" max="10" value="'+esc(val('r_lim',r.limite))+'"></label><label>Dias de suspensão<input id="r_dias" type="number" min="1" max="60" value="'+esc(val('r_dias',r.dias))+'"></label></div>'+
-    '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Deixe em branco para usar o endereço desta página"></label><p class="muted small" style="margin:0">Pode deixar em branco: o QR code usa o endereço desta página.</p><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
+    '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Deixe em branco para usar o endereço desta página"></label><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
+  out+='<div class="card"><h2>Cópia de segurança</h2><button class="btn" data-act="backup">Baixar cópia de segurança</button></div>';
   out+='<div class="card"><h2>Membros</h2><div class="list">'+state.members.map(m=>{
     const claimUid=Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m.id);
     return '<div class="item"><div class="row"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" data-act="rename" data-m="'+esc(m.id)+'">Salvar nome</button></div>'+
@@ -716,6 +778,32 @@ app.addEventListener('click',async ev=>{
   if(act==='logout'){firebase.auth().signOut();return;}
   if(act==='tab'){state.tab=d.t;render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
+  if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';render();return;}
+  if(act==='rsvp'&&evn){
+    if(!myMember()||!state.uid)return;
+    const cur=state.avatars[state.uid]||{},old=(cur.rsvp||{})[evn.id],v=old===d.v?null:(d.v==='nao'?'nao':'sim');
+    state.avatars[state.uid]={...cur,rsvp:{...(cur.rsvp||{}),[evn.id]:v}};render();
+    w(()=>db.doc('avatars/'+state.uid).set({rsvp:{[evn.id]:v}},{merge:true}),v===null?'Resposta removida.':(v==='sim'?'Confirmado: você vai.':'Anotado: você não vai.'));return;
+  }
+  if(act==='ics'&&evn){
+    const z=t=>new Date(t).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''),x=t=>String(t||'').replace(/([,;\\])/g,'\\$1').replace(/\n/g,' ');
+    const ini=evTime(evn),fim=endTime(evn)||ini+3*36e5;
+    download(evn.title.replace(/[^\w\d]+/g,'-').slice(0,40)+'.ics','text/calendar;charset=utf-8',['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Eventos dos Bebados//PT','BEGIN:VEVENT','UID:'+evn.id+'@eventos-dos-bebados','DTSTAMP:'+z(Date.now()),'DTSTART:'+z(ini),'DTEND:'+z(fim),'SUMMARY:'+x(evn.title),'LOCATION:'+x(isOnline(evn)?'Online, pelo app':evn.local),'END:VEVENT','END:VCALENDAR'].join('\r\n'));
+    return;
+  }
+  if(act==='react'&&evn){
+    const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key],i=parseInt(d.v,10);
+    if(!c||!EMO[i]||!isOnline(evn)||getStatus(evn)!=='aberto')return;
+    const r={e:i,at:Date.now()};
+    state.checkins[key]={...c,react:r};state.reactSeen[key]=r.at;state.reactShow[me.id]={e:i,until:r.at+4000,ev:evn.id};setTimeout(scheduleRender,4100);render();
+    db.doc('checkins/'+key).update({react:r}).catch(()=>{});return;
+  }
+  if(act==='backup'){
+    if(!adm())return;
+    const {members,guests,events,ctl,checkins,justifs,claims,approvals,avatars,rules,names}=state;
+    download('eventos-dos-bebados-'+todayStr()+'.json','application/json',JSON.stringify({exportadoEm:new Date().toISOString(),versao:VER,regras:rules,members,convidados:guests,events,ctl,checkins,justifs,claims,approvals,avatars,contas:names},null,1));
+    toast('Cópia de segurança baixada.');return;
+  }
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
@@ -958,7 +1046,7 @@ function subscribe(){
   sub('members',db.collection('members'),s=>{const all=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name));state.members=all.filter(m=>!m.guestOf);state.guests=all.filter(m=>m.guestOf);});
   sub('events',db.collection('events'),s=>{state.events=s.docs.map(d=>({id:d.id,...d.data()}));});
   sub('ctl',db.collection('ctl'),s=>{state.ctl=toMap(s);});
-  sub('checkins',db.collection('checkins'),s=>{state.checkins=toMap(s);});
+  sub('checkins',db.collection('checkins'),s=>{state.checkins=toMap(s);trackReacts();});
   sub('justifs',db.collection('justifs'),s=>{state.justifs=toMap(s);});
   sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
   sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
@@ -992,7 +1080,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112222459';
+const VER='20261112223309';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
