@@ -2698,10 +2698,13 @@ function eventosHTML(){
 /* ranking de participação: só eventos presenciais contam */
 /* ranking em forma de corrida: cada membro corre na sua raia até a posição das presenças (só eventos presenciais contam).
    Tocar no boneco abre os dados daquela pessoa. */
+/* presença só conta para a corrida e as conquistas depois que o evento começa de verdade (pelo horário marcado);
+   abrir a sala antes da hora não adianta ponto para ninguém, nem para o líder */
+const evComecou=e=>Date.now()>=evTime(e);
 function rankHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
   const mes=state.rankMode!=='total',mk=todayStr().slice(0,7);
-  const evs=state.events.filter(e=>!isOnline(e)&&(!mes||String(e.date).slice(0,7)===mk)).sort((a,b)=>evTime(b)-evTime(a));
+  const evs=state.events.filter(e=>!isOnline(e)&&evComecou(e)&&(!mes||String(e.date).slice(0,7)===mk)).sort((a,b)=>evTime(b)-evTime(a));
   const rows=state.members.map(m=>({m,evs:evs.filter(e=>state.checkins[e.id+'_'+m.id]),a:analyze(m)})).sort((x,y)=>y.evs.length-x.evs.length||x.m.name.localeCompare(y.m.name));
   const max=Math.max(1,...rows.map(r=>r.evs.length)),medal=['🥇','🥈','🥉'];
   if(!state.raceAt){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}
@@ -2721,7 +2724,7 @@ function rankHTML(){
 }
 /* números de cada membro para conquistas (só eventos presenciais) */
 function statsDe(m){
-  const evs=state.events.filter(e=>!isOnline(e)),pres=evs.filter(e=>state.checkins[e.id+'_'+m.id]),a=analyze(m);
+  const evs=state.events.filter(e=>!isOnline(e)&&evComecou(e)),pres=evs.filter(e=>state.checkins[e.id+'_'+m.id]),a=analyze(m);
   let cur=0,best=0;
   for(const h of a.hist){if(h.s==='presente'){cur++;if(cur>best)best=cur;}else if(h.s==='falta'||h.s==='suspenso')cur=0;}
   let primeiro=0;
@@ -2731,7 +2734,7 @@ function statsDe(m){
   }
   const porMes={};for(const h of a.hist){const k=String(h.e.date).slice(0,7);(porMes[k]=porMes[k]||[]).push(h.s);}
   return {n:pres.length,seq:cur,best,primeiro,
-    lider:evs.filter(e=>e.leaderId===m.id&&getStatus(e)!=='agendado').length,
+    lider:evs.filter(e=>e.leaderId===m.id).length,
     abon:Object.values(state.justifs).some(j=>j.memberId===m.id&&j.decision==='abonada'),
     perfeito:Object.values(porMes).some(v=>v.length>=2&&v.every(x=>x==='presente'))};
 }
@@ -3502,7 +3505,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113193923';
+const VER='20261113194252';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
