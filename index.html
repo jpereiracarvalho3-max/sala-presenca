@@ -375,7 +375,13 @@ button.fas{cursor:pointer}
 .fmini{display:inline-flex;flex-direction:column;align-items:center;width:44px}
 .fmini svg{width:26px;height:36px;overflow:visible;display:block}
 .fmini i{font-style:normal;font-size:10px;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.flados{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.flados,.fmeio{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fmet{border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:170px}
+.fmet b{font-family:var(--font-head);font-size:17px}
+.fmesa.peq{max-width:280px;margin-top:24px}
+.fmesa.peq .fbomba{font-size:40px}
+.fmet.com{border:2px solid var(--bad);background:var(--bad-bg)}
+.fmet .stl{padding:8px 10px}
 .flado{border-radius:14px;border:1px solid var(--line);background:var(--soft);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .flado b{font-family:var(--font-head);font-size:18px}
 .flado.perde{border-color:var(--bad);background:var(--bad-bg)}
@@ -1388,7 +1394,7 @@ function fRegrasHTML(k){
 /* mesa redonda com o boneco de cada participante */
 function fMesa(e,k,mids,o){
   o=o||{};const n=mids.length,id=fGid(e,k);state.fVistos=state.fVistos||{};const vistos=state.fVistos[id]||(state.fVistos[id]={});
-  const h='<div class="fmesa"><div class="ftampo">'+(o.centro||'')+'</div>'+mids.map((m,i)=>{
+  const h='<div class="fmesa'+(o.cls?' '+o.cls:'')+'"><div class="ftampo">'+(o.centro||'')+'</div>'+mids.map((m,i)=>{
     const a=(-90+360*i/n)*Math.PI/180,x=50+40*Math.cos(a),y=50+40*Math.sin(a),novo=!vistos[m];vistos[m]=1;
     const tag=o.act&&!(o.semAct||{})[m]?'button':'div';
     return '<'+tag+' class="fas'+(novo?' novo':'')+((o.marca||{})[m]?' '+o.marca[m]:'')+'"'+(tag==='button'?' data-act="'+o.act+'" data-e="'+esc(e.id)+'" data-k="'+k+'" data-m="'+esc(m)+'"':'')+' style="left:'+x.toFixed(1)+'%;top:'+y.toFixed(1)+'%">'+((o.topo||{})[m]?'<em>'+o.topo[m]+'</em>':'')+fig(fM(m))+'<span>'+esc(iNome(m))+'</span>'+((o.sub||{})[m]?'<i>'+o.sub[m]+'</i>':'')+'</'+tag+'>';
@@ -1437,15 +1443,16 @@ function fVotoHTML(e,k,g,rod,opcoes){
 /* ---------- tela de um jogo ---------- */
 function fScreen(e,k){
   const J=F_JOGOS[k],g=fGame(e,k)||{},me=myMember(),E=esc(e.id),jog=fJog(e,g),dentro=!!(g.jog&&g.jog[state.uid]),attr=' data-e="'+E+'" data-k="'+k+'"';
-  let h='<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+J.nome+'</span></div><div class="card"><div class="row between"><h2 style="margin:0">'+J.nome+'</h2>'+(g.st==='jogo'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
+  const podeAdd=g.st!=='jogo'&&dentro&&J.um&&fPresentes(e).some(m=>!fProprios(e,g).includes(m));
+  let h='<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+J.nome+'</span></div><div class="card"><div class="row between" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">'+J.nome+'</h2>'+(g.st==='jogo'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':podeAdd?'<button class="chip" data-act="fAdd" data-v="'+k+'" aria-expanded="'+(state.fAdd===k)+'" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">+ Pessoa</button>':'')+'</div>';
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(g.st!=='jogo'){
     h+='<div class="small muted">'+J.desc+'</div>'+fRegrasHTML(k);
     h+=jog.length?fMesa(e,k,jog,{centro:'<span class="small muted" style="text-align:center">'+jog.length+(jog.length===1?' na mesa':' na mesa')+'</span>'}):'<div class="empty">Ninguém sentou na mesa ainda.</div>';
-    if(!dentro)h+='<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>'+(J.um?'<div class="small muted" style="text-align:center">Está sem celular? Peça para alguém que já sentou colocar você na mesa e jogue pelo celular dessa pessoa.</div>':'');
+    if(!dentro)h+='<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>'+(J.um?'<div class="small muted" style="text-align:center">Está sem celular? Peça para alguém que já sentou tocar em + Pessoa e colocar você no celular dela.</div>':'');
     else if(J.um){
       const pr=fProprios(e,g),c=fConv(g),meus=fMeus(g),fora=fPresentes(e).filter(m=>!pr.includes(m)),cheio=!!J.lim&&meus.length>=J.lim;
-      if(fora.length)h+='<div class="item"><b>Alguém sem celular?</b><span class="small muted">'+(J.lim?'Você pode colocar 1 pessoa para jogar com você. Ela joga pelo seu celular, na vez dela.':'Toque no nome para colocar na mesa. Essa pessoa joga pelo seu celular.')+'</span><div class="avrow">'+fora.map(m=>{const dono=c[m]&&(g.jog||{})[c[m]]?c[m]:'',meu=dono===state.uid,off=(dono&&!meu)||(cheio&&!meu);return '<button class="stl" data-act="fLista"'+attr+' data-m="'+esc(m)+'" aria-pressed="'+meu+'"'+(off?' disabled style="opacity:.45"':'')+'>'+esc(iNome(m))+(dono&&!meu?' <span class="small muted">(com '+esc(iNome(g.jog[dono]))+')</span>':'')+'</button>';}).join('')+'</div></div>';
+      if(fora.length&&state.fAdd===k)h+='<div class="item"><b>Quem vai jogar pelo seu celular?</b><span class="small muted">'+(J.lim?'Escolha 1 pessoa que está sem celular. Ela joga com você, no seu aparelho.':'Toque em quem está sem celular e quer jogar. Essas pessoas jogam pelo seu aparelho.')+' Quem não quiser jogar agora, é só não colocar.</span><div class="avrow">'+fora.map(m=>{const dono=c[m]&&(g.jog||{})[c[m]]?c[m]:'',meu=dono===state.uid,off=(dono&&!meu)||(cheio&&!meu);return '<button class="stl" data-act="fLista"'+attr+' data-m="'+esc(m)+'" aria-pressed="'+meu+'"'+(off?' disabled style="opacity:.45"':'')+'>'+esc(iNome(m))+(dono&&!meu?' <span class="small muted">(com '+esc(iNome(g.jog[dono]))+')</span>':'')+'</button>';}).join('')+'</div></div>';
     }
     if(dentro)h+='<button class="btn primary" data-act="fStart"'+attr+(jog.length>=J.min?'':' disabled')+'>'+({cav:'Largar',rol:'Girar a roleta',vod:'Girar',bom:'Acender a bomba',car:'Dar as cartas',sin:'Começar',pro:'Sortear a frase',mai:'Sortear a pergunta',che:'Sortear o chefe'})[k]+'</button>'+(jog.length<J.min?'<div class="small muted" style="text-align:center">Mínimo de '+J.min+' pessoas</div>':'');
     if(dentro)h+='<button class="tfim" data-act="fSair"'+attr+'>Sair da mesa</button>';
@@ -1481,6 +1488,11 @@ function fScreen(e,k){
   }
   if(k==='bom'){
     if(g.est){h+=fMesa(e,k,rod,{marca:{[g.perdeu]:'alvo'},topo:{[g.perdeu]:'💥'},centro:'<div class="fbum">BUM!</div>'})+fBebe([g.perdeu])+denovo('Acender outra bomba');return h+'</div>';}
+    const dupla=me&&rod.includes(me.id)?[me.id].concat(fMeus(g).filter(m=>rod.includes(m))):[];
+    if(dupla.length>1){
+      h+=fMesa(e,k,rod,{cls:'peq',marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'})+'<div class="fmeio">'+dupla.map(p=>'<div class="fmet'+(g.com===p?' com':'')+'"><span class="fmini">'+fig(fM(p))+'</span><b>'+esc(iNome(p))+'</b>'+(g.com===p?'<span class="small">💣 Está com você! Passe para:</span><div class="avrow" style="justify-content:center">'+rod.filter(m=>m!==p).map(m=>'<button class="stl" data-act="fBomPassa"'+attr+' data-m="'+esc(m)+'">'+esc(iNome(m))+'</button>').join('')+'</div>':'<span class="small muted">Sem a bomba</span>')+'</div>').join('')+'</div>';
+      return h+'</div>';
+    }
     const pode=fPosso(g,g.com),sem={[g.com]:1};
     h+=fMesa(e,k,rod,{act:pode?'fBomPassa':'',semAct:sem,marca:{[g.com]:'alvo'},topo:{[g.com]:'💣'},centro:'<div class="fbomba">💣</div>'});
     h+='<div class="cidfala">'+(pode?(!(me&&me.id===g.com)?'A bomba está com <b>'+esc(iNome(g.com))+'</b>, que joga por este celular. Entregue o aparelho: é só tocar em quem vai receber.':'<b>A bomba está com você!</b> Toque em alguém para passar.'):'A bomba está com <b>'+esc(iNome(g.com))+'</b>.')+'</div>';
@@ -1572,6 +1584,7 @@ setInterval(fTick,60);
 function fAcao(act,d,evn){
   const k=d.k,J=F_JOGOS[k];if(act==='fRegras'){state.fRegras=state.fRegras===d.v?null:d.v;render();return;}
   if(act==='fPronto'){state.fPronto=d.m;render();return;}
+  if(act==='fAdd'){state.fAdd=state.fAdd===d.v?null:d.v;render();return;}
   if(!evn||!J||!F_ORDEM.includes(k)||!iPode(evn))return;
   const g=fGame(evn,k)||{},me=myMember(),rod=g.rod||[];
   if(act==='fEntrar'){if(me)fSet(evn,k,{jog:{[state.uid]:me.id}});return;}
@@ -1580,6 +1593,7 @@ function fAcao(act,d,evn){
     if(!J.um||g.st==='jogo'||!(g.jog&&g.jog[state.uid])||!fPresentes(evn).includes(d.m)||fProprios(evn,g).includes(d.m))return;
     const c=fConv(g),dono=c[d.m]&&(g.jog||{})[c[d.m]]?c[d.m]:'';
     if(dono===state.uid){fSet(evn,k,{conv:{[d.m]:null}});return;}
+    if(J.lim)state.fAdd=null;
     if(dono)return toast('Essa pessoa já está jogando pelo celular de '+iNome(g.jog[dono])+'.');
     if(J.lim&&fMeus(g).length>=J.lim)return toast('Neste jogo cada celular leva só mais 1 pessoa.');
     fSet(evn,k,{conv:{[d.m]:state.uid}});return;
@@ -2493,7 +2507,7 @@ app.addEventListener('click',async ev=>{
   if(act==='leave'){state.jogoP=null;state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
   if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
-  if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':(String(d.v).startsWith('f:')&&F_ORDEM.includes(String(d.v).slice(2)))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
+  if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.fAdd=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':(String(d.v).startsWith('f:')&&F_ORDEM.includes(String(d.v).slice(2)))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   /* A Cidade Dorme */
   if(act==='cEntrar'&&evn){if(iPode(evn))cEntrar(evn,true);return;}
   if(act==='cSair'&&evn){cEntrar(evn,false);return;}
@@ -2848,7 +2862,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113182045';
+const VER='20261113182313';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
