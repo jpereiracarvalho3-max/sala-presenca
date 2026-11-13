@@ -1118,8 +1118,8 @@ function eventoPgHTML(e){
 }
 /* notificações: montadas a partir do que já está no app; "visto" fica guardado neste aparelho */
 const alertasVisto=()=>{try{return +localStorage.getItem('alertas_'+state.uid)||0;}catch(e){return 0;}};
-/* o Geral só traz enquetes e recados dos eventos em que a pessoa vai (marcou Vou, está presente, criou ou é líder) */
-function vouNo(eid){const e=state.events.find(x=>x.id===eid),me=myMember();if(!e)return false;return (((state.avatars[state.uid]||{}).rsvp||{})[eid]==='sim')||e.createdBy===state.uid||!!(me&&(e.leaderId===me.id||state.checkins[eid+'_'+me.id]));}
+/* o Geral traz enquetes e recados de todos os eventos, menos daqueles em que a pessoa marcou Não vou */
+function vouNo(eid){return !!state.events.find(x=>x.id===eid)&&(((state.avatars[state.uid]||{}).rsvp||{})[eid]!=='nao');}
 function alertasLista(){
   const me=myMember(),out=[],ev=id=>state.events.find(x=>x.id===id),de14=Date.now()-14*864e5;
   const add=(at,ic,txt,eid,fixo)=>{const e=eid&&ev(eid);if(eid&&!e)return;out.push({at:at||0,ic,txt,eid,ev:e?e.title:'',fixo:!!fixo,g:grupo});};let grupo='racha';
@@ -1877,7 +1877,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113133721';
+const VER='20261113133916';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
