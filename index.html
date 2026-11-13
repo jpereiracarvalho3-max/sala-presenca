@@ -218,6 +218,8 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 .chat-l{display:flex;flex-direction:column;gap:3px;min-height:140px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 2px}
 .chat-l>:first-child{margin-top:auto}
 html.so-chat,html.so-chat body{overflow:hidden;overscroll-behavior:none}
+html.so-chat body{position:fixed;left:0;right:0;top:0;bottom:0}
+html.so-chat.tec .tabs{display:none}
 .chat-ln{display:flex;align-items:flex-end;gap:6px}
 .chat-ln.pri{margin-top:9px}
 .chat-ln.meu{justify-content:flex-end}
@@ -760,9 +762,11 @@ const DECOR={
 /* telas */
 function head(){
   const me=myMember();
+  /* dentro do app (quem já tem as abas) o topo fica só com o título: Sair e Modo administrador ficam no fim do Painel.
+     Quem ainda não foi aprovado não tem Painel, então continua vendo o Sair aqui em cima. */
+  const ap=state.approvals[state.uid],dentro=state.loaded&&(state.isOwner||(ap&&ap.status==='aprovado'));
   let who='';
-  if(state.uid)who+='<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer">Sair</button>';
-  if(state.isOwner)who+='<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>';
+  if(state.uid&&!dentro)who+='<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer">Sair</button>';
   return '<div class="top"><div><h1>Eventos dos Bêbados</h1></div><div class="who">'+who+'</div></div>';
 }
 function tabsHTML(){
@@ -2094,7 +2098,8 @@ function faltasHTML(){
     if(state.rachaNovo)out+='<div class="card"><h2 style="margin:0">Novo racha</h2>'+rachaForm(null)+'</div>';
   }
   out+=nivHTML();
-  return out+rankHTML()+destaquesHTML()+abonoHTML();
+  const conta='<div class="row" style="justify-content:center;gap:8px;margin-top:6px">'+(state.isOwner?'<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer;padding:7px 12px">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>':'')+(state.uid?'<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer;padding:7px 12px">Sair da conta</button>':'')+'</div>';
+  return out+rankHTML()+destaquesHTML()+abonoHTML()+conta;
 }
 /* ===================== PÁGINA DO EVENTO: RACHA, RECADOS E ENQUETE; ABA DE NOTIFICAÇÕES =====================
    Tudo fica guardado junto do evento (coleções splits, posts e polls), como histórico. O app não movimenta dinheiro:
@@ -2409,13 +2414,25 @@ const hora=ms=>{const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinut
 let chatPos={fim:true,top:0};
 function chatAjusta(){
   const no=state.tab==='chat'&&!state.room&&!state.needLogin;document.documentElement.classList.toggle('so-chat',!!no);
+  if(!no){document.documentElement.classList.remove('tec');document.body.style.top='';}
   const el=document.getElementById('chatLista'),bar=document.querySelector('.chat-bar');if(!no||!el||!bar)return;
-  try{window.scrollTo(0,0);const h=bar.getBoundingClientRect().top-el.getBoundingClientRect().top-6;el.style.height=Math.max(140,h)+'px';el.scrollTop=chatPos.fim?el.scrollHeight:chatPos.top;}catch(e){}
+  try{
+    /* no iPhone o teclado cobre a parte de baixo sem encolher a página: a diferença é a altura do teclado */
+    /* a tela do chat acompanha exatamente a área visível: se o iPhone empurrar a página para cima (sobe), o conteúdo desce o mesmo tanto,
+       então o título nunca sai da tela; a barra de escrever fica colada em cima do teclado */
+    if(window.scrollY)window.scrollTo(0,0);
+    const vv=window.visualViewport,vh=vv?vv.height:window.innerHeight,sobe=vv?Math.max(0,vv.offsetTop||0):0,aberto=window.innerHeight-vh>120,embaixo=Math.max(0,window.innerHeight-vh-sobe);
+    document.documentElement.classList.toggle('tec',aberto);bar.style.bottom=aberto?embaixo+'px':'';document.body.style.top=aberto&&sobe?sobe+'px':'';
+    const h=bar.getBoundingClientRect().top-el.getBoundingClientRect().top-6;el.style.height=Math.max(90,h)+'px';el.scrollTop=chatPos.fim?el.scrollHeight:chatPos.top;
+  }catch(e){}
 }
 const chatFim=()=>{chatPos.fim=true;chatAjusta();};
 document.addEventListener('scroll',ev=>{const t=ev.target;if(t&&t.id==='chatLista')chatPos={fim:t.scrollHeight-t.scrollTop-t.clientHeight<40,top:t.scrollTop};},true);
 window.addEventListener('resize',()=>chatAjusta());
-try{if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>chatAjusta());}catch(e){}
+try{if(window.visualViewport){window.visualViewport.addEventListener('resize',()=>chatAjusta());window.visualViewport.addEventListener('scroll',()=>chatAjusta());}}catch(e){}
+/* ao tocar no campo de mensagem o iPhone tenta empurrar a página para cima: reajusta logo depois, algumas vezes */
+document.addEventListener('focusin',ev=>{if(ev.target&&ev.target.id==='chat_txt')[60,250,500,900].forEach(t=>setTimeout(chatAjusta,t));});
+document.addEventListener('focusout',ev=>{if(ev.target&&ev.target.id==='chat_txt')[120,400].forEach(t=>setTimeout(chatAjusta,t));});
 const CHAT_CORES=['#F5A623','#7ED6A5','#7FB8FF','#FF9E9E','#D7A6FF','#FFD36E','#6EE0E0','#FFAD7A'];
 const chatCor=id=>CHAT_CORES[(hash(String(id||'x'))>>>0)%CHAT_CORES.length];
 let chatJaVi={};
@@ -3520,7 +3537,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113194728';
+const VER='20261113195429';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
