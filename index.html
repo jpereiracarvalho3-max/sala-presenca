@@ -1327,9 +1327,14 @@ function chatLimpa(){
   for(const [id,m] of Object.entries(state.chat||{})){if((m.at||0)<lim&&n<20){n++;try{db.doc('chat/'+id).delete().catch(()=>{});if(m.tipo==='a')db.doc('chataudio/'+id).delete().catch(()=>{});}catch(e){}}}
 }
 /* NOTIFICAÇÕES NO CELULAR
-   O app põe cada aviso numa fila (outbox); um robô no GitHub lê a fila a cada 5 minutos e envia pelo Firebase Cloud Messaging.
+   O app põe cada aviso numa fila (outbox) e cutuca o robô rápido (Cloudflare Worker, pasta cloudflare/), que lê a fila e envia pelo Firebase Cloud Messaging.
+   Um robô reserva no GitHub olha a mesma fila a cada 30 minutos.
    VAPID é a chave pública de Web Push do projeto (Firebase > Configurações > Cloud Messaging). Sem ela, tudo aqui fica desligado. */
 const VAPID='BJUneVWqbTaBejQKPxA1nTNV4HJr22hMcfjkj-kLKQb_rRMPA0S7EZNr2FAOyfxdmCkR08YWZXm_y1oywhouKHo';
+/* ROBO_URL é o endereço do robô rápido (termina em workers.dev). Vazio = só o robô reserva envia.
+   O pedido não leva conteúdo nenhum: só manda o robô olhar a fila. Se falhar, o robô olha sozinho no minuto seguinte. */
+const ROBO_URL='https://avisos.jpereiracarvalho3.workers.dev/';
+function cutucar(){if(!ROBO_URL)return;try{fetch(ROBO_URL,{method:'POST',mode:'no-cors',keepalive:true}).catch(()=>{});}catch(e){}}
 const pushBase=()=>!!(VAPID&&'serviceWorker' in navigator&&'Notification' in window&&'PushManager' in window);
 let pushSdkP=null,pushReg=null;
 const pushSdk=()=>pushSdkP||(pushSdkP=new Promise((ok,er)=>{if(window.firebase&&firebase.messaging)return ok();const x=document.createElement('script');x.src='https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js';x.onload=()=>ok();x.onerror=()=>{pushSdkP=null;er(new Error('sdk'));};document.head.appendChild(x);}));
@@ -1362,7 +1367,7 @@ function pushHTML(){
 /* põe um aviso na fila: para = lista de ids de membros, ou 'todos' (o robô tira o autor e quem marcou Não vou no evento) */
 function avisar(para,titulo,corpo,eventId,quando,id,teste){
   if(!db)return;
-  try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',teste:!!teste,at:Date.now()}).catch(()=>{});}catch(e){}
+  try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',teste:!!teste,at:Date.now()}).then(cutucar).catch(()=>{});}catch(e){}
 }
 /* lembrete de evento presencial: quem criou o evento (ou o administrador) deixa na fila um aviso para cerca de 30 minutos antes do início.
    Guarda neste aparelho o que já agendou; se a data ou a hora mudar, agenda de novo. */
@@ -1745,7 +1750,7 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
-  if(act==='pushTeste'){const me=myMember();if(!me||!adm()||state.pushTestou)return;state.pushTestou=true;render();setTimeout(()=>{state.pushTestou=false;scheduleRender();},60000);db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>toast('Teste na fila. Feche o app e aguarde.')).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
+  if(act==='pushTeste'){const me=myMember();if(!me||!adm()||state.pushTestou)return;state.pushTestou=true;render();setTimeout(()=>{state.pushTestou=false;scheduleRender();},60000);db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>{cutucar();toast('Teste na fila. Feche o app e aguarde.');}).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
   if(act==='pushDepois'){pushMarca();render();return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
@@ -2188,7 +2193,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113143555';
+const VER='20261113150438';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;

@@ -112,6 +112,10 @@ def main():
     def apagar(caminho):
         requests.delete(f'{DOCS}/{caminho}', headers=h, timeout=30)
 
+    def pegar(o):
+        """Tira o aviso da fila. Só quem consegue apagar envia: se o robô rápido (Cloudflare) já pegou, não envia de novo."""
+        return requests.delete(f"{DOCS}/outbox/{o['_id']}", headers=h, params={'currentDocument.exists': 'true'}, timeout=30).ok
+
     fila = listar('outbox')
     if not fila:
         print('::notice::Chave aceita. Fila vazia.')
@@ -141,6 +145,8 @@ def main():
     avatars = {a['_id']: a for a in listar('avatars')} if any(o.get('para') == 'todos' for o in prontos) else {}
     enviados = falhas = 0
     for o in prontos:
+        if not pegar(o):
+            continue
         for u in destinos(o, aprov, avatars):
             for tk in list(tokens.get(u, {})):
                 r = requests.post(FCM, headers=h, json=mensagem(o, tk), timeout=30)
@@ -153,7 +159,6 @@ def main():
                     tokens[u].pop(tk, None)
                     corpo = {'fields': {'t': {'mapValue': {'fields': {k: {'integerValue': str(int(v))} for k, v in tokens[u].items()}}}}}
                     requests.patch(f'{DOCS}/tokens/{u}', headers=h, params={'updateMask.fieldPaths': 't'}, json=corpo, timeout=30)
-        apagar('outbox/' + o['_id'])
     print(f'::notice::{len(prontos)} aviso(s) processado(s), {len(tokens)} pessoa(s) com celular cadastrado, {enviados} envio(s), {falhas} falha(s).')
     return 0
 
