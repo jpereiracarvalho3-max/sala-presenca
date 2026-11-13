@@ -148,6 +148,23 @@ a.btn{text-decoration:none;text-align:center;display:block}
 .fig.guest span{font-style:italic}
 .react{position:absolute;left:50%;top:-10px;font-size:28px;font-style:normal;line-height:1;pointer-events:none;z-index:6;animation:reactUp 4s ease-out forwards}
 @keyframes reactUp{0%{opacity:0;transform:translate(-50%,12px) scale(.5)}12%{opacity:1;transform:translate(-50%,-6px) scale(1.2)}75%{opacity:1;transform:translate(-50%,-18px) scale(1)}100%{opacity:0;transform:translate(-50%,-36px) scale(1)}}
+.carta{width:58px;height:82px;border-radius:10px;background:#fff;border:1px solid #C9CEDD;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-weight:700;color:#1B2140;box-shadow:0 2px 6px rgba(27,33,64,.18);padding:0;cursor:pointer;touch-action:manipulation;font-family:var(--font-head)}
+.carta b{font-size:24px;line-height:1.05}.carta i{font-size:24px;line-height:1.05;font-style:normal}
+.carta.red{color:#D6336C}
+.carta.man{box-shadow:0 0 0 2.5px #F2C230,0 2px 6px rgba(27,33,64,.18)}
+.carta.mini{width:42px;height:60px;cursor:default}.carta.mini b,.carta.mini i{font-size:17px}
+button.carta:not([disabled]):active{transform:translateY(-6px)}
+button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
+.tmao.livre .carta{transform:translateY(-5px);box-shadow:0 0 0 2px var(--accent),0 6px 14px rgba(36,87,245,.28)}
+.tmao.livre .carta.man{box-shadow:0 0 0 2.5px #F2C230,0 6px 14px rgba(36,87,245,.28)}
+.tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:4px 8px}
+.truco{background:linear-gradient(180deg,#FFFFFF,#F6FAF7)}
+.tmao{display:flex;justify-content:center;gap:10px;min-height:86px;align-items:center}
+.tmesa{display:flex;justify-content:center;gap:12px;min-height:92px;align-items:center;background:#1F7A4D;border-radius:14px;padding:10px;flex-wrap:wrap}
+.tmesa .small{color:#fff}.tmesa .muted{color:#CDEBDC}.tmesa.antiga .carta{opacity:.55}.tmesa .ganhou{font-weight:700;text-decoration:underline}
+.tjog{display:flex;flex-direction:column;align-items:center;gap:4px}
+.placar{display:flex;justify-content:center;align-items:center;gap:10px;font-size:15px;flex-wrap:wrap;text-align:center}.placar b{font-size:20px;font-family:var(--font-head)}
+.vz{width:14px;height:14px;border-radius:50%;background:var(--line);display:inline-block}.vz.nos{background:var(--ok)}.vz.eles{background:var(--bad)}.vz.emp{background:var(--warn)}
 .emo{font-size:24px;line-height:1;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--soft);cursor:pointer;touch-action:manipulation}
 .emo:active{transform:scale(1.2)}
 .btn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
@@ -188,7 +205,7 @@ a.btn{text-decoration:none;text-align:center;display:block}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -495,7 +512,7 @@ function download(name,type,text){
 /* eventos online: mesas, lugares e link da chamada */
 const isOnline=e=>!!e&&e.modo==='online';
 const MAX_MESAS=3;
-const mesasOf=e=>Math.max(1,Math.min(MAX_MESAS,parseInt(e.mesas,10)||3));
+const mesasOf=e=>(e.sala==='jogos'&&e.modo==='online')?2:Math.max(1,Math.min(MAX_MESAS,parseInt(e.mesas,10)||3));
 function tablePos(i,n){
   if(n<=1)return {x:.5,y:.72};
   if(n===2)return {x:i?.72:.28,y:.72};
@@ -508,7 +525,7 @@ function onlineHTML(e){
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
   if(!c)return '<div class="card"><p class="muted" style="margin:0">Volte em Eventos e toque em Entrar na sala online.</p></div>';
   const t=tableOf(e,c);
-  if(t<0)return '<div class="card"><h3>Mesas</h3><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
+  if(t<0)return '<div class="card"><h3>Mesas</h3><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar · '+mesaNome(e,i)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
   const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
   const rows=seatedAt(e.id,t).map(id=>{
     const nm=(all.find(m=>m.id===id)||{}).name;if(!nm)return '';
@@ -520,12 +537,166 @@ function onlineHTML(e){
     else chip=p&&p.st==='conectado'?'<span class="chip ok">conectado</span>':((rtc.tries[id]||0)>=4&&!p?'<span class="chip bad">sem conexão</span>':'<span class="chip warn">conectando…</span>');
     return '<div class="row between"><b>'+esc(nm)+'</b>'+chip+'</div>';
   }).join('');
-  return '<div class="card"><h3>Mesa '+(t+1)+'</h3>'+rows+
+  return '<div class="card"><h3>'+(isJogos(e)&&t===0?'Na mesa':mesaNome(e,t))+'</h3>'+rows+
     (inCall?'<button class="btn" data-act="callMute">'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'</button>'
            :'<p class="small" style="margin:0"><span class="chip warn">Você está na mesa, mas fora da chamada</span></p><button class="btn primary" data-act="callJoin" data-e="'+esc(e.id)+'">Ligar o microfone</button>')+
     '<button class="btn danger" data-act="stand" data-e="'+esc(e.id)+'">Levantar da mesa'+(inCall?' (sai da chamada)':'')+'</button>'+
     '</div>';
 }
+/* ===================== SALA DE JOGOS: TRUCO MINEIRO =====================
+   Baralho de 40 cartas (sem 8, 9 e 10). Manilhas fixas, da mais forte para a mais fraca:
+   4 de paus (zap), 7 de copas, ás de espadas (espadilha), 7 de ouros.
+   Depois: 3, 2, A, K, J, Q, 7, 6, 5, 4. Mão vale 2; truco 4; seis 8; nove 10; doze 12. Partida até 12. */
+const isJogos=e=>isOnline(e)&&e.sala==='jogos';
+const mesaNome=(e,i)=>isJogos(e)?(i===0?'Truco':'Conversa'):'Mesa '+(i+1);
+const T_RANKS='4567QJKA23',T_MAN={'4p':14,'7c':13,'Ae':12,'7o':11},T_NAIPE={o:'♦',e:'♠',c:'♥',p:'♣'};
+const T_SOBE={2:4,4:8,8:10,10:12},T_NOME={4:'Truco',8:'Seis',10:'Nove',12:'Doze'},T_META=12;
+const tForca=c=>T_MAN[c]||(T_RANKS.indexOf(c[0])+1);
+const tTeam=s=>s%2;
+const tGid=e=>e.id+'_truco';
+const tGame=e=>state.games[tGid(e)]||null;
+const tSeat=g=>g&&Array.isArray(g.seats)?g.seats.findIndex(x=>x.uid===state.uid):-1;
+const tNome=(g,s)=>{const x=g.seats[s],m=x&&state.members.find(y=>y.id===x.mid);return m?m.name:'?';};
+const tTimeNome=(g,t)=>g.seats.map((x,i)=>i).filter(i=>tTeam(i)===t).map(i=>tNome(g,i)).join(' e ');
+function tDeck(){
+  const d=[];for(const r of T_RANKS)for(const s of 'oecp')d.push(r+s);
+  const u=new Uint32Array(d.length);crypto.getRandomValues(u);
+  for(let i=d.length-1;i>0;i--){const j=u[i]%(i+1);const t=d[i];d[i]=d[j];d[j]=t;}
+  return d;
+}
+/* quem ganhou a mão olhando o resultado das rodadas: null = continua, -1 = ninguém, 0 ou 1 = time */
+function tVencedor(res){
+  const a=res[0],b=res[1],c=res[2];
+  if(res.length===2){
+    if(a!==-1&&a===b)return a;      /* ganhou as duas primeiras */
+    if(a===-1&&b!==-1)return b;     /* empatou a primeira: quem faz a segunda leva */
+    if(a!==-1&&b===-1)return a;     /* empatou a segunda: vale a primeira */
+    return null;
+  }
+  if(res.length===3){if(c!==-1)return c;if(a!==-1)return a;return -1;}
+  return null;
+}
+function tMinhas(e,g){const h=state.myHands[tGid(e)];return h&&g&&h.n===g.n&&Array.isArray(h.cards)?h.cards:null;}
+function tWatch(e){
+  const gid=tGid(e);if(state.handSubs[gid]||!state.uid)return;state.handSubs[gid]=true;
+  db.doc('hands/'+gid+'_'+state.uid).onSnapshot(s=>{state.myHands[gid]=s.exists?s.data():null;scheduleRender();},()=>{state.handSubs[gid]=false;});
+}
+async function tGravar(e,G){state.games[tGid(e)]=G;render();return w(()=>db.doc('games/'+tGid(e)).set(G));}
+async function tDar(e,G){
+  const n=G.seats.length,d=tDeck(),gid=tGid(e);
+  G.n=(G.n||0)+1;
+  const sai=(G.dealer+1)%n;
+  G.hand={turn:sai,lead:sai,vaza:0,mesa:[],res:[],valor:2,subiu:null,pedido:null};
+  const eu=G.seats.findIndex(x=>x.uid===state.uid);
+  if(eu>=0)state.myHands[gid]={n:G.n,cards:d.slice(eu*3,eu*3+3)};
+  state.games[gid]=G;render();
+  return w(async()=>{
+    await Promise.all(G.seats.map((x,i)=>db.doc('hands/'+gid+'_'+x.uid).set({n:G.n,cards:d.slice(i*3,i*3+3)})));
+    await db.doc('games/'+gid).set(G);
+  });
+}
+async function tComecar(e){
+  const ids=seatedAt(e.id,0);
+  if(ids.length!==2&&ids.length!==4)return toast('O truco precisa de 2 ou 4 jogadores na mesa.');
+  const seats=ids.map(mid=>({mid,uid:avUid({id:mid})||null}));
+  if(seats.some(x=>!x.uid))return toast('Só quem tem conta no app pode jogar.');
+  const u=new Uint32Array(seats.length);crypto.getRandomValues(u);
+  for(let i=seats.length-1;i>0;i--){const j=u[i]%(i+1);const t=seats[i];seats[i]=seats[j];seats[j]=t;}
+  return tDar(e,{status:'playing',seats,score:[0,0],dealer:u[0]%seats.length,n:0,msg:'Partida começou. Boa sorte!',ult:null,at:Date.now()});
+}
+async function tFimMao(e,G,time,motivo){
+  const pts=time===-1?0:G.hand.valor;
+  if(time!==-1)G.score[time]+=pts;
+  G.msg=(motivo?motivo+' ':'')+(time===-1?'Mão empatada: ninguém pontua.':tTimeNome(G,time)+' '+(G.seats.length>2?'ganharam':'ganhou')+' a mão: +'+pts+'.');
+  if(G.score[0]>=T_META||G.score[1]>=T_META){
+    G.status='over';G.winner=G.score[0]>=T_META?0:1;G.hand=null;
+    return tGravar(e,G);
+  }
+  G.dealer=(G.dealer+1)%G.seats.length;
+  return tDar(e,G);
+}
+async function tJogar(e,carta){
+  const g=tGame(e),eu=tSeat(g);if(!g||g.status!=='playing'||eu<0||!g.hand)return;
+  if(g.hand.turn!==eu||g.hand.pedido)return;
+  const minhas=tMinhas(e,g);if(!minhas||!minhas.includes(carta))return;
+  const gid=tGid(e),G=JSON.parse(JSON.stringify(g)),H=G.hand,n=G.seats.length,resto=minhas.filter(c=>c!==carta);
+  state.myHands[gid]={n:G.n,cards:resto};
+  db.doc('hands/'+gid+'_'+state.uid).set({n:G.n,cards:resto}).catch(()=>{});
+  H.mesa.push({s:eu,c:carta});
+  if(H.mesa.length<n){H.turn=(eu+1)%n;return tGravar(e,G);}
+  /* fecha a rodada */
+  let best=-1,tops=[];
+  for(const p of H.mesa){const f=tForca(p.c);if(f>best){best=f;tops=[p];}else if(f===best)tops.push(p);}
+  const times=[...new Set(tops.map(p=>tTeam(p.s)))],r=times.length===1?times[0]:-1;
+  H.res.push(r);
+  G.ult={mesa:H.mesa,r,s:r===-1?-1:tops[0].s};
+  const prox=r===-1?H.lead:tops[0].s;
+  H.mesa=[];H.vaza++;H.lead=prox;H.turn=prox;
+  G.msg=r===-1?'Rodada empatada.':tNome(G,tops[0].s)+' fez a rodada.';
+  const v=tVencedor(H.res);
+  if(v!==null)return tFimMao(e,G,v,'');
+  return tGravar(e,G);
+}
+async function tPedir(e){
+  const g=tGame(e),eu=tSeat(g);if(!g||g.status!=='playing'||eu<0||!g.hand)return;
+  const h=g.hand;if(h.turn!==eu||h.pedido||h.subiu===tTeam(eu)||!T_SOBE[h.valor])return;
+  const G=JSON.parse(JSON.stringify(g));G.hand.pedido={by:eu,to:T_SOBE[h.valor]};
+  G.msg=tNome(G,eu)+' pediu '+T_NOME[G.hand.pedido.to]+'!';
+  return tGravar(e,G);
+}
+async function tResponder(e,acao){
+  const g=tGame(e),eu=tSeat(g);if(!g||g.status!=='playing'||eu<0||!g.hand)return;
+  const p=g.hand.pedido;if(!p||tTeam(eu)===tTeam(p.by))return;
+  const G=JSON.parse(JSON.stringify(g)),H=G.hand;
+  if(acao==='correr'){H.pedido=null;return tFimMao(e,G,tTeam(p.by),tNome(G,eu)+' correu.');}
+  H.valor=p.to;H.subiu=tTeam(p.by);
+  if(acao==='aumentar'&&T_SOBE[p.to]){H.pedido={by:eu,to:T_SOBE[p.to]};G.msg=tNome(G,eu)+' aumentou para '+T_NOME[H.pedido.to]+'!';}
+  else{H.pedido=null;G.msg=tNome(G,eu)+' aceitou. Valendo '+H.valor+'.';}
+  return tGravar(e,G);
+}
+function tEncerrar(e){const gid=tGid(e);delete state.games[gid];render();return w(()=>db.doc('games/'+gid).delete(),'Partida encerrada.');}
+function carta(c,opt){
+  opt=opt||{};const red=c[1]==='o'||c[1]==='c',man=!!T_MAN[c];
+  return '<'+(opt.act?'button':'span')+' class="carta'+(red?' red':'')+(man?' man':'')+(opt.mini?' mini':'')+'"'+(opt.act?' data-act="tJogar" data-c="'+c+'" data-e="'+esc(opt.e)+'"'+(opt.off?' disabled':''):'')+' aria-label="'+c[0]+' de '+({o:'ouros',e:'espadas',c:'copas',p:'paus'})[c[1]]+(man?', manilha':'')+'"><b>'+c[0]+'</b><i>'+T_NAIPE[c[1]]+'</i></'+(opt.act?'button':'span')+'>';
+}
+function trucoHTML(e){
+  const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
+  if(!c||tableOf(e,c)!==0||getStatus(e)!=='aberto')return '';
+  if(state.gamesErr)return '<div class="card"><h3>Truco mineiro</h3><span class="chip warn">O jogo ainda não foi liberado no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
+  tWatch(e);
+  const g=tGame(e),naMesa=seatedAt(e.id,0),E=esc(e.id);
+  const fora=g&&g.status==='playing'?g.seats.filter(x=>!naMesa.includes(x.mid)):[];
+  if(!g||g.status!=='playing'){
+    const ok=naMesa.length===2||naMesa.length===4;
+    return '<div class="card"><h3>Truco mineiro</h3>'+
+      (g&&g.status==='over'?'<div class="placar"><span class="chip ok">🏆 '+esc(tTimeNome(g,g.winner))+'</span><b>'+g.score[g.winner]+' x '+g.score[1-g.winner]+'</b></div>'+(g.msg?'<div class="small muted">'+esc(g.msg)+'</div>':''):'')+
+      '<div class="small muted">Na mesa: '+naMesa.length+' · joga com 2 ou 4</div>'+
+      '<button class="btn primary" data-act="tComecar" data-e="'+E+'"'+(ok?'':' disabled')+'>'+(g&&g.status==='over'?'Jogar de novo':'Começar partida')+'</button></div>';
+  }
+  const eu=tSeat(g),h=g.hand,n=g.seats.length,meuTime=eu>=0?tTeam(eu):0,minhas=eu>=0?tMinhas(e,g):null;
+  let out='<div class="card truco"><div class="row between"><h3>Truco mineiro</h3><span class="chip info">Valendo '+h.valor+'</span></div>';
+  out+='<div class="placar"><span><b>'+g.score[meuTime]+'</b> '+esc(tTimeNome(g,meuTime))+'</span><span class="muted">x</span><span>'+esc(tTimeNome(g,1-meuTime))+' <b>'+g.score[1-meuTime]+'</b></span></div>';
+  out+='<div class="row" style="justify-content:center">'+[0,1,2].map(i=>{const r=h.res[i];return '<span class="vz '+(r===undefined?'':(r===-1?'emp':(r===meuTime?'nos':'eles')))+'" title="Rodada '+(i+1)+'"></span>';}).join('')+'</div>';
+  const mesa=h.mesa.length?h.mesa:(g.ult?g.ult.mesa:[]),antiga=!h.mesa.length&&!!g.ult;
+  out+='<div class="tmesa'+(antiga?' antiga':'')+'">'+(mesa.length?mesa.map(p=>'<div class="tjog">'+carta(p.c,{mini:true})+'<span class="small'+(antiga&&g.ult.s===p.s?' ganhou':'')+'">'+esc(tNome(g,p.s))+'</span></div>').join(''):'<span class="small muted">Mesa vazia</span>')+'</div>';
+  if(g.msg)out+='<div class="small" style="text-align:center">'+esc(g.msg)+'</div>';
+  if(fora.length)out+='<span class="chip warn">'+esc(fora.map(x=>(state.members.find(m=>m.id===x.mid)||{}).name||'?').join(', '))+' saiu da mesa</span>';
+  if(eu<0){out+='<div class="small muted" style="text-align:center">Partida em andamento. Você está assistindo.</div>';}
+  else{
+    const p=h.pedido;
+    if(p){
+      if(tTeam(p.by)!==meuTime)out+='<div class="row" style="justify-content:center"><button class="btn good" data-act="tResp" data-v="aceitar" data-e="'+E+'">Aceitar</button><button class="btn danger" data-act="tResp" data-v="correr" data-e="'+E+'">Correr</button>'+(T_SOBE[p.to]?'<button class="btn primary" data-act="tResp" data-v="aumentar" data-e="'+E+'">Pedir '+T_NOME[T_SOBE[p.to]].toLowerCase()+'</button>':'')+'</div>';
+      else out+='<div class="small muted" style="text-align:center">Aguardando resposta…</div>';
+    }else{
+      out+='<div class="small" style="text-align:center">'+(h.turn===eu?'<span class="chip ok">Sua vez</span>':'Vez de <b>'+esc(tNome(g,h.turn))+'</b>')+'</div>';
+    }
+    const livre=h.turn===eu&&!p;
+    out+='<div class="tmao'+(livre?' livre':'')+'">'+(minhas?minhas.map(x=>carta(x,{act:true,e:e.id,off:!livre})).join('')||'<span class="small muted">Sem cartas</span>':'<span class="small muted">Distribuindo as cartas…</span>')+'</div>';
+    if(livre&&h.subiu!==meuTime&&T_SOBE[h.valor])out+='<button class="btn primary" data-act="tPedir" data-e="'+E+'">Pedir '+T_NOME[T_SOBE[h.valor]].toLowerCase()+'</button>';
+  }
+  return out+'<button class="tfim" data-act="tEncerrar" data-e="'+E+'">Encerrar partida</button></div>';
+}
+
 function react(m,e,stage){
   const r=state.reactShow[m.id];if(!stage||!isOnline(e)||!r||r.ev!==e.id)return '';
   const left=r.until-Date.now();if(left<=0)return '';
@@ -549,7 +720,7 @@ function roomHTML(e){
   };
   const on=isOnline(e),nt=on?mesasOf(e):0,meM=myMember(),myC=meM&&state.checkins[e.id+'_'+meM.id],walk=on&&live&&!!myC&&!readOnly(),myT=on?tableOf(e,myC):-1;
   let mesas='';
-  for(let i=0;i<nt;i++){const tp=tablePos(i,nt),k=seatedAt(e.id,i).length;mesas+='<button class="mesa'+(myT===i?' mine':'')+'"'+(walk?' data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'"':' tabindex="-1"')+' style="left:'+(tp.x*100).toFixed(2)+'%;top:'+(tp.y*100).toFixed(2)+'%;z-index:'+Math.round(tp.y*100)+'" aria-label="Mesa '+(i+1)+', '+k+' sentados">Mesa '+(i+1)+(k?' ('+k+')':'')+'</button>';}
+  for(let i=0;i<nt;i++){const tp=tablePos(i,nt),k=seatedAt(e.id,i).length;mesas+='<button class="mesa'+(myT===i?' mine':'')+'"'+(walk?' data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'"':' tabindex="-1"')+' style="left:'+(tp.x*100).toFixed(2)+'%;top:'+(tp.y*100).toFixed(2)+'%;z-index:'+Math.round(tp.y*100)+'" aria-label="'+mesaNome(e,i)+', '+k+' sentados">'+mesaNome(e,i)+(k?' ('+k+')':'')+'</button>';}
   const txt='<div class="wtxt"><div class="place">'+esc(e.local||(on?'Evento online':'Local a definir'))+'</div><div class="small muted">'+esc(fmtDay(e.date))+' às '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+'</div></div>';
   const wall=th==='padrao'?'<div class="wall">'+txt+'<div class="door" title="Porta"></div></div>':'<div class="wall themed">'+txt+DECOR[th]+'</div>';
   return '<div class="room th-'+th+'">'+wall+
@@ -571,7 +742,7 @@ function avatarHTML(){
 function roomScreen(e){
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
-  h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+roomHTML(e)+(isOnline(e)?onlineHTML(e)+reactBar(e):'');
+  h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+roomHTML(e)+(isOnline(e)?(isJogos(e)?trucoHTML(e):'')+onlineHTML(e)+reactBar(e):'');
   if(canManage(e)&&!readOnly()){
     const head0='<div class="card">'+(isOnline(e)?'':'<h3>QR code</h3>');let box=head0;
     if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
@@ -616,7 +787,7 @@ function eventosHTML(){
               :'<div class="small muted">Líder do evento: <b>'+esc(((state.members.find(m=>m.id===(ed.leaderId||(myMember()||{}).id))||{}).name)||'você')+'</b>'+(state.editing==='new'?' (quem cria o evento é o líder; o administrador pode trocar)':'')+'</div>')+
        '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
        '<label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label>'+
-       (val('ev_modo',ed.modo)==='online'?'<label>Quantas mesas na sala online (até 3)<input id="ev_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ev_mesas',ed.mesas||3),10)||3))+'"></label>':'')+
+       (val('ev_modo',ed.modo)==='online'?'<label>Sala online<select id="ev_sala"><option value="conversa">Conversa (mesas)</option><option value="jogos"'+(val('ev_sala',ed.sala)==='jogos'?' selected':'')+'>Sala de jogos (truco mineiro)</option></select></label>'+(val('ev_sala',ed.sala)==='jogos'?'':'<label>Quantas mesas na sala online (até 3)<input id="ev_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ev_mesas',ed.mesas||3),10)||3))+'"></label>'):'')+
        '<div class="row"><button class="btn primary" data-act="saveEvent">Salvar</button><button class="btn" data-act="cancelEdit">Cancelar</button></div></div>';
     }else out+='<button class="btn primary" data-act="newEvent">Novo evento</button>';
   }
@@ -836,6 +1007,11 @@ app.addEventListener('click',async ev=>{
   if(act==='logout'){firebase.auth().signOut();return;}
   if(act==='tab'){state.tab=d.t;render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
+  if(act==='tComecar'&&evn){await tComecar(evn);return;}
+  if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
+  if(act==='tPedir'&&evn){await tPedir(evn);return;}
+  if(act==='tResp'&&evn){await tResponder(evn,d.v);return;}
+  if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';render();return;}
   if(act==='rsvp'&&evn){
     if(!myMember()||!state.uid)return;
@@ -911,7 +1087,7 @@ app.addEventListener('click',async ev=>{
   if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
   if(act==='saveEvent'){
     const g=id=>(document.getElementById(id)||{}).value||'';
-    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3))};
+    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3)),sala:(g('ev_modo')==='online'&&g('ev_sala')==='jogos')?'jogos':'conversa'};
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
     if(!data.time||!data.fim)return toast('Preencha a hora de início e a de término.');
     if(!adm()){const me=myMember();if(!me)return;if(state.editing==='new')data.leaderId=me.id;else delete data.leaderId;}
@@ -946,7 +1122,7 @@ app.addEventListener('click',async ev=>{
     const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key];
     if(!c||getStatus(evn)!=='aberto'||!isOnline(evn))return;
     let up,sitT=-1;
-    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;if(tableOf(evn,c)===t&&rtc.on)return;sitT=t;up={table:t};}
+    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;if(tableOf(evn,c)===t&&rtc.on)return;if(isJogos(evn)&&t===0&&tableOf(evn,c)!==0&&seatedAt(evn.id,0).length>=4)return toast('A mesa do truco está cheia (4 lugares).');sitT=t;up={table:t};}
     else if(act==='stand'){const tp=tablePos(Math.max(0,tableOf(evn,c)),mesasOf(evn));up={table:null,x:tp.x,y:Math.min(.97,tp.y+.1)};}
     else{const r=el.getBoundingClientRect();if(!r.width||!r.height)return;up={table:null,x:+Math.max(.06,Math.min(.94,(ev.clientX-r.left)/r.width)).toFixed(3),y:+Math.max(.42,Math.min(.97,(ev.clientY-r.top)/r.height+.03)).toFixed(3)};}
     if(rtc.on){hangup(false);up.call=false;up.rtc={};}
@@ -995,7 +1171,7 @@ function onField(ev){
   const t=ev.target;
   if(t.id&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))state.draft[t.id]=t.value;
   if(t.id==='evsel'&&ev.type==='change'){state.eventId=t.value;render();}
-  if(t.id==='ev_modo'&&ev.type==='change')render();
+  if((t.id==='ev_modo'||t.id==='ev_sala')&&ev.type==='change')render();
 }
 app.addEventListener('input',onField);app.addEventListener('change',onField);
 
@@ -1109,6 +1285,7 @@ function subscribe(){
   sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
   sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
   sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
+  db.collection('games').onSnapshot(s=>{state.games=toMap(s);state.gamesErr=false;scheduleRender();},()=>{state.gamesErr=true;scheduleRender();});
   sub('rules',db.doc('config/rules'),s=>{const r=s.exists?s.data():{};state.rules={limite:Math.max(1,r.limite||2),dias:Math.max(1,r.dias||3),appLink:r.appLink||''};});
   setTimeout(()=>{if(!state.loaded){state.slow=true;render();}},10000);
 }
@@ -1138,7 +1315,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112224313';
+const VER='20261112225207';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;

@@ -85,6 +85,14 @@ service cloud.firestore {
             && key == request.resource.data.eventId + '_' + request.resource.data.memberId);
       allow delete: if isOwner() || isLeaderOf(resource.data.eventId);
     }
+    // Sala de jogos: a partida fica visível para os membros; a mão de cada um só o dono lê
+    match /games/{id} {
+      allow read, write: if inside();
+    }
+    match /hands/{id} {
+      allow read: if inside() && id.matches('.*_' + me());
+      allow write: if inside();
+    }
     match /justifs/{key} {
       allow read: if inside();
       allow create: if isMember()
