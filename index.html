@@ -187,6 +187,22 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .evdata b{font-family:var(--font-head);font-size:24px}.evdata span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 .tabs{background:#1B1511 !important}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px}
+.seg2 button{border:0;background:transparent;color:var(--muted);font-weight:600;padding:9px 6px;border-radius:9px;cursor:pointer;touch-action:manipulation}
+.seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.conqs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.conq{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 2px;text-align:center}
+.conq i{font-style:normal;font-size:22px;line-height:1.1}.conq small{font-size:9.5px;line-height:1.15;color:var(--muted)}
+.conq.off{opacity:.38;filter:grayscale(1)}
+.dests{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dest{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.dest i{font-style:normal;font-size:26px;line-height:1.1}.dest b{font-family:var(--font-head);font-size:15px}
+.tela{display:flex;flex-direction:column;gap:14px}
+.tela.entra{animation:telaIn .32s ease-out both}
+@keyframes telaIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.tjog.nova{animation:cartaIn .38s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes cartaIn{from{opacity:0;transform:translateY(46px) scale(.85) rotate(-8deg)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tela.entra,.tjog.nova{animation:none!important}}
 .hero{background:linear-gradient(135deg,#2D2520,#3B2B14);border-color:#5A4424}
 .hav svg{width:74px;height:103px;overflow:visible;display:block}
 .pista{background:#B5533C;border-radius:14px;padding:4px 0;display:flex;flex-direction:column;overflow:hidden}
@@ -202,7 +218,8 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 .corredor.vai svg{animation:hop .26s ease-in-out infinite}
 @keyframes corre{from{left:0}to{left:var(--x)}}
 .raia.susp .corredor svg{filter:grayscale(1);opacity:.75}
-.raia.susp .rnome::after{content:' (suspenso)';font-weight:400;opacity:.85}
+.raia.susp .rnome::after{content:'suspenso';display:block;width:max-content;margin-top:2px;padding:1px 7px;border-radius:999px;background:rgba(0,0,0,.35);font-weight:600;font-size:10.5px;letter-spacing:.02em}
+.raia.susp{background:rgba(0,0,0,.16)}
 .rn{font-family:var(--font-head);font-weight:700;font-size:15px;text-align:right}
 .perfil{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
 .pav svg{width:52px;height:72px;overflow:visible;display:block}
@@ -262,7 +279,7 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -779,7 +796,9 @@ function trucoHTML(e){
   out+='<div class="placar2"><div class="pt"><span class="small">'+esc(tTimeNome(g,meuTime))+'</span><b>'+g.score[meuTime]+'</b></div><span class="px">X</span><div class="pt"><span class="small">'+esc(tTimeNome(g,1-meuTime))+'</span><b>'+g.score[1-meuTime]+'</b></div></div>';
   out+='<div class="row" style="justify-content:center">'+[0,1,2].map(i=>{const r=h.res[i];return '<span class="vz '+(r===undefined?'':(r===-1?'emp':(r===meuTime?'nos':'eles')))+'" title="Rodada '+(i+1)+'"></span>';}).join('')+'</div>';
   const mesa=h.mesa.length?h.mesa:(g.ult?g.ult.mesa:[]),antiga=!h.mesa.length&&!!g.ult;
-  out+='<div class="tmesa'+(antiga?' antiga':'')+'">'+(mesa.length?mesa.map(p=>'<div class="tjog">'+carta(p.c,{mini:true})+'<span class="small'+(antiga&&g.ult.s===p.s?' ganhou':'')+'">'+esc(tNome(g,p.s))+'</span></div>').join(''):'<span class="small muted">Mesa vazia</span>')+'</div>';
+  const tsig=g.n+'-'+h.vaza+'-'+h.mesa.length;if(tsig!==state.tSig){state.tSig=tsig;state.tSigAt=Date.now();}
+  const novaCarta=!antiga&&Date.now()-state.tSigAt<500;
+  out+='<div class="tmesa'+(antiga?' antiga':'')+'">'+(mesa.length?mesa.map((p,i)=>'<div class="tjog'+(novaCarta&&i===mesa.length-1?' nova':'')+'">'+carta(p.c,{mini:true})+'<span class="small'+(antiga&&g.ult.s===p.s?' ganhou':'')+'">'+esc(tNome(g,p.s))+'</span></div>').join(''):'<span class="small muted">Mesa vazia</span>')+'</div>';
   if(g.msg)out+='<div class="small" style="text-align:center">'+esc(g.msg)+'</div>';
   if(fora.length)out+='<span class="chip warn">'+esc(fora.map(x=>(state.members.find(m=>m.id===x.mid)||{}).name||'?').join(', '))+' saiu da mesa</span>';
   if(eu<0){out+='<div class="small muted" style="text-align:center">Partida em andamento. Você está assistindo.</div>';}
@@ -944,7 +963,7 @@ function faltasHTML(){
     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
     out+='<div class="card hero"><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
   }
-  return out+rankHTML()+abonoHTML();
+  return out+rankHTML()+destaquesHTML()+abonoHTML();
 }
 function eventosHTML(){
   let out='';
@@ -966,8 +985,10 @@ function eventosHTML(){
   }
   const me=myMember();
   const rank=e=>({aberto:0,agendado:1,encerrado:2})[getStatus(e)];
-  const evs=state.events.slice().sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?evTime(a)-evTime(b):evTime(b)-evTime(a)));
-  out+='<div class="card"><h2>Eventos marcados</h2>'+(evs.length?'<div class="list">'+evs.map(e=>{
+  const todosEv=state.events.slice().sort((a,b)=>rank(a)-rank(b)||(rank(a)===1?evTime(a)-evTime(b):evTime(b)-evTime(a)));
+  const verEnc=state.evAba==='enc',nEnc=todosEv.filter(e=>getStatus(e)==='encerrado').length,nAtv=todosEv.length-nEnc;
+  const evs=todosEv.filter(e=>(getStatus(e)==='encerrado')===verEnc);
+  out+='<div class="card"><div class="seg2"><button data-act="evAba" data-v="atv" aria-pressed="'+!verEnc+'">Próximos'+(nAtv?' ('+nAtv+')':'')+'</button><button data-act="evAba" data-v="enc" aria-pressed="'+verEnc+'">Encerrados'+(nEnc?' ('+nEnc+')':'')+'</button></div>'+(evs.length?'<div class="list">'+evs.map(e=>{
     const st=getStatus(e),l=state.members.find(m=>m.id===e.leaderId);
     const n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length;
     const present=!!(me&&state.checkins[e.id+'_'+me.id]);
@@ -994,7 +1015,7 @@ function eventosHTML(){
       '<div class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span>'+(quando?'<span class="chip warn">'+quando+'</span>':'')+'</div>'+
       '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?(isOnline(e)?' - '+n+' na sala':' - '+n+' de '+state.members.length+' presentes'):'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?(isOnline(e)?' - <b>você está na sala</b>':' - <b>você está presente</b>'):'')+'</div>'+rsvp+codeBox+
       (btns?'<div class="row">'+btns+'</div>':'')+'</div>';
-  }).join('')+'</div>':'<div class="empty">Nenhum evento marcado ainda.</div>')+'</div>';
+  }).join('')+'</div>':'<div class="empty">'+(verEnc?'Nenhum evento encerrado ainda.':'Nenhum evento marcado.')+'</div>')+'</div>';
   return out;
 }
 /* ranking de participação: só eventos presenciais contam */
@@ -1021,11 +1042,46 @@ function rankHTML(){
   return '<div class="card"><div class="row between"><h2 style="margin:0">Corrida de presença</h2><span class="row"><button class="btn'+(mes?' primary':'')+'" data-act="rankMode" data-v="mes" aria-pressed="'+mes+'">Mês</button><button class="btn'+(mes?'':' primary')+'" data-act="rankMode" data-v="total" aria-pressed="'+!mes+'">Geral</button></span></div>'+
     '<div class="pista">'+pista+'</div>'+(sel?perfilHTML(sel,mes):'<div class="small muted" style="text-align:center">Toque em alguém para ver os dados</div>')+'</div>';
 }
+/* números de cada membro para conquistas (só eventos presenciais) */
+function statsDe(m){
+  const evs=state.events.filter(e=>!isOnline(e)),pres=evs.filter(e=>state.checkins[e.id+'_'+m.id]),a=analyze(m);
+  let cur=0,best=0;
+  for(const h of a.hist){if(h.s==='presente'){cur++;if(cur>best)best=cur;}else if(h.s==='falta'||h.s==='suspenso')cur=0;}
+  let primeiro=0;
+  for(const e of pres){
+    const ats=state.members.map(x=>state.checkins[e.id+'_'+x.id]).filter(c=>c&&typeof c.at==='number').map(c=>c.at),meu=state.checkins[e.id+'_'+m.id].at;
+    if(ats.length>1&&typeof meu==='number'){const mn=Math.min(...ats);if(meu===mn&&ats.filter(x=>x===mn).length===1)primeiro++;}
+  }
+  const porMes={};for(const h of a.hist){const k=String(h.e.date).slice(0,7);(porMes[k]=porMes[k]||[]).push(h.s);}
+  return {n:pres.length,seq:cur,best,primeiro,
+    lider:evs.filter(e=>e.leaderId===m.id&&getStatus(e)!=='agendado').length,
+    abon:Object.values(state.justifs).some(j=>j.memberId===m.id&&j.decision==='abonada'),
+    perfeito:Object.values(porMes).some(v=>v.length>=2&&v.every(x=>x==='presente'))};
+}
+const CONQ=[
+  ['🎉','Estreia','Foi ao primeiro evento',x=>x.n>=1],['🍺','Fiel','5 presenças',x=>x.n>=5],['🏅','Veterano','10 presenças',x=>x.n>=10],['🏆','Lenda','25 presenças',x=>x.n>=25],
+  ['🔥','Em chamas','3 presenças seguidas',x=>x.best>=3],['🚀','Imparável','5 presenças seguidas',x=>x.best>=5],['⭐','Mês perfeito','Um mês inteiro sem faltar',x=>x.perfeito],
+  ['⏰','Primeiro a chegar','Chegou antes de todos',x=>x.primeiro>=1],['👑','Líder','Liderou um evento',x=>x.lider>=1],['📝','Desculpa aceita','Teve uma falta abonada',x=>x.abon]
+];
+function conquistasHTML(m){
+  const x=statsDe(m),tem=CONQ.filter(c=>c[3](x)).length;
+  return '<div class="row between"><b>Conquistas</b><span class="small muted">'+tem+' de '+CONQ.length+(x.seq>1?' · '+x.seq+' seguidas agora':'')+'</span></div><div class="conqs">'+CONQ.map(c=>{const ok=c[3](x);return '<span class="conq'+(ok?'':' off')+'" title="'+c[1]+': '+c[2]+'" aria-label="'+c[1]+(ok?', conquistada':', ainda não')+'"><i>'+c[0]+'</i><small>'+c[1]+'</small></span>';}).join('')+'</div>';
+}
+function destaquesHTML(){
+  const mk=todayStr().slice(0,7),evs=state.events.filter(e=>!isOnline(e)&&getStatus(e)==='encerrado'&&String(e.date).slice(0,7)===mk);
+  if(!evs.length||!state.members.length)return '';
+  const rows=state.members.map(m=>({m,p:evs.filter(e=>state.checkins[e.id+'_'+m.id]).length,f:analyze(m).mes}));
+  const top=k=>{const mx=Math.max(...rows.map(r=>r[k]));if(!(mx>0))return null;const ns=rows.filter(r=>r[k]===mx).map(r=>r.m.name);return {v:mx,txt:ns.slice(0,2).join(' e ')+(ns.length>2?' e mais '+(ns.length-2):'')};};
+  const p=top('p'),f=top('f');
+  const tile=(ic,t,o,un)=>'<div class="dest"><i>'+ic+'</i><span class="small muted">'+t+'</span><b>'+(o?esc(o.txt):'Ninguém')+'</b>'+(o?'<span class="small muted">'+o.v+' '+un+(o.v===1?'':'s')+'</span>':'')+'</div>';
+  return '<div class="card"><h2 style="margin:0">Destaques do mês</h2><div class="dests">'+tile('🏆','Mais presente',p,'presença')+tile('🙈','Mais faltoso',f,'falta')+'</div></div>';
+}
 function perfilHTML(r,mes){
   const m=r.m,a=r.a,lim=state.rules.limite,pres=a.hist.filter(h=>h.s==='presente').length;
   const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':(a.mes>=lim?'<span class="chip warn">Suspensão já cumprida</span>':(a.mes===lim-1&&lim>1?'<span class="chip warn">Mais uma falta suspende</span>':'<span class="chip ok">Em dia</span>'));
-  return '<div class="perfil"><div class="row between"><div class="row" style="align-items:center"><span class="pav">'+fig(m)+'</span><div><h3 style="margin:0">'+esc(m.name)+'</h3>'+chip+'</div></div><button class="ticon" data-act="perfil" data-m="'+esc(m.id)+'" aria-label="Fechar">✕</button></div>'+
-    '<div class="pnums"><div><b>'+a.mes+'<small> de '+lim+'</small></b><span>faltas no mês</span></div><div><b>'+r.evs.length+'</b><span>'+(mes?'presenças no mês':'presenças no total')+'</span></div><div><b>'+pres+'</b><span>presenças em encerrados</span></div></div>'+
+  return '<div class="perfil"><div class="row between" style="flex-wrap:nowrap;align-items:flex-start"><div class="row" style="align-items:center;flex-wrap:nowrap;min-width:0"><span class="pav">'+fig(m)+'</span><div><h3 style="margin:0">'+esc(m.name)+'</h3>'+chip+'</div></div><button class="ticon" data-act="perfil" data-m="'+esc(m.id)+'" aria-label="Fechar">✕</button></div>'+
+    '<div class="pnums"><div><b>'+a.mes+'<small> de '+lim+'</small></b><span>faltas no mês</span></div><div><b>'+r.evs.length+'</b><span>'+(mes?'presenças no mês':'presenças no total')+'</span></div><div><b>'+statsDe(m).seq+'</b><span>seguidas agora</span></div></div>'+
+    conquistasHTML(m)+
     '<div class="dots" aria-label="Últimos eventos">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div>'+
     '<div class="legend"><span><i style="background:var(--ok)"></i>Presente</span><span><i style="background:var(--bad)"></i>Falta</span><span><i style="background:var(--info)"></i>Abonada</span><span><i style="background:var(--warn)"></i>Em análise</span><span><i style="background:var(--muted)"></i>Suspenso</span></div>'+
     (r.evs.length?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">'+(mes?'Nenhuma presença neste mês.':'Nenhuma presença ainda.')+'</div>')+'</div>';
@@ -1107,7 +1163,7 @@ function render(){
     autoValidate();return;
   }
   h+=tabsHTML();
-  h+=({faltas:faltasHTML,eventos:eventosHTML,avatar:()=>avatarHTML()||'<div class="card"><div class="empty">Entre como membro para montar o seu avatar.</div></div>',admin:adminHTML}[state.tab]||faltasHTML)();
+  h+='<div class="tela'+(Date.now()-state.telaAt<450?' entra':'')+'">'+({faltas:faltasHTML,eventos:eventosHTML,avatar:()=>avatarHTML()||'<div class="card"><div class="empty">Entre como membro para montar o seu avatar.</div></div>',admin:adminHTML}[state.tab]||faltasHTML)()+'</div>';
   app.innerHTML=h;
   const q=document.getElementById('qr');
   if(q&&window.QRCode){try{new QRCode(q,{text:q.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q.textContent='Não foi possível gerar o QR code.';}}
@@ -1197,13 +1253,14 @@ app.addEventListener('click',async ev=>{
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
   if(act==='logout'){firebase.auth().signOut();return;}
-  if(act==='tab'){state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
+  if(act==='tab'){state.telaAt=Date.now();state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='tComecar'&&evn){await tComecar(evn);return;}
   if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
   if(act==='tPedir'&&evn){await tPedir(evn);return;}
   if(act==='tResp'&&evn){await tResponder(evn,d.v);return;}
   if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
+  if(act==='evAba'){state.evAba=d.v==='enc'?'enc':'atv';render();return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
   if(act==='perfil'){state.perfil=state.perfil===d.m?null:d.m;render();return;}
   if(act==='rsvp'&&evn){
@@ -1527,7 +1584,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113093024';
+const VER='20261113122942';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
