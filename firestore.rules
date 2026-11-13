@@ -101,7 +101,7 @@ service cloud.firestore {
         || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partes']));
       allow delete: if isOwner() || resource.data.uid == me();
     }
-    // Link de racha para pessoa de fora do grupo: quem tem o link (chave longa e aleatória) vê só aquele racha, até vencer,
+    // Link para pessoa de fora do grupo (racha ou sorteio do evento): quem tem o link (chave longa e aleatória) vê só aquele racha, até vencer,
     // e só consegue avisar "já paguei". Quem criou o racha (ou o administrador) cria, confirma e apaga.
     match /convites/{k} {
       allow get: if inside() || resource.data.exp > request.time.toMillis();
@@ -111,7 +111,17 @@ service cloud.firestore {
         || (resource.data.exp > request.time.toMillis()
             && resource.data.st == 'devendo'
             && request.resource.data.st == 'avisou'
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st', 'at']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st', 'at']))
+        // Sorteio do evento (amigo oculto): a pessoa de fora só escreve as próprias dicas pelo link dela;
+        // os integrantes só atualizam a cópia das dicas de quem ela tirou
+        || (resource.data.exp > request.time.toMillis()
+            && resource.data.get('tipo', '') == 'amigo'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dica'])
+            && request.resource.data.dica is string
+            && request.resource.data.dica.size() <= 300)
+        || (inside()
+            && resource.data.get('tipo', '') == 'amigo'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dicaDele']));
       allow delete: if isOwner() || (signedIn() && resource.data.uid == me());
     }
     match /posts/{id} {
