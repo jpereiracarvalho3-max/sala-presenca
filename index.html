@@ -164,7 +164,7 @@ a.btn{text-decoration:none;text-align:center;display:block}
 (function(){
 const app=document.getElementById('app');
 const state={tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
-  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
+  ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -284,7 +284,7 @@ function head(){
   return '<div class="top"><div><h1>Eventos dos Bêbados</h1><div class="muted small">Regra: '+state.rules.limite+' faltas no mês geram '+state.rules.dias+' dias de suspensão. As faltas zeram todo mês.</div></div><div class="who">'+who+'</div></div>';
 }
 function tabsHTML(){
-  const t=[['faltas','Faltas'],['eventos','Eventos']];
+  const t=[['faltas','Faltas'],['eventos','Eventos'],['rank','Ranking']];
   if(adm()){const n=pendingReqs().length;t.push(['admin','Admin'+(n?' ('+n+')':'')]);}
   return '<div class="tabs" role="tablist">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
 }
@@ -455,6 +455,21 @@ function eventosHTML(){
   }).join('')+'</div>':'<div class="empty">Nenhum evento marcado ainda.</div>')+'</div>';
   return out;
 }
+/* ranking de participação: só eventos presenciais contam */
+function rankHTML(){
+  if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
+  const evs=state.events.filter(e=>!isOnline(e)).sort((a,b)=>evTime(b)-evTime(a));
+  const rows=state.members.map(m=>({m,evs:evs.filter(e=>state.checkins[e.id+'_'+m.id])})).sort((x,y)=>y.evs.length-x.evs.length||x.m.name.localeCompare(y.m.name));
+  const total=evs.filter(e=>getStatus(e)!=='agendado').length,medal=['🥇','🥈','🥉'];
+  let pos=0,last=-1;
+  return '<div class="card"><h2>Ranking de presença</h2><p class="muted small" style="margin:0">Conta só eventos presenciais. Eventos presenciais já realizados ou em andamento: <b>'+total+'</b>. Toque em um nome para ver em quais ele esteve.</p><div class="list">'+
+    rows.map((r,i)=>{
+      if(r.evs.length!==last){pos=i;last=r.evs.length;}
+      const open=!!state.rankOpen[r.m.id],n=r.evs.length;
+      return '<div class="item"><button class="row between" data-act="rankToggle" data-m="'+esc(r.m.id)+'" aria-expanded="'+open+'" style="border:0;background:transparent;padding:0;width:100%;cursor:pointer;color:inherit;font:inherit;text-align:left"><h3>'+(n&&pos<3?medal[pos]+' ':'')+(pos+1)+'º '+esc(r.m.name)+'</h3><span class="chip '+(n?'ok':'')+'">'+n+(n===1?' presença':' presenças')+'</span></button>'+
+        (open?(n?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">Ainda não esteve em nenhum evento presencial.</div>'):'')+'</div>';
+    }).join('')+'</div></div>';
+}
 function placarHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
   const rows=state.members.map(m=>({m,a:analyze(m)})).sort((x,y)=>(y.a.suspenso-x.a.suspenso)||(y.a.mes-x.a.mes)||x.m.name.localeCompare(y.m.name));
@@ -532,7 +547,7 @@ function render(){
     autoValidate();return;
   }
   h+=tabsHTML();
-  h+=({faltas:faltasHTML,eventos:eventosHTML,admin:adminHTML}[state.tab]||faltasHTML)();
+  h+=({faltas:faltasHTML,eventos:eventosHTML,rank:rankHTML,admin:adminHTML}[state.tab]||faltasHTML)();
   app.innerHTML=h;
   const q=document.getElementById('qr');
   if(q&&window.QRCode){try{new QRCode(q,{text:q.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q.textContent='Não foi possível gerar o QR code.';}}
@@ -615,6 +630,7 @@ app.addEventListener('click',async ev=>{
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
   if(act==='logout'){firebase.auth().signOut();return;}
   if(act==='tab'){state.tab=d.t;render();return;}
+  if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
@@ -871,7 +887,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112210553';
+const VER='20261112210723';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
