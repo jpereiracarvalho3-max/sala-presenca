@@ -160,7 +160,9 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .pdots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:120;background:rgba(255,255,255,.92);border-radius:999px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .pdots button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font-weight:600;font-size:13px;color:#586080;cursor:pointer}
 .pdots button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.room.grande{display:flex;flex-direction:column;min-height:calc(100vh - 28px);min-height:calc(100dvh - 28px)}
+/* sala online em tela cheia: cabe exatamente entre o relógio e a barra de baixo do celular */
+body:has(.room.grande){padding-top:max(8px,env(safe-area-inset-top,0px));padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+.room.grande{display:flex;flex-direction:column;min-height:calc(100vh - 28px);min-height:calc(100dvh - max(8px,env(safe-area-inset-top,0px)) - max(8px,env(safe-area-inset-bottom,0px)))}
 .room.grande .wall{flex:0 0 auto;padding-top:46px}
 .room.grande .wall.themed{padding-top:46px}
 .room.grande .floor.stage.online{flex:1 1 auto;height:auto;min-height:420px}
@@ -2143,7 +2145,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113142623';
+const VER='20261113142848';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
