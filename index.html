@@ -312,6 +312,16 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 .segredo b{font-family:var(--font-head);font-size:32px;line-height:1.15;text-align:center}
 .segredo.aberto{border-style:solid;border-color:var(--accent);background:var(--surface)}
 .segredo.imp{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.cidnoite{border-radius:18px;background:#0a0f22;border:1px solid #232c4d;color:#cdd6ff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:300px;padding:28px 18px}
+.cidnoite b{font-family:var(--font-head);font-size:28px;line-height:1.15;color:#eef1ff}
+.cidnoite .small{color:#8f9bd1;max-width:260px}
+.cidvez{border-radius:18px;border:2px solid var(--accent);background:var(--surface);display:flex;flex-direction:column;gap:12px;padding:16px;text-align:center;align-items:stretch}
+.cidvez>b{font-family:var(--font-head);font-size:22px;line-height:1.2}
+.cidlista{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cidlista .stl{padding:12px 8px;min-height:46px}
+.cidlista .stl:disabled{opacity:.45;cursor:default}
+.cidfala{border-radius:14px;background:var(--soft);border:1px solid var(--line);padding:14px;text-align:center;font-weight:600;font-size:17px;line-height:1.35}
+.chip.cidfora{opacity:.45;text-decoration:line-through}
 .tfim{align-self:center;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:11px 16px;min-height:40px;touch-action:manipulation}
 .truco{background:var(--surface)}
 .tmao{display:flex;justify-content:center;gap:10px;min-height:86px;align-items:center}
@@ -1016,7 +1026,7 @@ function iComecar(e){
 function impScreen(e){
   const g=iGame(e)||{},st=g.status||'lobby',js=iJog(e,g),me=myMember(),dentro=!!(g.jog&&g.jog[state.uid]),E=esc(e.id),tema=IMP_TEMAS[g.tema]?g.tema:'lugar';
   if(g.n!==state.impN){state.impN=g.n;state.impVer=false;}
-  let h='<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div><div class="card"><div class="row between"><h2 style="margin:0">Impostor</h2>'+(st==='playing'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
+  let h=jogosTopo(e,'imp')+'<div class="card"><div class="row between"><h2 style="margin:0">Impostor</h2>'+(st==='playing'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':'')+'</div>';
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(st==='playing'){
     const rod=Array.isArray(g.rod)?g.rod:[],naRodada=!!me&&rod.includes(me.id),seg=iDec(g.seg)||{p:'?',i:[]},k=seg.i.length;
@@ -1044,9 +1054,195 @@ function impScreen(e){
   return h+'</div>';
 }
 
+/* ===================== A CIDADE DORME (sala presencial, com narração) =====================
+   Jogo de roda com papéis secretos: cidadãos, assassino(s), anjo e detetive.
+   O celular de quem começa a partida é o NARRADOR: ele fala em voz alta e faz o jogo andar (noite, manhã, votação).
+   Cada jogador age no próprio celular. A partida fica em games/{evento}_cid; papéis e escolhas da noite ficam
+   embaralhados (como no Impostor), não trancados. */
+const CID_PAPEL={c:'Cidadão',a:'Assassino',j:'Anjo',d:'Detetive'};
+const CID_DICA={c:'Você não tem poder especial. Descubra quem é o assassino na conversa e vote.',a:'À noite, você escolhe no celular quem vai morrer. De dia, disfarce.',j:'À noite, você escolhe alguém para proteger do assassino.',d:'À noite, você investiga uma pessoa e descobre se ela é assassino.'};
+const CID_MIN=5,CID_K=window.__cidK||1; /* CID_K encurta as esperas nos testes */
+const cGid=e=>e.id+'_cid';
+const cGame=e=>state.games[cGid(e)]||null;
+const cQtdAss=n=>n>=8?2:1;
+const cSeg=g=>(iDec(g&&g.seg)||{}).r||{};
+const cAlvo=s=>(iDec(s)||{}).t||'';
+const cNoite=f=>['dorme','na','fa','nj','fj','nd','fd'].includes(f);
+function cVenc(r,vivos){const a=vivos.filter(m=>r[m]==='a').length;return a===0?'cidade':(a>=vivos.length-a?'assassinos':'');}
+function cEntrar(e,entra){const me=myMember();if(!me)return;return w(()=>db.doc('games/'+cGid(e)).set({jog:{[state.uid]:entra?me.id:null}},{merge:true}),entra?'':'Você saiu do jogo.');}
+function cGrava(e,dados){return db.doc('games/'+cGid(e)).update(dados);}
+function cComecar(e){
+  const g=cGame(e)||{},js=iJog(e,g),me=myMember();
+  if(!me||!(g.jog&&g.jog[state.uid]))return toast('Entre no jogo primeiro.');
+  if(js.length<CID_MIN)return toast('A Cidade Dorme precisa de pelo menos '+CID_MIN+' participantes.');
+  const u=new Uint32Array(js.length);crypto.getRandomValues(u);
+  const ordem=js.map((x,i)=>({mid:x.mid,k:u[i]})).sort((a,b)=>a.k-b.k).map(x=>x.mid),na=cQtdAss(js.length),r={};
+  ordem.forEach((m,i)=>{r[m]=i<na?'a':i===na?'j':i===na+1?'d':'c';});
+  state.cidVer=false;
+  const L=cidLoc;L.gid=cGid(e);L.fn=(g.fn||0)+1;L.ini=Date.now();L.rand=12000*CID_K;L.indo=false;cFalar(cFala({fase:'papeis'}));
+  cGrava(e,{status:'jogo',host:state.uid,n:(g.n||0)+1,rod:js.map(x=>x.mid),vivos:js.map(x=>x.mid),seg:iCod({r}),fase:'papeis',fn:(g.fn||0)+1,ft:Date.now(),noite:0,visto:{},votos:{},ka:'',pj:'',di:'',up:'',dok:false,forca:false,fechar:false,morto:'',salvo:false,elim:'',empate:false,venc:''}).catch(()=>toast('Não consegui começar a partida.'));
+}
+/* ---------- narração (só no celular narrador) ---------- */
+const cidLoc={gid:'',fn:-1,ini:0,falaFim:0,rand:0,indo:false,tok:0,tf:null,texto:''};
+function cFalar(txt){
+  const L=cidLoc,id=++L.tok,est=Math.max(1500,txt.length*75)*CID_K;L.falaFim=0;L.texto=txt;clearTimeout(L.tf);
+  let falou=false;
+  try{
+    if('speechSynthesis' in window&&!window.__cidMudo){
+      const u=new SpeechSynthesisUtterance(txt),vs=speechSynthesis.getVoices()||[],v=vs.find(x=>/^pt[-_]BR/i.test(x.lang))||vs.find(x=>/^pt/i.test(x.lang));
+      u.lang='pt-BR';if(v)u.voice=v;u.rate=0.95;u.onend=()=>{if(L.tok===id&&!L.falaFim)L.falaFim=Date.now();};
+      /* no iPhone, falar logo depois de cancelar pode engolir a frase: só interrompe se estiver falando, e espera um instante */
+      if(speechSynthesis.speaking||speechSynthesis.pending){speechSynthesis.cancel();setTimeout(()=>{try{if(L.tok===id)speechSynthesis.speak(u);}catch(e){}},150);}
+      else speechSynthesis.speak(u);
+      falou=true;
+    }
+  }catch(e){}
+  /* se a voz não avisar que terminou (ou não existir), segue pelo tempo estimado da frase */
+  L.tf=setTimeout(()=>{if(L.tok===id&&!L.falaFim)L.falaFim=Date.now();},falou?est+4000:est);
+}
+function cFala(g){
+  const r=cSeg(g),dois=Object.values(r).filter(x=>x==='a').length>1,A=dois?'Assassinos':'Assassino';
+  switch(g.fase){
+    case 'papeis':return 'A partida vai começar. Cada um veja o seu papel no celular, sem mostrar para ninguém.';
+    case 'dorme':return (g.noite>1?'A noite caiu de novo. ':'')+'A cidade dorme. Todos fechem os olhos e escondam a tela do celular.';
+    case 'na':return A+', '+(dois?'abram os olhos e escolham':'abra os olhos e escolha')+' no celular quem vai morrer.';
+    case 'fa':return A+', '+(dois?'fechem os olhos e escondam':'feche os olhos e esconda')+' o celular.';
+    case 'nj':return 'Anjo, abra os olhos e escolha no celular quem você quer proteger.';
+    case 'fj':return 'Anjo, feche os olhos e esconda o celular.';
+    case 'nd':return 'Detetive, abra os olhos e escolha no celular quem você quer investigar.';
+    case 'fd':return 'Detetive, feche os olhos e esconda o celular.';
+    case 'manha':return 'A cidade acorda. Todos abram os olhos. '+(g.morto?'Esta noite, '+iNome(g.morto)+' foi assassinado.':g.salvo?'Esta noite, alguém foi atacado, mas o anjo salvou.':'Esta noite, ninguém morreu.');
+    case 'dia':return 'Agora conversem. Quem é o assassino? Quando decidirem, abram a votação no celular do narrador.';
+    case 'voto':return 'Hora de votar. Cada um escolhe no seu celular quem deve ser eliminado.';
+    case 'res':return g.elim?'A cidade eliminou '+iNome(g.elim)+'. '+iNome(g.elim)+' era '+CID_PAPEL[r[g.elim]||'c'].toLowerCase()+'.':'Deu empate. Ninguém foi eliminado.';
+    case 'fim':{const as=Object.keys(r).filter(m=>r[m]==='a').map(iNome);return 'Fim de jogo. '+(g.venc==='cidade'?'A cidade venceu!':'Os assassinos venceram!')+' '+(as.length>1?'Os assassinos eram ':'O assassino era ')+as.join(' e ')+'.';}
+  }
+  return '';
+}
+let cidLock=null;
+function cAcordado(liga){try{if(liga){if(!cidLock&&navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{cidLock=l;l.addEventListener('release',()=>{cidLock=null;});}).catch(()=>{});}else if(cidLock){cidLock.release().catch(()=>{});cidLock=null;}}catch(e){}}
+/* o narrador faz o jogo andar: roda a cada instante só no celular de quem é o narrador da partida */
+function cTick(){
+  let narrando=false;
+  for(const gid in state.games){
+    if(!gid.endsWith('_cid'))continue;
+    const g=state.games[gid];if(!g||g.status!=='jogo'||g.host!==state.uid)continue;
+    const e=state.events.find(x=>x.id===gid.slice(0,-4));if(!e||getStatus(e)!=='aberto')continue;
+    narrando=true;cAnda(e,g,gid);break;
+  }
+  cAcordado(narrando);
+}
+function cAnda(e,g,gid){
+  const L=cidLoc,t=Date.now();
+  if(L.gid!==gid||L.fn!==g.fn){L.gid=gid;L.fn=g.fn;L.ini=t;L.rand=(9000+Math.random()*6000)*CID_K;L.indo=false;cFalar(cFala(g));scheduleRender();}
+  if(L.indo)return;
+  const dt=L.falaFim?t-L.falaFim:-1,r=cSeg(g),vivos=Array.isArray(g.vivos)?g.vivos:[],tem=p=>vivos.some(m=>r[m]===p),S=5000*CID_K;
+  const vai=d=>{L.indo=true;cGrava(e,{...d,fn:(g.fn||0)+1,ft:Date.now()}).catch(()=>{L.indo=false;});};
+  switch(g.fase){
+    case 'papeis':if(dt>=0&&((g.rod||[]).every(m=>(g.visto||{})[m])||g.forca))vai({fase:'dorme',noite:1,ka:'',pj:'',di:'',dok:false});break;
+    case 'dorme':if(dt>=S)vai({fase:'na'});break;
+    case 'na':if(g.ka||t-L.ini>60000*CID_K)vai({fase:'fa'});break;
+    case 'fa':if(dt>=S)vai({fase:'nj'});break;
+    case 'nj':if(tem('j')?(g.pj||t-L.ini>45000*CID_K):dt>=L.rand)vai({fase:'fj'});break;
+    case 'fj':if(dt>=S)vai({fase:'nd'});break;
+    case 'nd':if(tem('d')?(g.dok||t-L.ini>60000*CID_K):dt>=L.rand)vai({fase:'fd'});break;
+    case 'fd':if(dt>=S){const alvo=cAlvo(g.ka),prot=cAlvo(g.pj),morto=alvo&&vivos.includes(alvo)&&alvo!==prot?alvo:'',nv=vivos.filter(m=>m!==morto);
+      vai({fase:'manha',morto,salvo:!!alvo&&alvo===prot,vivos:nv,up:g.pj||'',venc:cVenc(r,nv)});}break;
+    case 'manha':if(dt>=2500*CID_K)vai(g.venc?{fase:'fim'}:{fase:'dia',votos:{},fechar:false});break;
+    case 'voto':{const v=g.votos||{};if(vivos.every(m=>m in v)||g.fechar){
+      const cont={};vivos.forEach(m=>{const x=v[m];if(x&&vivos.includes(x))cont[x]=(cont[x]||0)+1;});
+      const ord=Object.entries(cont).sort((a,b)=>b[1]-a[1]),elim=ord.length&&(ord.length===1||ord[0][1]>ord[1][1])?ord[0][0]:'',nv=vivos.filter(m=>m!==elim);
+      vai({fase:'res',elim,empate:!elim&&ord.length>0,vivos:nv,venc:cVenc(r,nv)});}}break;
+    case 'res':if(dt>=4000*CID_K)vai(g.venc?{fase:'fim'}:{fase:'dorme',noite:(g.noite||1)+1,ka:'',pj:'',di:'',dok:false,morto:'',salvo:false});break;
+  }
+}
+setInterval(cTick,700);
+/* ---------- telas ---------- */
+const cLua='<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/><path d="M17 3v3M15.5 4.5h3"/></svg>';
+const cDorme=(sub)=>'<div class="cidnoite">'+cLua+'<b>A cidade dorme</b><span class="small">'+(sub||'Olhos fechados e celular escondido. Espere o narrador chamar.')+'</span></div>';
+function cLista(ids,sel,bloq){return '<div class="cidlista">'+ids.map(m=>'<button class="stl" data-act="cSel" data-m="'+esc(m)+'" aria-pressed="'+(sel===m)+'"'+(bloq&&bloq[m]?' disabled':'')+'>'+esc(iNome(m))+(bloq&&bloq[m]?' <span class="small muted">('+bloq[m]+')</span>':'')+'</button>').join('')+'</div>';}
+function jogosTopo(e,qual){return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div><div class="seg2"><button data-act="jogoQual" data-v="imp" aria-pressed="'+(qual==='imp')+'">Impostor</button><button data-act="jogoQual" data-v="cid" aria-pressed="'+(qual==='cid')+'">A Cidade Dorme</button></div>';}
+function cidScreen(e){
+  const g=cGame(e)||{},st=g.status||'lobby',js=iJog(e,g),me=myMember(),dentro=!!(g.jog&&g.jog[state.uid]),E=esc(e.id),souHost=g.host===state.uid;
+  if(g.fn!==state.cidFn){state.cidFn=g.fn;state.cidVer=false;state.cidSel=null;}
+  let h=jogosTopo(e,'cid')+'<div class="card"><div class="row between"><h2 style="margin:0">A Cidade Dorme</h2>'+(st==='jogo'&&g.fase!=='fim'?'<span class="chip ok">'+(g.noite?(cNoite(g.fase)?'Noite ':'Dia ')+g.noite:'Papéis')+'</span>':'')+'</div>';
+  if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
+  if(st!=='jogo'){
+    const n=js.length,na=cQtdAss(n);
+    h+='<div class="small muted">Jogo de papéis secretos. De noite o assassino ataca, o anjo protege e o detetive investiga, cada um pelo próprio celular. De dia todos conversam e votam em quem eliminar.</div>'+
+      '<div><div class="small muted">Participantes ('+n+')</div><div class="avrow">'+(n?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
+    if(dentro){
+      h+='<div class="item"><b>O celular de quem começar vira o narrador</b><span class="small muted">Ele fala o jogo em voz alta. Fique com ele na mão, com o som no máximo e a tela ligada. Você joga normalmente.</span><button class="btn" data-act="cVoz">Testar a voz neste celular</button></div>'+
+        '<button class="btn primary" data-act="cComecar" data-e="'+E+'"'+(n>=CID_MIN?'':' disabled')+'>Começar partida (este celular narra)</button>'+
+        '<div class="small muted" style="text-align:center">'+(n<CID_MIN?'Mínimo de '+CID_MIN+' participantes':na+(na===1?' assassino':' assassinos')+', 1 anjo, 1 detetive e '+(n-na-2)+(n-na-2===1?' cidadão':' cidadãos'))+'</div><button class="tfim" data-act="cSair" data-e="'+E+'">Sair do jogo</button>';
+    }else h+='<button class="btn primary" data-act="cEntrar" data-e="'+E+'">Participar</button>';
+    return h+'</div>';
+  }
+  const r=cSeg(g),rod=Array.isArray(g.rod)?g.rod:[],vivos=Array.isArray(g.vivos)?g.vivos:[],f=g.fase,naRod=!!me&&rod.includes(me.id),vivo=naRod&&vivos.includes(me.id),meu=naRod?(r[me.id]||'c'):'',fala=cFala(g);
+  const papelBtn=()=>state.cidVer
+    ?'<button class="segredo aberto'+(meu==='a'?' imp':'')+'" data-act="cVer"><span class="small">Você é</span><b>'+CID_PAPEL[meu].toUpperCase()+'</b><span class="small">'+CID_DICA[meu]+'</span>'+(meu==='a'&&Object.values(r).filter(x=>x==='a').length>1?'<span class="small">Seu parceiro: <b style="font-size:inherit">'+esc(Object.keys(r).filter(m=>r[m]==='a'&&m!==me.id).map(iNome).join(', '))+'</b></span>':'')+'<span class="small muted">Toque para esconder</span></button>'
+    :'<button class="segredo" data-act="cVer"><b>Toque para ver o seu papel</b><span class="small muted">Não deixe ninguém olhar o seu celular</span></button>';
+  const vivosHTML='<div><div class="small muted">Na cidade ('+vivos.length+')</div><div class="avrow">'+rod.map(m=>'<span class="chip'+(vivos.includes(m)?'':' cidfora')+'">'+esc(iNome(m))+'</span>').join('')+'</div></div>';
+  const aviso=t=>'<div class="cidfala">'+esc(t)+'</div>';
+  if(f==='fim'){
+    h+='<div class="segredo aberto'+(g.venc==='cidade'?'':' imp')+'" style="cursor:default"><span class="small">Fim de jogo</span><b>'+(g.venc==='cidade'?'A cidade venceu':'Os assassinos venceram')+'</b></div>'+
+      '<div class="list" style="gap:6px">'+rod.map(m=>'<div class="row between"><span'+(vivos.includes(m)?'':' class="muted" style="text-decoration:line-through"')+'>'+esc(iNome(m))+'</span><span class="chip'+(r[m]==='a'?' bad':r[m]==='c'?'':' info')+'">'+CID_PAPEL[r[m]||'c']+'</span></div>').join('')+'</div>'+
+      (souHost||dentro?'<button class="btn primary" data-act="cNova" data-e="'+E+'">Nova partida</button>':'');
+    return h+'</div>';
+  }
+  if(!naRod){
+    h+='<div class="empty">Partida em andamento.</div>'+(cNoite(f)?'':aviso(fala))+(dentro?'<div class="small muted" style="text-align:center">Você entra na próxima partida.</div>':'<button class="btn primary" data-act="cEntrar" data-e="'+E+'">Participar da próxima partida</button>');
+    return h+'</div>';
+  }
+  const rodape=()=>(souHost?'<div class="item"><span class="small muted">Este celular é o narrador. Se a voz não sair, leia em voz alta:</span><b>'+esc(fala)+'</b></div><button class="tfim" data-act="cEncerrar" data-e="'+E+'">Encerrar a partida</button>':'<button class="tfim" data-act="cHost" data-e="'+E+'">O narrador travou? Narrar por este celular</button>');
+  if(f==='papeis'){
+    const viu=!!(g.visto||{})[me.id],nv=rod.filter(m=>(g.visto||{})[m]).length;
+    h+=papelBtn()+(viu?'<div class="small muted" style="text-align:center">Esperando os outros: '+nv+' de '+rod.length+' já viram.</div>':'<button class="btn primary" data-act="cVisto" data-e="'+E+'">Já vi o meu papel</button>')+
+      (souHost&&nv<rod.length?'<button class="btn" data-act="cForca" data-e="'+E+'">Começar a noite mesmo assim</button>':'');
+    return h+rodape()+'</div>';
+  }
+  if(!vivo){
+    h+='<div class="empty"><b>Você foi eliminado.</b><br>Fique em silêncio e acompanhe o jogo.</div>'+(cNoite(f)?'':aviso(fala))+
+      '<div class="list" style="gap:6px">'+rod.map(m=>'<div class="row between"><span'+(vivos.includes(m)?'':' class="muted" style="text-decoration:line-through"')+'>'+esc(iNome(m))+'</span><span class="chip'+(r[m]==='a'?' bad':r[m]==='c'?'':' info')+'">'+CID_PAPEL[r[m]||'c']+'</span></div>').join('')+'</div>';
+    return h+rodape()+'</div>';
+  }
+  if(cNoite(f)){
+    const sel=state.cidSel;
+    if(f==='na'&&meu==='a'){
+      if(g.ka)h+=cDorme('Escolha feita. Feche os olhos e esconda o celular.');
+      else h+='<div class="cidvez"><b>Assassino, quem vai morrer?</b>'+cLista(vivos.filter(m=>r[m]!=='a'),sel)+'<button class="btn danger" data-act="cConf" data-e="'+E+'"'+(sel?'':' disabled')+'>Confirmar</button></div>';
+    }else if(f==='nj'&&meu==='j'){
+      const up=cAlvo(g.up);
+      if(g.pj)h+=cDorme('Proteção feita. Feche os olhos e esconda o celular.');
+      else h+='<div class="cidvez"><b>Anjo, quem você protege?</b>'+cLista(vivos,sel,up?{[up]:'protegeu ontem'}:null)+'<button class="btn good" data-act="cConf" data-e="'+E+'"'+(sel?'':' disabled')+'>Confirmar</button></div>';
+    }else if(f==='nd'&&meu==='d'){
+      const alvo=cAlvo(g.di);
+      if(g.dok)h+=cDorme('Investigação feita. Feche os olhos e esconda o celular.');
+      else if(alvo)h+='<div class="cidvez"><span class="small">'+esc(iNome(alvo))+'</span><b style="font-size:26px;color:var(--'+(r[alvo]==='a'?'bad':'ok')+')">'+(r[alvo]==='a'?'É ASSASSINO':'Não é assassino')+'</b><button class="btn primary" data-act="cDok" data-e="'+E+'">Entendi</button></div>';
+      else h+='<div class="cidvez"><b>Detetive, quem você investiga?</b>'+cLista(vivos.filter(m=>m!==me.id),sel)+'<button class="btn primary" data-act="cConf" data-e="'+E+'"'+(sel?'':' disabled')+'>Confirmar</button></div>';
+    }else h+=cDorme();
+    return h+(souHost?'<div class="small muted" style="text-align:center">Narrador: '+esc(fala)+'</div>':'')+'</div>';
+  }
+  /* de dia */
+  h+=aviso(fala);
+  if(f==='voto'){
+    const v=g.votos||{},ja=me.id in v,nv=vivos.filter(m=>m in v).length;
+    if(ja)h+='<div class="empty">Voto registrado. '+nv+' de '+vivos.length+' já votaram.</div>';
+    else h+='<div class="cidvez"><b>Quem deve ser eliminado?</b>'+cLista(vivos.filter(m=>m!==me.id),state.cidSel)+'<button class="btn primary" data-act="cConf" data-e="'+E+'"'+(state.cidSel?'':' disabled')+'>Votar</button><button class="tfim" data-act="cBranco" data-e="'+E+'">Não votar em ninguém</button></div>';
+    if(souHost)h+='<button class="btn" data-act="cFechar" data-e="'+E+'">Encerrar a votação agora ('+nv+' de '+vivos.length+')</button>';
+  }
+  if(f==='res'){
+    const v=g.votos||{},lin=Object.keys(v).filter(m=>v[m]).map(m=>'<div class="row between small"><span>'+esc(iNome(m))+'</span><span class="muted">votou em <b>'+esc(iNome(v[m]))+'</b></span></div>').join('');
+    if(lin)h+='<div class="item">'+lin+'</div>';
+  }
+  if(f==='dia'&&souHost)h+='<button class="btn primary" data-act="cVotar" data-e="'+E+'">Abrir a votação</button>';
+  h+=vivosHTML+papelBtn().replace('class="segredo','style="min-height:120px" class="segredo');
+  return h+rodape()+'</div>';
+}
+
 function roomScreen(e){
   if(isOnline(e))return onlineScreen(e);
-  if(state.jogoP===e.id){if(iPode(e))return impScreen(e);state.jogoP=null;}
+  if(state.jogoP===e.id){if(iPode(e))return state.jogoQual==='cid'?cidScreen(e):impScreen(e);state.jogoP=null;}
   const st=getStatus(e),leader=state.members.find(m=>m.id===e.leaderId);
   let h='<div class="row between"><button class="btn" data-act="leave">Voltar</button><span class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span><span class="chip">Líder: '+esc(leader?leader.name:'não definido')+'</span></span></div>';
   const jogo=isJogos(e)?trucoHTML(e):'';
@@ -1931,7 +2127,37 @@ app.addEventListener('click',async ev=>{
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
   if(act==='leave'){state.jogoP=null;state.room=null;state.tab='eventos';state.reactOpen=false;state.painel=0;render();return;}
-  if(act==='jogosP'&&evn){state.jogoP=evn.id;state.impVer=false;render();window.scrollTo(0,0);return;}
+  if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':(state.jogoQual||'imp');state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
+  if(act==='jogoQual'){state.jogoQual=d.v==='cid'?'cid':'imp';state.impVer=false;state.cidVer=false;render();return;}
+  /* A Cidade Dorme */
+  if(act==='cEntrar'&&evn){if(iPode(evn))cEntrar(evn,true);return;}
+  if(act==='cSair'&&evn){cEntrar(evn,false);return;}
+  if(act==='cVoz'){cFalar('Teste de voz. A cidade dorme.');toast('Se você ouviu a frase, a narração funciona neste celular.');return;}
+  if(act==='cComecar'&&evn){cComecar(evn);return;}
+  if(act==='cVer'){{const er=state.events.find(x=>x.id===state.room),gr=er&&cGame(er);if(gr)state.cidFn=gr.fn;}state.cidVer=!state.cidVer;clearTimeout(state.cidT);if(state.cidVer)state.cidT=setTimeout(()=>{state.cidVer=false;scheduleRender();},8000);render();return;}
+  if(act==='cSel'){state.cidSel=d.m;render();return;}
+  if(['cVisto','cForca','cConf','cDok','cBranco','cFechar','cVotar','cNova','cEncerrar','cHost'].includes(act)&&evn){
+    const g=cGame(evn),me=myMember();if(!g||!me)return;
+    const r=cSeg(g),vivo=(g.vivos||[]).includes(me.id),meu=r[me.id],sel=state.cidSel,souHost=g.host===state.uid,grava=dd=>cGrava(evn,dd).catch(()=>toast('Não consegui gravar. Confira a internet.'));
+    if(act==='cVisto'){state.cidVer=false;grava({['visto.'+me.id]:true});render();return;}
+    if(act==='cForca'&&souHost){grava({forca:true});return;}
+    if(act==='cDok'&&meu==='d'){grava({dok:true});return;}
+    if(act==='cConf'&&vivo&&sel&&(g.vivos||[]).includes(sel)){
+      state.cidSel=null;
+      if(g.fase==='na'&&meu==='a'&&!g.ka&&r[sel]!=='a')grava({ka:iCod({t:sel})});
+      else if(g.fase==='nj'&&meu==='j'&&!g.pj&&cAlvo(g.up)!==sel)grava({pj:iCod({t:sel})});
+      else if(g.fase==='nd'&&meu==='d'&&!g.di&&sel!==me.id)grava({di:iCod({t:sel})});
+      else if(g.fase==='voto'&&sel!==me.id&&!(me.id in (g.votos||{})))grava({['votos.'+me.id]:sel});
+      render();return;
+    }
+    if(act==='cBranco'&&vivo&&g.fase==='voto'){state.cidSel=null;grava({['votos.'+me.id]:''});return;}
+    if(act==='cFechar'&&souHost&&g.fase==='voto'){grava({fechar:true});return;}
+    if(act==='cVotar'&&souHost&&g.fase==='dia'){grava({fase:'voto',votos:{},fechar:false,fn:(g.fn||0)+1,ft:Date.now()});return;}
+    if(act==='cNova'&&(souHost||g.fase==='fim')){try{speechSynthesis.cancel();}catch(e){}grava({status:'lobby',fase:'',host:''});return;}
+    if(act==='cEncerrar'&&souHost){if(!state.draft['ce_'+evn.id]){state.draft['ce_'+evn.id]=1;el.textContent='Toque de novo para encerrar';return;}delete state.draft['ce_'+evn.id];try{speechSynthesis.cancel();}catch(e){}grava({status:'lobby',fase:'',host:''});return;}
+    if(act==='cHost'&&!souHost){if(!state.draft['ch_'+evn.id]){state.draft['ch_'+evn.id]=1;el.textContent='Toque de novo para narrar por este celular';return;}delete state.draft['ch_'+evn.id];cidLoc.fn=-1;cFalar('Este celular agora é o narrador.');grava({host:state.uid});return;}
+    return;
+  }
   if(act==='jogosPSair'){state.jogoP=null;state.impVer=false;render();return;}
   if(act==='iEntrar'&&evn){const me=myMember();if(!me||!iPode(evn))return;iSalvar(evn,{jog:{[state.uid]:me.id}});return;}
   if(act==='iSair'&&evn){state.impVer=false;iSalvar(evn,{jog:{[state.uid]:null}},'Você saiu do jogo.');return;}
@@ -2257,7 +2483,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113163519';
+const VER='20261113171714';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
