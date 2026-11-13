@@ -1571,7 +1571,7 @@ function abonoHTML(){
 function adminHTML(){
   if(!adm())return '<div class="card"><div class="empty">Só o administrador vê esta aba.</div></div>';
   const r=state.rules;
-  let out=pendHTML()+'<div class="card"><h2>Regras</h2><div class="grid2"><label>Faltas no mês para suspender<input id="r_lim" type="number" min="1" max="10" value="'+esc(val('r_lim',r.limite))+'"></label><label>Dias de suspensão<input id="r_dias" type="number" min="1" max="60" value="'+esc(val('r_dias',r.dias))+'"></label></div>'+
+  let out=pendHTML()+(VAPID&&myMember()?'<div class="card"><div class="row between"><h2 style="margin:0">Notificações</h2><button class="btn" data-act="pushTeste"'+(state.pushTestou?' disabled':'')+'>'+(state.pushTestou?'Teste na fila':'Enviar teste para mim')+'</button></div></div>':'')+'<div class="card"><h2>Regras</h2><div class="grid2"><label>Faltas no mês para suspender<input id="r_lim" type="number" min="1" max="10" value="'+esc(val('r_lim',r.limite))+'"></label><label>Dias de suspensão<input id="r_dias" type="number" min="1" max="60" value="'+esc(val('r_dias',r.dias))+'"></label></div>'+
     '<label>Link do app (para o QR code)<input id="r_link" value="'+esc(val('r_link',r.appLink))+'" placeholder="Deixe em branco para usar o endereço desta página"></label><button class="btn primary" data-act="saveRules">Salvar regras</button></div>';
   out+='<div class="card"><h2>Cópia de segurança</h2><button class="btn" data-act="backup">Baixar cópia de segurança</button></div>';
   out+='<div class="card"><h2>Membros</h2><div class="list">'+state.members.map(m=>{
@@ -1706,6 +1706,7 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
+  if(act==='pushTeste'){const me=myMember();if(!me||!adm()||state.pushTestou)return;state.pushTestou=true;render();setTimeout(()=>{state.pushTestou=false;scheduleRender();},60000);db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>toast('Teste na fila. Feche o app e aguarde.')).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
   if(act==='pushDepois'){pushMarca();render();return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
@@ -2145,7 +2146,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113142848';
+const VER='20261113143021';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
