@@ -17,6 +17,7 @@ const FCM = `https://fcm.googleapis.com/v1/projects/${PROJ}/messages:send`;
 const LINK = 'https://jpereiracarvalho3-max.github.io/sala-presenca/';
 const VELHO_MS = 3 * 86400 * 1000; // aviso sem data com mais de 3 dias não é mais enviado
 const INTERVALO_MS = 3000;         // intervalo mínimo entre duas olhadas na fila
+const ABERTO_MS = 150000;          // aparelho que marcou "app aberto" há menos de 2 min e meio não recebe notificação (o app renova a marca a cada minuto)
 const LIMITE = 45;                 // o plano gratuito permite 50 chamadas externas por execução; o que não couber fica para o minuto seguinte
 
 /* ---------- regras (iguais às do enviar.py) ---------- */
@@ -152,12 +153,12 @@ async function olharFila(env) {
 
   const aprov = {};
   for (const a of await listar('approvals')) if (a.status === 'aprovado') aprov[a._id] = a.memberId;
-  const tokens = {};
-  for (const t of await listar('tokens')) tokens[t._id] = t.t || {};
+  const tokens = {}, aberto = {};
+  for (const t of await listar('tokens')) { tokens[t._id] = t.t || {}; aberto[t._id] = t.on || {}; }
   const avatars = {};
   if (prontos.some((o) => o.para === 'todos')) for (const a of await listar('avatars')) avatars[a._id] = a;
 
-  let feitos = 0, enviados = 0, falhas = 0, adiados = 0;
+  let feitos = 0, enviados = 0, falhas = 0, adiados = 0, abertos = 0;
   for (const o of prontos) {
     const us = destinos(o, aprov, avatars);
     const custo = 1 + us.reduce((s, u) => s + Object.keys(tokens[u] || {}).length + 1, 0);
@@ -167,6 +168,8 @@ async function olharFila(env) {
     for (const u of us) {
       let mudou = false;
       for (const tk of Object.keys(tokens[u] || {})) {
+        /* quem está com o app aberto na tela já vê a novidade no próprio app (o teste do Admin vai sempre) */
+        if (!o.sempre && Date.now() - Number((aberto[u] || {})[tk] || 0) < ABERTO_MS) { abertos++; continue; }
         let r;
         try { r = await chamar(FCM, { method: 'POST', body: JSON.stringify(mensagem(o, tk)) }); } catch (e) { falhas++; continue; }
         if (r.ok) { enviados++; continue; }
@@ -180,7 +183,7 @@ async function olharFila(env) {
       }
     }
   }
-  return `${feitos} aviso(s) processado(s), ${enviados} envio(s), ${falhas} falha(s)` + (adiados ? `, ${adiados} para o próximo minuto.` : '.');
+  return `${feitos} aviso(s) processado(s), ${enviados} envio(s), ${falhas} falha(s)` + (abertos ? `, ${abertos} com o app aberto` : '') + (adiados ? `, ${adiados} para o próximo minuto.` : '.');
 }
 
 /* ---------- controle: uma olhada por vez, no máximo uma a cada 3 segundos ---------- */

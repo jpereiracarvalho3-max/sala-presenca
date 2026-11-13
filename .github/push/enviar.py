@@ -13,6 +13,7 @@ PROJ = 'sala-presenca'
 DOCS = f'https://firestore.googleapis.com/v1/projects/{PROJ}/databases/(default)/documents'
 FCM = f'https://fcm.googleapis.com/v1/projects/{PROJ}/messages:send'
 LINK = 'https://jpereiracarvalho3-max.github.io/sala-presenca/'
+ABERTO_MS = 150000  # aparelho que marcou "app aberto" há menos de 2 min e meio não recebe notificação
 VELHO_MS = 3 * 86400 * 1000  # aviso sem data com mais de 3 dias não é mais enviado
 
 
@@ -141,7 +142,9 @@ def main():
         return 0
 
     aprov = {a['_id']: a.get('memberId') for a in listar('approvals') if a.get('status') == 'aprovado'}
-    tokens = {t['_id']: (t.get('t') or {}) for t in listar('tokens')}
+    regs = listar('tokens')
+    tokens = {t['_id']: (t.get('t') or {}) for t in regs}
+    aberto = {t['_id']: (t.get('on') or {}) for t in regs}
     avatars = {a['_id']: a for a in listar('avatars')} if any(o.get('para') == 'todos' for o in prontos) else {}
     enviados = falhas = 0
     for o in prontos:
@@ -149,6 +152,8 @@ def main():
             continue
         for u in destinos(o, aprov, avatars):
             for tk in list(tokens.get(u, {})):
+                if not o.get('sempre') and agora_ms - int(aberto.get(u, {}).get(tk) or 0) < ABERTO_MS:
+                    continue  # app aberto na tela: a pessoa já vê a novidade no próprio app
                 r = requests.post(FCM, headers=h, json=mensagem(o, tk), timeout=30)
                 if r.ok:
                     enviados += 1

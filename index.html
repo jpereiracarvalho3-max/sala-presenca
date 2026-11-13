@@ -1345,9 +1345,18 @@ async function pushToken(){
   if(!tk)throw new Error('sem token');
   const me=myMember();
   await db.doc('tokens/'+state.uid).set({mid:me?me.id:'',t:{[tk]:Date.now()}},{merge:true});
+  state.pushTk=tk;presenca();
   if(!state.pushOk){state.pushOk=true;try{ms.onMessage(m=>{const n=(m&&m.notification)||{};if(n.title)toast(n.title+(n.body?': '+n.body:''));});}catch(e){}}
   return tk;
 }
+/* enquanto o app está aberto na tela, este aparelho fica marcado como "aberto" (renovado a cada minuto) e o robô não manda notificação para ele;
+   ao sair do app a marca é apagada. Se o app for fechado à força, a marca vence sozinha em 2 minutos e meio. */
+function presenca(){
+  if(!db||!state.uid||!state.pushTk)return;
+  try{db.doc('tokens/'+state.uid).set({on:{[state.pushTk]:document.hidden?0:Date.now()}},{merge:true}).catch(()=>{});}catch(e){}
+}
+document.addEventListener('visibilitychange',presenca);window.addEventListener('pagehide',()=>{if(!db||!state.uid||!state.pushTk)return;try{db.doc('tokens/'+state.uid).set({on:{[state.pushTk]:0}},{merge:true}).catch(()=>{});}catch(e){}});
+setInterval(()=>{if(!document.hidden)presenca();},60000);
 /* na primeira vez que a pessoa entra neste aparelho, uma tela pede para ativar (o celular só mostra o pedido de permissão depois de um toque) */
 const pushPerguntou=()=>{try{return !!localStorage.getItem('pushperg_'+state.uid);}catch(e){return true;}};
 const pushMarca=()=>{try{localStorage.setItem('pushperg_'+state.uid,'1');}catch(e){}};
@@ -1750,7 +1759,7 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
-  if(act==='pushTeste'){const me=myMember();if(!me||!adm()||state.pushTestou)return;state.pushTestou=true;render();setTimeout(()=>{state.pushTestou=false;scheduleRender();},60000);db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,at:Date.now()}).then(()=>{cutucar();toast('Teste na fila. Feche o app e aguarde.');}).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
+  if(act==='pushTeste'){const me=myMember();if(!me||!adm()||state.pushTestou)return;state.pushTestou=true;render();setTimeout(()=>{state.pushTestou=false;scheduleRender();},60000);db.doc('outbox/t'+Date.now().toString(36)).set({uid:state.uid,para:[me.id],titulo:'Eventos dos Bêbados',corpo:'Notificação de teste: está funcionando.',eventId:'',quando:'',teste:true,sempre:true,at:Date.now()}).then(()=>{cutucar();toast('Teste enviado. Deve chegar em segundos.');}).catch(e=>{state.pushTestou=false;toast('O teste não entrou na fila ('+((e&&e.code)||'erro')+').');render();});return;}
   if(act==='pushDepois'){pushMarca();render();return;}
   if(act==='pushAtivar'){
     if(!pushBase()||state.pushBusy)return;
@@ -2193,7 +2202,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113152016';
+const VER='20261113152552';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
