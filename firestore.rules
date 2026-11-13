@@ -93,6 +93,26 @@ service cloud.firestore {
       allow read: if inside() && id.matches('.*_' + me());
       allow write: if inside();
     }
+    // Racha, recados e enquetes de cada evento: só membros leem; cada um cria o seu; no racha e na enquete os outros só mexem na parte de pagamento e de voto
+    match /splits/{id} {
+      allow read: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow update: if isOwner() || resource.data.uid == me()
+        || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partes']));
+      allow delete: if isOwner() || resource.data.uid == me();
+    }
+    match /posts/{id} {
+      allow read: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow delete: if isOwner() || resource.data.uid == me() || isLeaderOf(resource.data.eventId);
+    }
+    match /polls/{id} {
+      allow read: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow update: if isOwner() || resource.data.uid == me()
+        || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votos']));
+      allow delete: if isOwner() || resource.data.uid == me();
+    }
     match /justifs/{key} {
       allow read: if inside();
       allow create: if isMember()

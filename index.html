@@ -187,6 +187,18 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .evdata b{font-family:var(--font-head);font-size:24px}.evdata span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 .tabs{background:#1B1511 !important}
+.cobra{border:1px solid var(--accent);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.opc{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;overflow:hidden;font:inherit;font-weight:600;text-align:left;touch-action:manipulation}
+.opc.meu{border-color:var(--accent)}
+.opcb{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.22}
+.opct,.opcn{position:relative}.opcn{font-family:var(--font-head)}
+.alerta{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:12px;padding:10px;cursor:pointer;font:inherit;touch-action:manipulation}
+.alerta i{font-style:normal;font-size:22px;line-height:1.1}
+.alerta .grow{display:flex;flex-direction:column;gap:2px}
+.alerta.novo{border-color:var(--accent);background:var(--surface)}
+.alerta[disabled]{cursor:default}
+.tabs button{position:relative}
+.bolinha{position:absolute;top:4px;left:calc(50% + 8px);width:9px;height:9px;border-radius:50%;background:var(--bad);border:2px solid #1B1511}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px}
 .seg2 button{border:0;background:transparent;color:var(--muted);font-weight:600;padding:9px 6px;border-radius:9px;cursor:pointer;touch-action:manipulation}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -285,7 +297,7 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={chamada:false,conqSel:null,evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={feats:{splits:{},posts:{},polls:{}},featErr:false,evPg:null,rachaNovo:false,rachaSel:null,enqNova:false,alertasVistoAntes:0,chamada:false,conqSel:null,evAba:'atv',telaAt:0,tSig:'',tSigAt:0,perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -559,11 +571,13 @@ function tabsHTML(){
     faltas:'<path d="M3 11.5l9-8 9 8"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/>',
     eventos:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     avatar:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    alertas:'<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7 2.5 7h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/>',
     admin:'<path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/>'
   };
-  const t=[['faltas','Painel'],['eventos','Eventos'],['avatar','Avatar']];
+  const nn=alertasNovos();
+  const t=[['faltas','Painel'],['eventos','Eventos'],['alertas','Notificações'],['avatar','Avatar']];
   if(adm()){const n=pendingReqs().length;t.push(['admin','Admin'+(n?' ('+n+')':'')]);}
-  return '<nav class="tabs" role="tablist" aria-label="Seções">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[x[0]]+'</svg><span>'+x[1]+'</span></button>').join('')+'</nav>';
+  return '<nav class="tabs" role="tablist" aria-label="Seções">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[x[0]]+'</svg><span>'+x[1]+'</span>'+(x[0]==='alertas'&&nn?'<i class="bolinha" aria-hidden="true"></i>':'')+'</button>').join('')+'</nav>';
 }
 function claimHTML(){
   const taken=new Set(Object.values(state.approvals).filter(a=>a.status==='aprovado').map(a=>a.memberId));
@@ -967,6 +981,7 @@ function roomScreen(e){
   if(emJogo)return h+jogo+reactBar(e);
   h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+(jogo?jogo+roomHTML(e)+reactBar(e):roomHTML(e)+(isOnline(e)?onlineHTML(e)+reactBar(e):''));
   if(iPode(e))h+='<button class="btn primary" data-act="jogosP" data-e="'+esc(e.id)+'">Jogos</button>';
+  if(!isOnline(e)&&(adm()||myMember()))h+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Racha, recados e enquetes</button>';
   if(canManage(e)&&!readOnly()){
     const head0='<div class="card">'+(isOnline(e)?'':'<h3>QR code</h3>');let box=head0;
     if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
@@ -997,7 +1012,134 @@ function faltasHTML(){
   }
   return out+rankHTML()+destaquesHTML()+abonoHTML();
 }
+/* ===================== PÁGINA DO EVENTO: RACHA, RECADOS E ENQUETE; ABA DE NOTIFICAÇÕES =====================
+   Tudo fica guardado junto do evento (coleções splits, posts e polls), como histórico. O app não movimenta dinheiro:
+   mostra o valor e o PIX de quem pagou e guarda quem já acertou. */
+const brl=v=>'R$ '+(Math.round((+v||0)*100)/100).toFixed(2).replace('.',',');
+const quando=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+' '+pad(d.getHours())+':'+pad(d.getMinutes());};
+const nomeDe=mid=>(state.members.find(m=>m.id===mid)||{}).name||'Alguém';
+const meuNome=()=>{const me=myMember();return me?me.name:(state.isOwner?'Administrador':'Alguém');};
+const doEvento=(col,eid)=>Object.entries(state.feats[col]||{}).map(([id,d])=>({id,...d})).filter(x=>x.eventId===eid).sort((a,b)=>(b.at||0)-(a.at||0));
+function crc16(s){let c=0xFFFF;for(let i=0;i<s.length;i++){c^=s.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=(c&0x8000)?((c<<1)^0x1021)&0xFFFF:(c<<1)&0xFFFF;}return c.toString(16).toUpperCase().padStart(4,'0');}
+const semAcento=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const PIX_TIPOS={cel:'Celular',cpf:'CPF',email:'E-mail',aleatoria:'Chave aleatória'};
+function pixChave(tipo,ch){
+  ch=String(ch||'').trim();
+  if(tipo==='cel'){let d=ch.replace(/\D/g,'');if(d.length>11&&d.startsWith('55'))d=d.slice(2);return d?'+55'+d:'';}
+  if(tipo==='cpf')return ch.replace(/\D/g,'');
+  if(tipo==='email')return ch.toLowerCase();
+  return ch;
+}
+/* "PIX copia e cola" no padrão do Banco Central (BR Code estático), com o valor já preenchido */
+function pixCopiaCola(chave,valor,nome){
+  const f=(id,v)=>id+String(v.length).padStart(2,'0')+v;
+  const p=f('00','01')+f('26',f('00','br.gov.bcb.pix')+f('01',chave))+f('52','0000')+f('53','986')+(valor>0?f('54',(Math.round(valor*100)/100).toFixed(2)):'')+f('58','BR')+f('59',(semAcento(nome).toUpperCase()||'RECEBEDOR').slice(0,25))+f('60','BRASIL')+f('62',f('05','***'))+'6304';
+  return p+crc16(p);
+}
+function copiar(txt,msg){
+  const ok=()=>toast(msg||'Copiado.');
+  const reserva=()=>{const t=document.createElement('textarea');t.value=txt;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy');ok();}catch(e){toast('Não deu para copiar. Selecione e copie na mão.');}t.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,reserva);else reserva();
+}
+const pixSalvo=()=>{try{return JSON.parse(localStorage.getItem('pix_'+state.uid)||'null')||{};}catch(e){return {};}};
+function featGravar(col,id,dados,msg,modo){
+  state.feats[col]=state.feats[col]||{};
+  if(modo==='del')delete state.feats[col][id];else if(modo==='set')state.feats[col][id]=dados;
+  render();
+  const ref=db.doc(col+'/'+id);
+  return w(()=>modo==='del'?ref.delete():(modo==='set'?ref.set(dados):ref.update(dados)),msg);
+}
+function rachaHTML(e){
+  const me=myMember(),E=esc(e.id),lista=doEvento('splits',e.id);
+  let h='<div class="card"><div class="row between"><h2 style="margin:0">Racha</h2>'+(me&&!state.rachaNovo?'<button class="btn" data-act="rachaNovo">Novo racha</button>':'')+'</div>';
+  if(state.rachaNovo&&me){
+    const px=pixSalvo(),outros=state.members.filter(m=>m.id!==me.id),presentes=new Set(outros.filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id));
+    const sel=state.rachaSel||(state.rachaSel=Object.fromEntries(outros.map(m=>[m.id,presentes.size?presentes.has(m.id):false])));
+    const n=outros.filter(m=>sel[m.id]).length,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0;
+    h+='<div class="item"><label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
+      '<label>Valor total (R$)<input id="rc_total" inputmode="decimal" placeholder="0,00" value="'+esc(val('rc_total',''))+'"></label>'+
+      '<div class="grid2"><label>Sua chave PIX<select id="rc_pt">'+Object.keys(PIX_TIPOS).map(k=>'<option value="'+k+'"'+(val('rc_pt',px.t||'cel')===k?' selected':'')+'>'+PIX_TIPOS[k]+'</option>').join('')+'</select></label><label>Chave<input id="rc_pc" autocomplete="off" value="'+esc(val('rc_pc',px.c||''))+'"></label></div>'+
+      '<div><div class="small muted">Com quem você rachou ('+n+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="rachaSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
+      '<div class="small">'+(n&&total>0?'Divide por <b>'+(n+1)+'</b> (você e mais '+n+'): <b>'+brl(total/(n+1))+'</b> para cada um.':'Escolha as pessoas e o valor.')+'</div>'+
+      '<div class="row"><button class="btn primary" data-act="rachaCriar" data-e="'+E+'">Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>';
+  }
+  if(!lista.length&&!state.rachaNovo)h+='<div class="empty">Nenhum racha neste evento.</div>';
+  h+=lista.map(r=>{
+    const partes=r.partes||{},ids=Object.keys(partes),meu=me&&partes[me.id],souDono=r.uid===state.uid,pagos=ids.filter(i=>partes[i].st==='pago').length;
+    let x='<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(r.desc||'Racha')+'</h3><span class="chip '+(pagos===ids.length?'ok':'warn')+'">'+pagos+' de '+ids.length+' pagos</span></div>'+
+      '<div class="small muted">'+esc(nomeDe(r.mid))+' pagou '+brl(r.total)+' · '+quando(r.at)+'</div>';
+    if(meu&&meu.st!=='pago'){
+      const cola=pixCopiaCola(r.pix,meu.v,nomeDe(r.mid));
+      x+='<div class="cobra"><div class="row between"><b>Você deve '+brl(meu.v)+'</b>'+(meu.st==='avisou'?'<span class="chip info">Aguardando confirmação</span>':'')+'</div>'+
+        '<div class="small muted">PIX de '+esc(nomeDe(r.mid))+' ('+esc(PIX_TIPOS[r.pt]||'chave')+'): <b>'+esc(r.chave||r.pix)+'</b></div>'+
+        '<div class="row" style="justify-content:center"><div class="qrwrap"><div class="qrpix" data-text="'+esc(cola)+'"></div></div></div>'+
+        '<div class="row"><button class="btn primary" data-act="copiar" data-t="'+esc(cola)+'" data-msg="PIX copia e cola copiado.">Copiar PIX copia e cola</button><button class="btn" data-act="copiar" data-t="'+esc(r.chave||r.pix)+'" data-msg="Chave copiada.">Copiar chave</button></div>'+
+        (meu.st==='avisou'?'':'<button class="btn good" data-act="rachaAvisar" data-id="'+esc(r.id)+'">Já paguei</button>')+'</div>';
+    }
+    x+='<div class="list" style="gap:6px">'+ids.map(i=>{const p=partes[i];
+      return '<div class="row between"><span>'+esc(nomeDe(i))+' <span class="muted small">'+brl(p.v)+'</span></span><span class="row">'+
+        '<span class="chip '+(p.st==='pago'?'ok':p.st==='avisou'?'info':'warn')+'">'+(p.st==='pago'?'Pago':p.st==='avisou'?'Disse que pagou':'Devendo')+'</span>'+
+        (souDono||adm()?(p.st==='pago'?'<button class="btn" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="devendo">Desfazer</button>':'<button class="btn good" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="pago">Confirmar</button>'):'')+'</span></div>';}).join('')+'</div>';
+    if(souDono||adm())x+='<button class="tfim" data-act="featApagar" data-col="splits" data-id="'+esc(r.id)+'">Apagar racha</button>';
+    return x+'</div>';
+  }).join('');
+  return h+'</div>';
+}
+function recadosHTML(e){
+  const lista=doEvento('posts',e.id),E=esc(e.id),podeApagar=p=>adm()||p.uid===state.uid||isLeader(e);
+  return '<div class="card"><h2 style="margin:0">Recados</h2>'+
+    '<div class="row" style="flex-wrap:nowrap"><input class="grow" id="rd_txt" maxlength="200" placeholder="Escreva um recado" value="'+esc(val('rd_txt',''))+'"><button class="btn primary" data-act="recadoEnviar" data-e="'+E+'">Enviar</button></div>'+
+    (lista.length?'<div class="list" style="gap:8px">'+lista.map(p=>'<div class="item" style="gap:4px"><div class="row between" style="flex-wrap:nowrap"><b>'+esc(p.nome||nomeDe(p.mid))+'</b><span class="row"><span class="small muted">'+quando(p.at)+'</span>'+(podeApagar(p)?'<button class="ticon" style="width:30px;height:30px" data-act="featApagar" data-col="posts" data-id="'+esc(p.id)+'" aria-label="Apagar recado">✕</button>':'')+'</span></div><div>'+esc(p.text)+'</div></div>').join('')+'</div>':'<div class="empty">Nenhum recado ainda.</div>')+'</div>';
+}
+function enquetesHTML(e){
+  const lista=doEvento('polls',e.id),E=esc(e.id);
+  let h='<div class="card"><div class="row between"><h2 style="margin:0">Enquetes</h2>'+(state.enqNova?'':'<button class="btn" data-act="enqNova">Nova enquete</button>')+'</div>';
+  if(state.enqNova)h+='<div class="item"><label>Pergunta<input id="eq_q" maxlength="80" placeholder="Ex.: Sábado ou domingo?" value="'+esc(val('eq_q',''))+'"></label><label>Opções (uma por linha, de 2 a 6)<textarea id="eq_ops" rows="3" placeholder="Sábado\\nDomingo">'+esc(val('eq_ops',''))+'</textarea></label><div class="row"><button class="btn primary" data-act="enqCriar" data-e="'+E+'">Criar enquete</button><button class="btn" data-act="enqCancelar">Cancelar</button></div></div>';
+  if(!lista.length&&!state.enqNova)h+='<div class="empty">Nenhuma enquete neste evento.</div>';
+  h+=lista.map(q=>{
+    const votos=q.votos||{},tot=Object.values(votos).filter(v=>Number.isInteger(v)).length,meu=votos[state.uid];
+    return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(q.q)+'</h3><span class="small muted">'+tot+(tot===1?' voto':' votos')+'</span></div>'+
+      (q.ops||[]).map((o,i)=>{const n=Object.values(votos).filter(v=>v===i).length,pc=tot?Math.round(n/tot*100):0;return '<button class="opc'+(meu===i?' meu':'')+'" data-act="enqVotar" data-id="'+esc(q.id)+'" data-i="'+i+'" aria-pressed="'+(meu===i)+'"><span class="opcb" style="width:'+pc+'%"></span><span class="opct">'+(meu===i?'✓ ':'')+esc(o)+'</span><span class="opcn">'+n+'</span></button>';}).join('')+
+      '<div class="row between"><span class="small muted">por '+esc(q.nome||nomeDe(q.mid))+'</span>'+(adm()||q.uid===state.uid?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="'+esc(q.id)+'">Apagar</button>':'')+'</div></div>';
+  }).join('');
+  return h+'</div>';
+}
+function eventoPgHTML(e){
+  const st=getStatus(e),l=state.members.find(m=>m.id===e.leaderId),n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length;
+  let h='<div class="row between"><button class="btn" data-act="evVoltar">Voltar</button><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
+    '<div class="card"><h2 style="margin:0">'+esc(e.title)+'</h2><div class="small muted">'+esc(fmtDay(e.date))+' · '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+' · '+esc(e.local||'local a definir')+'</div><div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?' · '+n+' presentes':'')+'</div></div>';
+  if(state.featErr)return h+'<div class="card"><span class="chip warn">Racha, recados e enquetes ainda não foram liberados no banco. O administrador precisa atualizar as regras do Firebase.</span></div>';
+  return h+rachaHTML(e)+recadosHTML(e)+enquetesHTML(e);
+}
+/* notificações: montadas a partir do que já está no app; "visto" fica guardado neste aparelho */
+const alertasVisto=()=>{try{return +localStorage.getItem('alertas_'+state.uid)||0;}catch(e){return 0;}};
+function alertasLista(){
+  const me=myMember(),out=[],ev=id=>state.events.find(x=>x.id===id),de14=Date.now()-14*864e5;
+  const add=(at,ic,txt,eid,fixo)=>{const e=eid&&ev(eid);if(eid&&!e)return;out.push({at:at||0,ic,txt,eid,ev:e?e.title:'',fixo:!!fixo,g:grupo});};let grupo='racha';
+  for(const [id,r] of Object.entries(state.feats.splits||{})){
+    const p=me&&r.partes&&r.partes[me.id];
+    if(p&&p.st==='devendo')add(r.at,'💸','Você deve '+brl(p.v)+' para '+nomeDe(r.mid)+' ('+(r.desc||'racha')+').',r.eventId,true);
+    if(p&&p.st==='avisou')add(p.at||r.at,'⏳','Aguardando '+nomeDe(r.mid)+' confirmar os seus '+brl(p.v)+'.',r.eventId);
+    if(r.uid===state.uid)for(const [mid,q] of Object.entries(r.partes||{}))if(q.st==='avisou')add(q.at||r.at,'🔔',nomeDe(mid)+' disse que pagou '+brl(q.v)+'. Confirme no racha.',r.eventId,true);
+    if(r.uid===state.uid){const dv=Object.keys(r.partes||{}).filter(m=>r.partes[m].st==='devendo');if(dv.length)add(r.at,'🧾',(r.desc||'Racha')+': falta'+(dv.length>1?'m ':' ')+dv.map(nomeDe).join(', ')+' pagar.',r.eventId);}
+  }
+  grupo='geral';
+  for(const e of state.events)if(!isOnline(e)&&e.createdBy!==state.uid&&(e.createdAt||0)>de14)add(e.createdAt,'📅','Evento marcado: '+e.title+', '+fmtDay(e.date)+' às '+(e.time||'--:--')+'.',e.id);
+  for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&(p.at||0)>de14)add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
+  for(const q of Object.values(state.feats.polls||{}))if(q.uid!==state.uid&&(q.at||0)>de14)add(q.at,'📊','Enquete: '+q.q,q.eventId);
+  return out.sort((a,b)=>(b.fixo-a.fixo)||(b.at-a.at));
+}
+const alertasNovos=()=>{const v=alertasVisto();return alertasLista().filter(a=>a.ic!=='⏳'&&a.ic!=='🧾'&&(a.fixo||a.at>v)).length;};
+function alertasHTML(){
+  const v=state.alertasVistoAntes||0,l=alertasLista();
+  const item=a=>'<button class="alerta'+(a.fixo||a.at>v?' novo':'')+'"'+(a.eid?' data-act="evAbrir" data-e="'+esc(a.eid)+'"':' disabled')+'><i>'+a.ic+'</i><span class="grow"><span>'+esc(a.txt)+'</span><span class="small muted">'+(a.ev?esc(a.ev)+' · ':'')+quando(a.at)+'</span></span></button>';
+  const rc=l.filter(a=>a.g==='racha'),ge=l.filter(a=>a.g!=='racha');
+  return (rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(item).join('')+'</div></div>':'')+
+    '<div class="card"><h2 style="margin:0">Geral</h2>'+(ge.length?'<div class="list" style="gap:8px">'+ge.map(item).join('')+'</div>':'<div class="empty">Nenhuma notificação por enquanto.</div>')+'</div>';
+}
+
 function eventosHTML(){
+  if(state.evPg){const ep=state.events.find(x=>x.id===state.evPg&&!isOnline(x));if(ep)return eventoPgHTML(ep);state.evPg=null;}
   let out='';
   if((adm()||myMember())&&!readOnly()){
     if(state.editing){
@@ -1047,6 +1189,8 @@ function eventosHTML(){
     if(st==='agendado'&&canManage(e)&&!readOnly())btns+='<button class="btn" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
     if(st==='aberto'&&adm()&&!readOnly())btns+='<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>';
     if(st==='encerrado'&&adm()&&!readOnly())btns+='<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir evento</button>';
+    {const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).length,res=[nr?nr+(nr===1?' racha':' rachas'):'',np?np+(np===1?' recado':' recados'):'',nq?nq+(nq===1?' enquete':' enquetes'):''].filter(Boolean).join(' · ');
+     btns+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Racha e recados'+(res?' ('+res+')':'')+'</button>';}
     if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
     if(adm()&&!readOnly())btns+='<button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
     let rsvp='';
@@ -1223,8 +1367,9 @@ function render(){
     autoValidate();return;
   }
   h+=tabsHTML();
-  h+='<div class="tela'+(Date.now()-state.telaAt<450?' entra':'')+'">'+({faltas:faltasHTML,eventos:eventosHTML,avatar:()=>avatarHTML()||'<div class="card"><div class="empty">Entre como membro para montar o seu avatar.</div></div>',admin:adminHTML}[state.tab]||faltasHTML)()+'</div>';
+  h+='<div class="tela'+(Date.now()-state.telaAt<450?' entra':'')+'">'+({faltas:faltasHTML,eventos:eventosHTML,alertas:alertasHTML,avatar:()=>avatarHTML()||'<div class="card"><div class="empty">Entre como membro para montar o seu avatar.</div></div>',admin:adminHTML}[state.tab]||faltasHTML)()+'</div>';
   app.innerHTML=h;
+  if(window.QRCode)app.querySelectorAll('.qrpix').forEach(el=>{try{new QRCode(el,{text:el.dataset.text,width:168,height:168,correctLevel:QRCode.CorrectLevel.M});}catch(e){el.textContent='Use o botão de copiar.';}});
   const q=document.getElementById('qr');
   if(q&&window.QRCode){try{new QRCode(q,{text:q.dataset.text,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});}catch(e){q.textContent='Não foi possível gerar o QR code.';}}
   autoValidate();
@@ -1313,13 +1458,65 @@ app.addEventListener('click',async ev=>{
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
   if(act==='logout'){firebase.auth().signOut();return;}
-  if(act==='tab'){state.telaAt=Date.now();setTimeout(scheduleRender,520);state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
+  if(act==='tab'){if(d.t==='alertas'){state.alertasVistoAntes=alertasVisto();try{localStorage.setItem('alertas_'+state.uid,String(Date.now()));}catch(e){}}if(d.t!=='eventos')state.evPg=null;state.telaAt=Date.now();setTimeout(scheduleRender,520);state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='tComecar'&&evn){await tComecar(evn);return;}
   if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
   if(act==='tPedir'&&evn){await tPedir(evn);return;}
   if(act==='tResp'&&evn){await tResponder(evn,d.v);return;}
   if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
+  if(act==='evAbrir'&&evn){state.evVolta=state.room===evn.id?evn.id:null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.rachaSel=null;state.enqNova=false;state.editing=null;state.chamada=false;state.telaAt=Date.now();setTimeout(scheduleRender,520);render();window.scrollTo(0,0);return;}
+  if(act==='evVoltar'){if(state.evVolta){state.room=state.evVolta;state.evVolta=null;}state.evPg=null;state.rachaNovo=false;state.enqNova=false;render();return;}
+  if(act==='copiar'){copiar(d.t,d.msg);return;}
+  if(act==='rachaNovo'){state.rachaNovo=true;state.rachaSel=null;render();return;}
+  if(act==='rachaCancelar'){state.rachaNovo=false;state.rachaSel=null;render();return;}
+  if(act==='rachaSel'){state.rachaSel=state.rachaSel||{};state.rachaSel[d.m]=!state.rachaSel[d.m];render();return;}
+  if(act==='rachaCriar'&&evn){
+    const me=myMember();if(!me)return;
+    const g=id=>(document.getElementById(id)||{}).value||'';
+    const total=Math.round((parseFloat(g('rc_total').replace(/\./g,'').replace(',','.'))||parseFloat(g('rc_total').replace(',','.'))||0)*100)/100;
+    const pt=PIX_TIPOS[g('rc_pt')]?g('rc_pt'):'cel',chave=g('rc_pc').trim(),pix=pixChave(pt,chave);
+    const ids=Object.keys(state.rachaSel||{}).filter(i=>state.rachaSel[i]&&state.members.some(m=>m.id===i)&&i!==me.id);
+    if(!(total>0))return toast('Digite o valor total.');
+    if(!ids.length)return toast('Escolha com quem você rachou.');
+    if(pix.length<5)return toast('Digite a sua chave PIX.');
+    const cada=Math.round(total/(ids.length+1)*100)/100,partes={};ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
+    try{localStorage.setItem('pix_'+state.uid,JSON.stringify({t:pt,c:chave}));}catch(e){}
+    state.rachaNovo=false;state.rachaSel=null;['rc_desc','rc_total','rc_pt','rc_pc'].forEach(k=>delete state.draft[k]);
+    featGravar('splits','s'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me.id,desc:g('rc_desc').trim()||'Racha',total,pt,chave,pix,partes,at:Date.now()},'Racha criado.','set');return;
+  }
+  if(act==='rachaAvisar'||act==='rachaMarcar'){
+    const r=(state.feats.splits||{})[d.id],me=myMember();if(!r)return;
+    const mid=act==='rachaAvisar'?(me&&me.id):d.m,novo=act==='rachaAvisar'?'avisou':(d.v==='pago'?'pago':'devendo');
+    if(!mid||!r.partes||!r.partes[mid])return;
+    if(act==='rachaMarcar'&&!(r.uid===state.uid||adm()))return;
+    const at=Date.now();r.partes[mid]={...r.partes[mid],st:novo,at};
+    featGravar('splits',d.id,{['partes.'+mid+'.st']:novo,['partes.'+mid+'.at']:at},novo==='avisou'?'Avisado. Falta '+nomeDe(r.mid)+' confirmar.':(novo==='pago'?'Pagamento confirmado.':'Marcado como devendo.'));return;
+  }
+  if(act==='recadoEnviar'&&evn){
+    const t=((document.getElementById('rd_txt')||{}).value||'').trim();if(t.length<2)return toast('Escreva o recado.');
+    const me=myMember();delete state.draft.rd_txt;
+    featGravar('posts','p'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),text:t.slice(0,200),at:Date.now()},'Recado enviado.','set');return;
+  }
+  if(act==='enqNova'){state.enqNova=true;render();return;}
+  if(act==='enqCancelar'){state.enqNova=false;render();return;}
+  if(act==='enqCriar'&&evn){
+    const g=id=>(document.getElementById(id)||{}).value||'',q=g('eq_q').trim(),ops=g('eq_ops').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,6).map(x=>x.slice(0,40));
+    if(q.length<3)return toast('Escreva a pergunta.');
+    if(ops.length<2)return toast('Coloque pelo menos 2 opções, uma por linha.');
+    const me=myMember();state.enqNova=false;delete state.draft.eq_q;delete state.draft.eq_ops;
+    featGravar('polls','q'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:q.slice(0,80),ops,votos:{},at:Date.now()},'Enquete criada.','set');return;
+  }
+  if(act==='enqVotar'){
+    const q=(state.feats.polls||{})[d.id],i=parseInt(d.i,10);if(!q||!(i>=0&&i<(q.ops||[]).length))return;
+    const v=(q.votos||{})[state.uid]===i?null:i;q.votos={...(q.votos||{}),[state.uid]:v};
+    featGravar('polls',d.id,{['votos.'+state.uid]:v});return;
+  }
+  if(act==='featApagar'){
+    if(!['splits','posts','polls'].includes(d.col))return;
+    if(!state.draft['fa_'+d.id]){state.draft['fa_'+d.id]=1;if(el.classList.contains('ticon'))el.textContent='?';else el.textContent='Toque de novo para apagar';return;}
+    delete state.draft['fa_'+d.id];featGravar(d.col,d.id,null,'Apagado.','del');return;
+  }
   if(act==='evAba'){state.evAba=d.v==='enc'?'enc':'atv';render();return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
   if(act==='perfil'){state.perfil=state.perfil===d.m?null:d.m;state.conqSel=null;render();return;}
@@ -1638,6 +1835,7 @@ function subscribe(){
   sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
   sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
   sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
+  ['splits','posts','polls'].forEach(c=>db.collection(c).onSnapshot(s=>{state.feats[c]=toMap(s);state.featErr=false;scheduleRender();},()=>{state.featErr=true;scheduleRender();}));
   db.collection('games').onSnapshot(s=>{state.games=toMap(s);state.gamesErr=false;scheduleRender();},()=>{state.gamesErr=true;scheduleRender();});
   sub('rules',db.doc('config/rules'),s=>{const r=s.exists?s.data():{};state.rules={limite:Math.max(1,r.limite||2),dias:Math.max(1,r.dias||3),appLink:r.appLink||''};});
   setTimeout(()=>{if(!state.loaded){state.slow=true;render();}},10000);
@@ -1668,7 +1866,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113130350';
+const VER='20261113131506';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
