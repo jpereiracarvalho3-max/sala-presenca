@@ -405,7 +405,7 @@ function onlineHTML(e){
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
   if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, volte em Eventos e toque em Entrar na sala online.</p></div>';
   const t=tableOf(e,c);
-  if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Para sentar, toque em uma mesa na sala ou use os botões abaixo.</p><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
+  if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Para sentar e entrar na chamada de voz da mesa, toque nela ou use os botões abaixo.</p><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
   const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
   const rows=seatedAt(e.id,t).map(id=>{
     const nm=(all.find(m=>m.id===id)||{}).name;if(!nm)return '';
@@ -418,10 +418,10 @@ function onlineHTML(e){
     return '<div class="row between"><b>'+esc(nm)+'</b>'+chip+'</div>';
   }).join('');
   return '<div class="card"><h3>Mesa '+(t+1)+'</h3>'+rows+
-    (inCall?'<div class="row"><button class="btn" data-act="callMute">'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'</button><button class="btn danger" data-act="callLeave">Sair da chamada</button></div>'
-           :'<button class="btn primary" data-act="callJoin" data-e="'+esc(e.id)+'">Entrar na chamada de voz</button>')+
-    '<button class="btn" data-act="stand" data-e="'+esc(e.id)+'">Levantar da mesa</button>'+
-    '<p class="muted small" style="margin:0">A chamada é só de voz e fica dentro do app. Quem sentar nesta mesa e entrar na chamada fala com todos da mesa. Mantenha esta tela aberta.</p></div>';
+    (inCall?'<button class="btn" data-act="callMute">'+(rtc.muted?'Reativar microfone':'Silenciar microfone')+'</button>'
+           :'<p class="small" style="margin:0"><span class="chip warn">Você está na mesa, mas fora da chamada</span></p><button class="btn primary" data-act="callJoin" data-e="'+esc(e.id)+'">Ligar o microfone</button>')+
+    '<button class="btn danger" data-act="stand" data-e="'+esc(e.id)+'">Levantar da mesa'+(inCall?' (sai da chamada)':'')+'</button>'+
+    '<p class="muted small" style="margin:0">Sentar na mesa já coloca você na chamada de voz dela. Para sair da chamada, levante da mesa ou toque no chão. Mantenha esta tela aberta.</p></div>';
 }
 function roomHTML(e){
   const st=getStatus(e),live=st==='aberto',th=themeOf(e);
@@ -799,25 +799,17 @@ app.addEventListener('click',async ev=>{
   if((act==='walk'||act==='sit'||act==='stand')&&evn){
     const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key];
     if(!c||getStatus(evn)!=='aberto'||!isOnline(evn))return;
-    let up;
-    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;up={table:t};}
+    let up,sitT=-1;
+    if(act==='sit'){const t=parseInt(d.t,10);if(!(t>=0&&t<mesasOf(evn)))return;if(tableOf(evn,c)===t&&rtc.on)return;sitT=t;up={table:t};}
     else if(act==='stand'){const tp=tablePos(Math.max(0,tableOf(evn,c)),mesasOf(evn));up={table:null,x:tp.x,y:Math.min(.97,tp.y+.1)};}
     else{const r=el.getBoundingClientRect();if(!r.width||!r.height)return;up={table:null,x:+Math.max(.06,Math.min(.94,(ev.clientX-r.left)/r.width)).toFixed(3),y:+Math.max(.42,Math.min(.97,(ev.clientY-r.top)/r.height+.03)).toFixed(3)};}
     if(rtc.on){hangup(false);up.call=false;up.rtc={};}
     state.checkins[key]={...c,...up};render();
-    await w(()=>db.doc('checkins/'+key).update(up));return;
+    w(()=>db.doc('checkins/'+key).update(up));
+    if(sitT>=0)await joinCall(evn,me,key,sitT); /* sentar já entra na chamada da mesa */
+    return;
   }
-  if(act==='callJoin'&&evn){
-    const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key],t=tableOf(evn,c);
-    if(!c||t<0||rtc.on)return;
-    if(!navigator.mediaDevices||!window.RTCPeerConnection)return toast('Este navegador não suporta chamada de voz.');
-    let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}catch(e){return toast('Não deu para usar o microfone. Libere o microfone para este site.');}
-    Object.assign(rtc,{on:true,eid:evn.id,table:t,me:me.id,stream,muted:false,peers:{},tries:{},lastN:{}});
-    state.checkins[key]={...c,call:true,rtc:{}};
-    if(!await w(()=>db.doc('checkins/'+key).update({call:true,rtc:{}}))){hangup(false);render();return;}
-    rtcSync();render();return;
-  }
-  if(act==='callLeave'){hangup();render();return;}
+  if(act==='callJoin'&&evn){const me=myMember(),key=me&&evn.id+'_'+me.id,c=key&&state.checkins[key];if(c&&tableOf(evn,c)>=0)await joinCall(evn,me,key,tableOf(evn,c));return;}
   if(act==='callMute'){if(!rtc.on)return;rtc.muted=!rtc.muted;rtc.stream.getAudioTracks().forEach(t=>{t.enabled=!rtc.muted;});render();return;}
   if(act==='joinOnline'&&evn){
     const me=myMember();if(!me)return toast('Escolha quem você é primeiro.');
@@ -903,6 +895,20 @@ async function answerTo(id,o){
     await db.doc('checkins/'+rtcKey()).update({['rtc.'+id]:{t:'answer',sdp:p.pc.localDescription.sdp,n:o.n}});
   }catch(e){if(rtc.peers[id]===p)dropPeer(id);}
 }
+/* entra na chamada da mesa; chamado no toque de sentar, para o navegador liberar microfone e som */
+async function joinCall(evn,me,key,t){
+  if(rtc.on)return;
+  if(!navigator.mediaDevices||!window.RTCPeerConnection){toast('Este navegador não suporta chamada de voz.');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){toast('Você sentou, mas o microfone não foi liberado para este site.');return;}
+  const c=state.checkins[key];
+  if(rtc.on||!c||c.table!==t||getStatus(evn)!=='aberto'){stream.getTracks().forEach(x=>x.stop());return;}
+  Object.assign(rtc,{on:true,eid:evn.id,table:t,me:me.id,stream,muted:false,peers:{},tries:{},lastN:{}});
+  state.checkins[key]={...c,call:true,rtc:{}};
+  rtcSync();render();
+  if(!await w(()=>db.doc('checkins/'+key).update({call:true,rtc:{}}))){hangup(false);render();}
+}
 function hangup(clear){
   if(!rtc.on)return;const key=rtcKey();
   Object.keys(rtc.peers).forEach(dropPeer);
@@ -986,7 +992,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112221755';
+const VER='20261112222459';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
