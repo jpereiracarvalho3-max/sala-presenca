@@ -191,6 +191,7 @@ button.chip{min-height:34px;padding:6px 12px;touch-action:manipulation}
 .opc{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;overflow:hidden;font:inherit;font-weight:600;text-align:left;touch-action:manipulation}
 .opc.meu{border-color:var(--accent)}
 .opcb{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.22}
+.opcq{margin:-4px 0 2px 4px}
 .opct,.opcn{position:relative}.opcn{font-family:var(--font-head)}
 .alerta{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:12px;padding:10px;cursor:pointer;font:inherit;touch-action:manipulation}
 .alerta i{font-style:normal;font-size:22px;line-height:1.1}
@@ -1103,10 +1104,11 @@ function enquetesHTML(e){
   h+=lista.map(q=>enqCard(q)).join('');
   return h+'</div>';
 }
+const nomeUid=u=>{const a=state.approvals[u],m=a&&state.members.find(x=>x.id===a.memberId);return m?m.name:(u===state.uid?meuNome():'Alguém');};
 function enqCard(q,sub){
     const votos=q.votos||{},tot=Object.values(votos).filter(v=>Number.isInteger(v)).length,meu=votos[state.uid];
     return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(q.q)+'</h3><span class="small muted">'+tot+(tot===1?' voto':' votos')+'</span></div>'+
-      (q.ops||[]).map((o,i)=>{const n=Object.values(votos).filter(v=>v===i).length,pc=tot?Math.round(n/tot*100):0;return '<button class="opc'+(meu===i?' meu':'')+'" data-act="enqVotar" data-id="'+esc(q.id)+'" data-i="'+i+'" aria-pressed="'+(meu===i)+'"><span class="opcb" style="width:'+pc+'%"></span><span class="opct">'+(meu===i?'✓ ':'')+esc(o)+'</span><span class="opcn">'+n+'</span></button>';}).join('')+
+      (q.ops||[]).map((o,i)=>{const n=Object.values(votos).filter(v=>v===i).length,pc=tot?Math.round(n/tot*100):0;return '<button class="opc'+(meu===i?' meu':'')+'" data-act="enqVotar" data-id="'+esc(q.id)+'" data-i="'+i+'" aria-pressed="'+(meu===i)+'"><span class="opcb" style="width:'+pc+'%"></span><span class="opct">'+(meu===i?'✓ ':'')+esc(o)+'</span><span class="opcn">'+n+'</span></button>'+(n?'<div class="small muted opcq">'+esc(Object.keys(votos).filter(u=>votos[u]===i).map(nomeUid).sort((a,b)=>a.localeCompare(b)).join(', '))+'</div>':'');}).join('')+
       '<div class="row between"><span class="small muted">por '+esc(q.nome||nomeDe(q.mid))+(sub?' · '+esc(sub):'')+'</span>'+(adm()||q.uid===state.uid?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="'+esc(q.id)+'">Apagar</button>':'')+'</div></div>';
 }
 function eventoPgHTML(e){
@@ -1877,7 +1879,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113133916';
+const VER='20261113134120';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
