@@ -1109,7 +1109,7 @@ function impScreen(e){
     const seg=iDec(g.seg)||{p:'?',i:[]};
     h+='<div class="segredo aberto" style="cursor:default"><span class="small">A palavra era</span><b>'+esc(seg.p)+'</b><span class="small">'+(seg.i.length>1?'Os impostores eram':'O impostor era')+'</span><b style="color:var(--bad)">'+esc(seg.i.map(iNome).join(' e '))+'</b></div>';
   }
-  h+=fRegrasHTML('imp');
+  h+=fReqHTML('imp')+fRegrasHTML('imp');
   h+='<div><div class="small muted">Tema da próxima rodada</div><div class="avrow">'+Object.keys(IMP_NOMES).map(t=>'<button class="stl" data-act="iTema" data-v="'+t+'" data-e="'+E+'" aria-pressed="'+(tema===t)+'">'+IMP_NOMES[t]+'</button>').join('')+'</div></div>';
   h+='<div><div class="small muted">Participantes ('+js.length+')</div><div class="avrow">'+(js.length?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
   h+=dentro
@@ -1234,7 +1234,7 @@ function cLista(ids,sel,bloq){return '<div class="cidlista">'+ids.map(m=>'<butto
 function jogosTopo(e,qual){return '<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+(qual==='cid'?'A Cidade Dorme':'Impostor')+'</span></div>';}
 /* tela do botão Jogos: lista os jogos da sala presencial com as regras de cada um; a pessoa escolhe um e entra */
 function jogosMenu(e){
-  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span><span class="small muted">A partir de '+J.min+' pessoas'+(J.um?' · quem está sem celular também joga':' · cada um no seu celular')+'</span></button>'+fRegrasHTML(k)+'</div>';};
+  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span></button>'+fReqHTML(k)+fRegrasHTML(k)+'</div>';};
   const gi=iGame(e)||{},gc=cGame(e)||{};
   return '<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>'+
     '<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
@@ -1248,7 +1248,7 @@ function cidScreen(e){
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(st!=='jogo'){
     const n=js.length,na=cQtdAss(n);
-    h+='<div class="small muted">Jogo de papéis secretos. De noite o assassino ataca, o anjo protege e o detetive investiga, cada um pelo próprio celular. De dia todos conversam e votam em quem eliminar.</div>'+fRegrasHTML('cid')+
+    h+='<div class="small muted">Jogo de papéis secretos. De noite o assassino ataca, o anjo protege e o detetive investiga, cada um pelo próprio celular. De dia todos conversam e votam em quem eliminar.</div>'+fReqHTML('cid')+fRegrasHTML('cid')+
       '<div><div class="small muted">Participantes ('+n+')</div><div class="avrow">'+(n?js.map(x=>'<span class="chip'+(x.uid===state.uid?' info':'')+'">'+esc(iNome(x.mid))+'</span>').join(''):'<span class="small muted">Ninguém entrou ainda.</span>')+'</div></div>';
     if(dentro){
       h+='<div class="item"><b>O celular de quem começar vira o narrador</b><span class="small muted">Ele fala o jogo em voz alta. Fique com ele na mão, com o som no máximo e a tela ligada. Você joga normalmente.</span><button class="btn" data-act="cVoz">Testar a voz neste celular</button></div>'+
@@ -1364,6 +1364,9 @@ const F_JOGOS={
     regras:['Cada um entra pelo próprio celular. O celular de quem começa vira o narrador e fala o jogo em voz alta.','No começo, o papel de cada um aparece por 10 segundos e some: cidadão, assassino, anjo ou detetive.','De noite todos fecham os olhos. O narrador chama um por vez: o assassino escolhe quem morre, o anjo escolhe quem protege e o detetive investiga uma pessoa.','De manhã o narrador conta o que aconteceu. A cidade conversa e cada um vota no celular em quem eliminar. A noite volta quando todos votam ou em 5 minutos.','A cidade vence se eliminar todos os assassinos. Os assassinos vencem se ficarem em número igual ou maior que os outros.','Quem morre ou é eliminado fica em silêncio até o fim.']}
 };
 const F_ORDEM=['cav','rol','vod','bom','car','sin','pro','mai','che'];
+/* pré-requisito de cada jogo, mostrado no menu e na entrada: quantas pessoas e quantos celulares */
+const fReq=k=>{const J=F_JOGOS[k];return !J.um?'Um celular por pessoa':J.lim?'Até 2 pessoas por celular':'Todos em um celular só';};
+const fReqHTML=k=>'<div class="avrow" style="gap:6px;margin:4px 0 2px"><span class="chip">'+F_JOGOS[k].min+'+ pessoas</span><span class="chip'+(F_JOGOS[k].um?' info':' warn')+'">'+fReq(k)+'</span></div>';
 const fGid=(e,k)=>e.id+'_f'+k;
 const fGame=(e,k)=>state.games[fGid(e,k)]||null;
 const fM=mid=>state.members.concat(state.guests).find(m=>m.id===mid)||{id:mid,name:'?'};
@@ -1447,7 +1450,7 @@ function fScreen(e,k){
   let h='<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+J.nome+'</span></div><div class="card"><div class="row between" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">'+J.nome+'</h2>'+(g.st==='jogo'?'<span class="chip ok">Rodada '+(g.n||1)+'</span>':podeAdd?'<button class="chip" data-act="fAdd" data-v="'+k+'" aria-expanded="'+(state.fAdd===k)+'" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">+ Pessoa</button>':'')+'</div>';
   if(state.gamesErr)return h+'<span class="chip warn">Os jogos ainda não foram liberados no banco. Peça ao administrador para atualizar as regras do Firebase.</span></div>';
   if(g.st!=='jogo'){
-    h+='<div class="small muted">'+J.desc+'</div>'+fRegrasHTML(k);
+    h+='<div class="small muted">'+J.desc+'</div>'+fReqHTML(k)+fRegrasHTML(k);
     h+=jog.length?fMesa(e,k,jog,{centro:'<span class="small muted" style="text-align:center">'+jog.length+(jog.length===1?' na mesa':' na mesa')+'</span>'}):'<div class="empty">Ninguém sentou na mesa ainda.</div>';
     if(!dentro)h+='<button class="btn primary" data-act="fEntrar"'+attr+'>Sentar na mesa</button>'+(J.um?'<div class="small muted" style="text-align:center">Está sem celular? Peça para alguém que já sentou tocar em + Pessoa e colocar você no celular dela.</div>':'');
     else if(J.um){
@@ -2862,7 +2865,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113182313';
+const VER='20261113182714';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
