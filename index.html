@@ -1149,10 +1149,40 @@ function alertasHTML(){
   for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
   ge.sort((a,b)=>b.at-a.at);
   if(state.featErr)return '<div class="card"><span class="chip warn">As notificações ainda não foram liberadas no banco.</span></div>';
-  return (rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,ev(r.eventId).title)).join('')+'</div></div>':'')+
+  return pushHTML()+(rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,ev(r.eventId).title)).join('')+'</div></div>':'')+
     '<div class="card"><h2 style="margin:0">Geral</h2>'+(ge.length?'<div class="list" style="gap:8px">'+ge.map(x=>x.h).join('')+'</div>':'<div class="empty">Nenhuma notificação por enquanto.</div>')+'</div>';
 }
 
+/* NOTIFICAÇÕES NO CELULAR
+   O app põe cada aviso numa fila (outbox); um robô no GitHub lê a fila a cada 5 minutos e envia pelo Firebase Cloud Messaging.
+   VAPID é a chave pública de Web Push do projeto (Firebase > Configurações > Cloud Messaging). Sem ela, tudo aqui fica desligado. */
+const VAPID='';
+const pushBase=()=>!!(VAPID&&'serviceWorker' in navigator&&'Notification' in window&&'PushManager' in window);
+let pushSdkP=null,pushReg=null;
+const pushSdk=()=>pushSdkP||(pushSdkP=new Promise((ok,er)=>{if(window.firebase&&firebase.messaging)return ok();const x=document.createElement('script');x.src='https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js';x.onload=()=>ok();x.onerror=()=>{pushSdkP=null;er(new Error('sdk'));};document.head.appendChild(x);}));
+async function pushToken(){
+  await pushSdk();
+  pushReg=pushReg||await navigator.serviceWorker.register('firebase-messaging-sw.js');
+  const ms=firebase.messaging(),tk=await ms.getToken({vapidKey:VAPID,serviceWorkerRegistration:pushReg});
+  if(!tk)throw new Error('sem token');
+  const me=myMember();
+  await db.doc('tokens/'+state.uid).set({mid:me?me.id:'',t:{[tk]:Date.now()}},{merge:true});
+  if(!state.pushOk){state.pushOk=true;try{ms.onMessage(m=>{const n=(m&&m.notification)||{};if(n.title)toast(n.title+(n.body?': '+n.body:''));});}catch(e){}}
+  return tk;
+}
+function pushHTML(){
+  if(!VAPID||state.pushOk)return '';
+  if(!pushBase())return ehIOS()&&!instalado()?'<div class="card"><span class="small muted">Para receber notificações no iPhone, instale o app na tela inicial.</span></div>':'';
+  const pm=Notification.permission;
+  if(pm==='denied')return '<div class="card"><span class="small muted">As notificações estão bloqueadas neste aparelho. Libere nos ajustes do celular.</span></div>';
+  if(pm==='granted')return '';
+  return '<div class="card"><button class="btn primary" data-act="pushAtivar"'+(state.pushBusy?' disabled':'')+'>'+(state.pushBusy?'Ativando...':'Ativar notificações no celular')+'</button></div>';
+}
+/* põe um aviso na fila: para = lista de ids de membros, ou 'todos' (o robô tira o autor e quem marcou Não vou no evento) */
+function avisar(para,titulo,corpo,eventId,quando,id){
+  if(!db)return;
+  try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',at:Date.now()}).catch(()=>{});}catch(e){}
+}
 /* antes do login, no celular: convida a instalar o app na tela inicial (assim o login fica guardado); dá para pular */
 let instalarEv=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();instalarEv=e;if(state.needLogin)scheduleRender();});
@@ -1489,6 +1519,14 @@ function autoValidate(){
 app.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el||el.disabled||el.tagName==='SELECT')return;
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
+  if(act==='pushAtivar'){
+    if(!pushBase()||state.pushBusy)return;
+    state.pushBusy=true;render();
+    Promise.resolve().then(()=>Notification.requestPermission()).then(pm=>{if(pm!=='granted')throw new Error('negado');return pushToken();})
+      .then(()=>{state.pushBusy=false;toast('Notificações ativadas neste celular.');render();})
+      .catch(e=>{state.pushBusy=false;toast(e&&e.message==='negado'?'Você não permitiu as notificações.':'Não deu para ativar agora. Tente de novo.');render();});
+    return;
+  }
   if(act==='semInstalar'){state.semInstalar=true;render();return;}
   if(act==='instalar'){if(instalarEv){const ev=instalarEv;instalarEv=null;try{ev.prompt();(ev.userChoice||Promise.resolve()).then(()=>scheduleRender());}catch(e){}}render();return;}
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
@@ -1518,7 +1556,9 @@ app.addEventListener('click',async ev=>{
     const cada=Math.round(total/(ids.length+1)*100)/100,partes={};ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
     try{localStorage.setItem('pix_'+state.uid,JSON.stringify({t:pt,c:chave}));}catch(e){}
     state.rachaNovo=false;state.rachaSel=null;const dt=g('rc_dt'),cobrar=/^\d{4}-\d\d-\d\d$/.test(dt)&&dt>todayStr()?dt:'';['rc_desc','rc_total','rc_pt','rc_pc','rc_dt'].forEach(k=>delete state.draft[k]);
-    featGravar('splits','s'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me.id,desc:g('rc_desc').trim()||'Racha',total,pt,chave,pix,partes,cobrar,at:Date.now()},cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.','set');return;
+    const sid='s'+Date.now().toString(36),sdesc=g('rc_desc').trim()||'Racha';
+    featGravar('splits',sid,{eventId:evn.id,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes,cobrar,at:Date.now()},cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.','set');
+    avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',evn.id,cobrar,'r_'+sid);return;
   }
   if(act==='rachaAvisar'||act==='rachaMarcar'){
     const r=(state.feats.splits||{})[d.id],me=myMember();if(!r)return;
@@ -1526,12 +1566,15 @@ app.addEventListener('click',async ev=>{
     if(!mid||!r.partes||!r.partes[mid])return;
     if(act==='rachaMarcar'&&!(r.uid===state.uid||adm()))return;
     const at=Date.now();r.partes[mid]={...r.partes[mid],st:novo,at};
-    featGravar('splits',d.id,{['partes.'+mid+'.st']:novo,['partes.'+mid+'.at']:at},novo==='avisou'?'Avisado. Falta '+nomeDe(r.mid)+' confirmar.':(novo==='pago'?'Pagamento confirmado.':'Marcado como devendo.'));return;
+    featGravar('splits',d.id,{['partes.'+mid+'.st']:novo,['partes.'+mid+'.at']:at},novo==='avisou'?'Avisado. Falta '+nomeDe(r.mid)+' confirmar.':(novo==='pago'?'Pagamento confirmado.':'Marcado como devendo.'));
+    if(novo==='avisou')avisar([r.mid],'Racha: '+(r.desc||''),nomeDe(mid)+' disse que pagou '+brl(r.partes[mid].v)+'. Confirme no app.',r.eventId);
+    if(novo==='pago')avisar([mid],'Racha: '+(r.desc||''),meuNome()+' confirmou o seu pagamento de '+brl(r.partes[mid].v)+'.',r.eventId);
+    return;
   }
   if(act==='recadoEnviar'&&evn){
     const t=((document.getElementById('rd_txt')||{}).value||'').trim();if(t.length<2)return toast('Escreva o recado.');
     const me=myMember();delete state.draft.rd_txt;
-    featGravar('posts','p'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),text:t.slice(0,200),at:Date.now()},'Recado enviado.','set');return;
+    featGravar('posts','p'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),text:t.slice(0,200),at:Date.now()},'Recado enviado.','set');avisar('todos',evn.title,meuNome()+': '+t,evn.id);return;
   }
   if(act==='enqNova'){state.enqNova=true;render();return;}
   if(act==='enqCancelar'){state.enqNova=false;render();return;}
@@ -1540,7 +1583,7 @@ app.addEventListener('click',async ev=>{
     if(q.length<3)return toast('Escreva a pergunta.');
     if(ops.length<2)return toast('Coloque pelo menos 2 opções, uma por linha.');
     const me=myMember();state.enqNova=false;delete state.draft.eq_q;delete state.draft.eq_ops;
-    featGravar('polls','q'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:q.slice(0,80),ops,votos:{},at:Date.now()},'Enquete criada.','set');return;
+    featGravar('polls','q'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:q.slice(0,80),ops,votos:{},at:Date.now()},'Enquete criada.','set');avisar('todos',evn.title,'Enquete: '+q,evn.id);return;
   }
   if(act==='enqVotar'){
     const q=(state.feats.polls||{})[d.id],i=parseInt(d.i,10);if(!q||!(i>=0&&i<(q.ops||[]).length))return;
@@ -1550,7 +1593,7 @@ app.addEventListener('click',async ev=>{
   if(act==='featApagar'){
     if(!['splits','posts','polls'].includes(d.col))return;
     if(!state.draft['fa_'+d.id]){state.draft['fa_'+d.id]=1;if(el.classList.contains('ticon'))el.textContent='?';else el.textContent='Toque de novo para apagar';return;}
-    delete state.draft['fa_'+d.id];featGravar(d.col,d.id,null,'Apagado.','del');return;
+    delete state.draft['fa_'+d.id];featGravar(d.col,d.id,null,'Apagado.','del');if(d.col==='splits'){try{db.doc('outbox/r_'+d.id).delete().catch(()=>{});}catch(e){}}return;
   }
   if(act==='evAba'){state.evAba=d.v==='enc'?'enc':'atv';render();return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
@@ -1888,6 +1931,7 @@ function boot(){
     if(!u){if(started){location.reload();return;}state.needLogin=true;render();return;}
     if(started)return;started=true;
     state.needLogin=false;state.uid=u.uid;state.canWrite=true;render();
+    if(pushBase()&&Notification.permission==='granted')setTimeout(()=>pushToken().then(()=>scheduleRender()).catch(()=>{}),4000);
     db.doc('profiles/'+u.uid).set({name:u.displayName||''}).catch(()=>{});
     /* o primeiro a entrar vira o administrador; as regras do banco impedem trocar depois */
     try{
@@ -1901,7 +1945,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113135101';
+const VER='20261113135520';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;

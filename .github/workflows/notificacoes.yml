@@ -1,0 +1,25 @@
+# Robô das notificações: a cada 5 minutos lê a fila de avisos do app (coleção outbox do Firestore)
+# e envia para os celulares pelo Firebase Cloud Messaging. Precisa do segredo FIREBASE_SA
+# (chave da conta de serviço do Firebase, em Settings > Secrets and variables > Actions).
+name: Notificacoes
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: notificacoes
+  cancel-in-progress: false
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar bibliotecas
+        run: pip install --quiet google-auth requests
+      - name: Enviar avisos da fila
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: python3 .github/push/enviar.py

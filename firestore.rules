@@ -113,6 +113,14 @@ service cloud.firestore {
         || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votos']));
       allow delete: if isOwner() || resource.data.uid == me();
     }
+    // Notificações no celular: cada um grava o registro do próprio aparelho; os avisos entram numa fila que só o robô de envio lê
+    match /tokens/{u} {
+      allow read, write: if signedIn() && u == me();
+    }
+    match /outbox/{id} {
+      allow create: if inside() && request.resource.data.uid == me();
+      allow delete: if isOwner() || resource.data.uid == me();
+    }
     match /justifs/{key} {
       allow read: if inside();
       allow create: if isMember()
