@@ -185,6 +185,27 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 .placar2{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;text-align:center}
 .pt{display:flex;flex-direction:column;align-items:center;min-width:0}.pt .small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.pt b{font-size:30px;line-height:1.1;font-family:var(--font-head)}
 .px{font-family:var(--font-head);font-weight:700;font-size:20px;color:var(--muted)}
+.pista{background:#B5533C;border-radius:14px;padding:4px 0;display:flex;flex-direction:column;overflow:hidden}
+.raia{display:grid;grid-template-columns:86px minmax(0,1fr) 22px;align-items:center;gap:6px;border:0;border-bottom:1px dashed rgba(255,255,255,.5);background:transparent;padding:0 8px;height:56px;cursor:pointer;color:#fff;text-align:left;font:inherit;touch-action:manipulation}
+.raia:last-child{border-bottom:0}
+.raia.aberta{background:rgba(255,255,255,.18)}
+.rnome{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtrack{position:relative;height:56px;display:block}
+.rtrack::after{content:'';position:absolute;right:0;top:0;bottom:0;width:10px;background:repeating-conic-gradient(#fff 0 25%,#1b1b1b 0 50%) 0 0/10px 10px}
+.corredor{position:absolute;bottom:2px;left:var(--x);width:36px;height:50px;display:block}
+.corredor svg{width:36px;height:50px;overflow:visible;display:block}
+.corredor.vai{animation:corre 1.5s cubic-bezier(.25,.8,.3,1) both}
+.corredor.vai svg{animation:hop .26s ease-in-out infinite}
+@keyframes corre{from{left:0}to{left:var(--x)}}
+.raia.susp .corredor svg{filter:grayscale(1);opacity:.75}
+.raia.susp .rnome::after{content:' (suspenso)';font-weight:400;opacity:.85}
+.rn{font-family:var(--font-head);font-weight:700;font-size:15px;text-align:right}
+.perfil{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
+.pav svg{width:52px;height:72px;overflow:visible;display:block}
+.pnums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.pnums div{background:#fff;border-radius:10px;padding:8px 4px;display:flex;flex-direction:column}
+.pnums b{font-family:var(--font-head);font-size:22px;line-height:1.1}.pnums small{font-size:12px;font-weight:500;color:var(--muted)}.pnums span{font-size:11.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.corredor.vai,.corredor.vai svg{animation:none!important}}
 .segredo{width:100%;min-height:190px;border-radius:18px;border:2px dashed var(--line);background:var(--soft);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 .segredo b{font-family:var(--font-head);font-size:32px;line-height:1.15;text-align:center}
 .segredo.aberto{border-style:solid;border-color:var(--accent);background:#fff}
@@ -237,7 +258,7 @@ button.carta[disabled]{opacity:.9;filter:saturate(.75);cursor:default}
 <script>
 (function(){
 const app=document.getElementById('app');
-const state={jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
+const state={perfil:null,raceAt:0,jogoP:null,impVer:false,impN:null,painel:0,reactOpen:false,games:{},gamesErr:false,myHands:{},handSubs:{},tab:'faltas',room:null,adminOn:true,members:[],guests:[],events:[],ctl:{},checkins:{},justifs:{},claims:{},approvals:{},avatars:{},pos:{},names:{},rules:{limite:2,dias:3,appLink:''},
   ready:{},loaded:false,uid:null,isOwner:false,canWrite:null,eventId:null,editing:null,draft:{},skipClaim:false,pendingV:null,rankOpen:{},rankMode:'mes',reactSeen:{},reactShow:{},reactInit:false,nodb:false,needLogin:false,slow:false,err:null,deferred:false};
 let db=null,user=null,toastT=null;
 
@@ -914,7 +935,7 @@ function faltasHTML(){
     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
     out+='<div class="card"><div class="row between"><h2 style="margin:0">Minhas faltas</h2>'+chip+'</div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
   }
-  return out+rankHTML()+placarHTML()+abonoHTML();
+  return out+rankHTML()+abonoHTML();
 }
 function eventosHTML(){
   let out='';
@@ -965,21 +986,37 @@ function eventosHTML(){
   return out;
 }
 /* ranking de participação: só eventos presenciais contam */
+/* ranking em forma de corrida: cada membro corre na sua raia até a posição das presenças (só eventos presenciais contam).
+   Tocar no boneco abre os dados daquela pessoa. */
 function rankHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
   const mes=state.rankMode!=='total',mk=todayStr().slice(0,7);
   const evs=state.events.filter(e=>!isOnline(e)&&(!mes||String(e.date).slice(0,7)===mk)).sort((a,b)=>evTime(b)-evTime(a));
-  const rows=state.members.map(m=>({m,evs:evs.filter(e=>state.checkins[e.id+'_'+m.id])})).sort((x,y)=>y.evs.length-x.evs.length||x.m.name.localeCompare(y.m.name));
-  const total=evs.filter(e=>getStatus(e)!=='agendado').length,medal=['🥇','🥈','🥉'];
+  const rows=state.members.map(m=>({m,evs:evs.filter(e=>state.checkins[e.id+'_'+m.id]),a:analyze(m)})).sort((x,y)=>y.evs.length-x.evs.length||x.m.name.localeCompare(y.m.name));
+  const max=Math.max(1,...rows.map(r=>r.evs.length)),medal=['🥇','🥈','🥉'];
+  if(!state.raceAt){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}
+  const dec=Date.now()-state.raceAt,correndo=dec<1600;
   let pos=0,last=-1;
-  return '<div class="card"><h2>Ranking de presença</h2><div class="row"><button class="btn'+(mes?' primary':'')+'" data-act="rankMode" data-v="mes" aria-pressed="'+mes+'">Este mês</button><button class="btn'+(mes?'':' primary')+'" data-act="rankMode" data-v="total" aria-pressed="'+!mes+'">Desde o início</button></div>'+
-    '<div class="small muted">'+total+(total===1?' evento presencial':' eventos presenciais')+'</div><div class="list">'+
-    rows.map((r,i)=>{
-      if(r.evs.length!==last){pos=i;last=r.evs.length;}
-      const open=!!state.rankOpen[r.m.id],n=r.evs.length;
-      return '<div class="item"><button class="row between" data-act="rankToggle" data-m="'+esc(r.m.id)+'" aria-expanded="'+open+'" style="border:0;background:transparent;padding:0;width:100%;cursor:pointer;color:inherit;font:inherit;text-align:left"><h3>'+(n&&pos<3?medal[pos]+' ':'')+(pos+1)+'º '+esc(r.m.name)+'</h3><span class="chip '+(n?'ok':'')+'">'+n+(n===1?' presença':' presenças')+'</span></button>'+
-        (open?(n?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">'+(mes?'Ainda não esteve em nenhum evento presencial neste mês.':'Ainda não esteve em nenhum evento presencial.')+'</div>'):'')+'</div>';
-    }).join('')+'</div></div>';
+  const pista=rows.map((r,i)=>{
+    if(r.evs.length!==last){pos=i;last=r.evs.length;}
+    const n=r.evs.length,pct=(n/max).toFixed(3),aberto=state.perfil===r.m.id;
+    return '<button class="raia'+(aberto?' aberta':'')+(r.a.suspenso?' susp':'')+'" data-act="perfil" data-m="'+esc(r.m.id)+'" aria-expanded="'+aberto+'" aria-label="'+esc(r.m.name)+', '+(pos+1)+'º lugar, '+n+(n===1?' presença':' presenças')+(r.a.suspenso?', suspenso':'')+'">'+
+      '<span class="rnome">'+(n&&pos<3?medal[pos]+' ':'')+esc(r.m.name)+'</span>'+
+      '<span class="rtrack"><span class="corredor'+(correndo?' vai':'')+'" style="--x:calc('+pct+' * (100% - 46px))'+(correndo?';animation-delay:-'+(dec/1000).toFixed(2)+'s':'')+'">'+fig(r.m)+'</span></span>'+
+      '<span class="rn">'+n+'</span></button>';
+  }).join('');
+  const sel=state.perfil&&rows.find(r=>r.m.id===state.perfil);
+  return '<div class="card"><div class="row between"><h2 style="margin:0">Corrida de presença</h2><span class="row"><button class="btn'+(mes?' primary':'')+'" data-act="rankMode" data-v="mes" aria-pressed="'+mes+'">Mês</button><button class="btn'+(mes?'':' primary')+'" data-act="rankMode" data-v="total" aria-pressed="'+!mes+'">Geral</button></span></div>'+
+    '<div class="pista">'+pista+'</div>'+(sel?perfilHTML(sel,mes):'<div class="small muted" style="text-align:center">Toque em alguém para ver os dados</div>')+'</div>';
+}
+function perfilHTML(r,mes){
+  const m=r.m,a=r.a,lim=state.rules.limite,pres=a.hist.filter(h=>h.s==='presente').length;
+  const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':(a.mes>=lim?'<span class="chip warn">Suspensão já cumprida</span>':(a.mes===lim-1&&lim>1?'<span class="chip warn">Mais uma falta suspende</span>':'<span class="chip ok">Em dia</span>'));
+  return '<div class="perfil"><div class="row between"><div class="row" style="align-items:center"><span class="pav">'+fig(m)+'</span><div><h3 style="margin:0">'+esc(m.name)+'</h3>'+chip+'</div></div><button class="ticon" data-act="perfil" data-m="'+esc(m.id)+'" aria-label="Fechar">✕</button></div>'+
+    '<div class="pnums"><div><b>'+a.mes+'<small> de '+lim+'</small></b><span>faltas no mês</span></div><div><b>'+r.evs.length+'</b><span>'+(mes?'presenças no mês':'presenças no total')+'</span></div><div><b>'+pres+'</b><span>presenças em encerrados</span></div></div>'+
+    '<div class="dots" aria-label="Últimos eventos">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div>'+
+    '<div class="legend"><span><i style="background:var(--ok)"></i>Presente</span><span><i style="background:var(--bad)"></i>Falta</span><span><i style="background:var(--info)"></i>Abonada</span><span><i style="background:var(--warn)"></i>Em análise</span><span><i style="background:var(--muted)"></i>Suspenso</span></div>'+
+    (r.evs.length?'<div class="list">'+r.evs.map(e=>'<div class="small">'+esc(e.title)+' <span class="muted">- '+esc(fmtDay(e.date))+(e.local?' - '+esc(e.local):'')+'</span></div>').join('')+'</div>':'<div class="small muted">'+(mes?'Nenhuma presença neste mês.':'Nenhuma presença ainda.')+'</div>')+'</div>';
 }
 function placarHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
@@ -1148,14 +1185,15 @@ app.addEventListener('click',async ev=>{
   const act=el.dataset.act,d=el.dataset,evn=d.e?state.events.find(x=>x.id===d.e):null;
   if(act==='login'){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e&&e.code;if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase.':c==='auth/operation-not-allowed'?'O login com Google ainda não foi ativado no Firebase.':'Não deu para entrar. Abra o link no Safari ou no Chrome.');});return;}
   if(act==='logout'){firebase.auth().signOut();return;}
-  if(act==='tab'){state.tab=d.t;render();return;}
+  if(act==='tab'){state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='tComecar'&&evn){await tComecar(evn);return;}
   if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
   if(act==='tPedir'&&evn){await tPedir(evn);return;}
   if(act==='tResp'&&evn){await tResponder(evn,d.v);return;}
   if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
-  if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';render();return;}
+  if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
+  if(act==='perfil'){state.perfil=state.perfil===d.m?null:d.m;render();return;}
   if(act==='rsvp'&&evn){
     if(!myMember()||!state.uid)return;
     const cur=state.avatars[state.uid]||{},old=(cur.rsvp||{})[evn.id],v=old===d.v?null:(d.v==='nao'?'nao':'sim');
@@ -1477,7 +1515,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113092407';
+const VER='20261113092549';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
