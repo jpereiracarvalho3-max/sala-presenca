@@ -240,6 +240,9 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
 .chat-onda.toc i:nth-child(2n){animation-delay:.15s}.chat-onda.toc i:nth-child(3n){animation-delay:.3s}
 @keyframes chatOnda{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
 .chat-esp{height:72px}
+.chat-enqs{position:sticky;top:0;z-index:20;background:#15110E;display:flex;flex-direction:column;gap:6px;padding:6px 0 8px;max-height:70dvh;overflow-y:auto}
+.chat-enq{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);padding:9px 12px;font-weight:600;cursor:pointer;touch-action:manipulation}
+.chat-enq.ab{border-color:var(--accent)}
 .chat-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(760px,100%);display:flex;gap:8px;align-items:center;padding:8px 10px;background:#15110E;z-index:59}
 .chat-bar input{flex:1;min-width:0;margin:0;height:48px;border-radius:24px;padding:0 18px;font-size:16px;background:#2B231D;border:1px solid var(--line)}
 .chat-b{flex:none;width:48px;height:48px;border-radius:50%;border:0;background:#2B231D;color:var(--ink);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;transition:transform .08s}
@@ -1096,7 +1099,9 @@ function avatarHTML(){
   const av=avOf(me);
   const sw=(k,arr,names)=>'<div class="avrow">'+arr.map((c,i)=>'<button class="sw" data-act="av" data-k="'+k+'" data-v="'+i+'" aria-pressed="'+(av[k]===i)+'" aria-label="'+esc(names[i])+'" title="'+esc(names[i])+'" style="background:'+c+'"></button>').join('')+'</div>';
   const opt=(t,k,arr)=>'<div><div class="small muted">'+t+'</div><div class="avrow">'+arr.map((n,i)=>'<button class="stl" data-act="av" data-k="'+k+'" data-v="'+i+'" aria-pressed="'+(av[k]===i)+'">'+n+'</button>').join('')+'</div></div>';
-  return '<div class="card"><h2>Meu avatar</h2><div class="avprev">'+fig(me)+'</div>'+
+  const nv=/^(\d\d)-(\d\d)$/.exec((state.avatars[state.uid]||{}).niver||''),nd=val('nv_d',nv?nv[2]:''),nm=val('nv_m',nv?nv[1]:'');
+  const nivCard='<div class="card"><h2 style="margin:0">Meu aniversário</h2><span class="small muted">No dia, o grupo recebe um aviso de manhã. Só dia e mês, sem o ano.</span><div class="grid2"><label>Dia<select id="nv_d"><option value="">--</option>'+Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')).map(x=>'<option value="'+x+'"'+(nd===x?' selected':'')+'>'+(+x)+'</option>').join('')+'</select></label><label>Mês<select id="nv_m"><option value="">--</option>'+NIV_MES.map((n,i)=>{const x=String(i+1).padStart(2,'0');return '<option value="'+x+'"'+(nm===x?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label></div><div class="row"><button class="btn primary" data-act="nivSalvar">Salvar</button>'+(nv?'<button class="tfim" data-act="nivTirar">Tirar meu aniversário</button>':'')+'</div></div>';
+  return nivCard+'<div class="card"><h2>Meu avatar</h2><div class="avprev">'+fig(me)+'</div>'+
     '<div><div class="small muted">Cor da pele</div>'+sw('skin',SKINS,SKIN_N)+'</div>'+
     '<div><div class="small muted">Cor do cabelo</div>'+sw('hair',HAIRS,HAIR_N)+'</div>'+
     '<div><div class="small muted">Estilo do cabelo</div><div class="avrow">'+STYLES.map((n,i)=>'<button class="stl" data-act="av" data-k="style" data-v="'+i+'" aria-pressed="'+(av.style===i)+'">'+n+'</button>').join('')+'</div></div>'+
@@ -2047,6 +2052,37 @@ function roomScreen(e){
   }else if(!isOnline(e))h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
   return h;
 }
+/* ANIVERSÁRIOS: cada um cadastra dia e mês na aba Avatar (avatars/{uid}.niver = 'MM-DD'). O Painel mostra os próximos,
+   e no dia, às 9h, o grupo recebe a notificação (o aviso entra na fila pelo app de quem abrir até 36 horas antes). */
+const NIV_MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function nivLista(){
+  const hoje=todayStr(),ano=+hoje.slice(0,4),out=[];
+  for(const [u,a] of Object.entries(state.avatars||{})){
+    const m=/^(\d\d)-(\d\d)$/.exec((a&&a.niver)||'');if(!m)continue;const ap=state.approvals[u];if(!ap||ap.status!=='aprovado'||!state.members.some(x=>x.id===ap.memberId))continue;
+    let data=ano+'-'+m[1]+'-'+m[2];if(data<hoje)data=(ano+1)+'-'+m[1]+'-'+m[2];
+    const dias=Math.round((Date.UTC(+data.slice(0,4),+m[1]-1,+m[2])-Date.UTC(ano,+hoje.slice(5,7)-1,+hoje.slice(8,10)))/864e5);
+    out.push({u,nome:nomeUid(u),data,dias,txt:(+m[2])+' de '+NIV_MES[+m[1]-1]});
+  }
+  return out.sort((a,b)=>a.dias-b.dias);
+}
+function nivHTML(){
+  const l=nivLista().filter(x=>x.dias<=30).slice(0,4);if(!l.length)return '';
+  return '<div class="card"><h2 style="margin:0">Aniversários</h2><div class="list" style="gap:6px">'+l.map(x=>'<div class="row between"><span>'+(x.dias===0?'🎂 ':'')+'<b>'+esc(x.nome)+'</b> <span class="small muted">'+esc(x.txt)+'</span></span><span class="chip'+(x.dias===0?' ok':'')+'">'+(x.dias===0?'é hoje!':x.dias===1?'amanhã':'em '+x.dias+' dias')+'</span></div>').join('')+'</div></div>';
+}
+let nivT=null;
+function nivSync(){
+  clearTimeout(nivT);
+  nivT=setTimeout(()=>{
+    if(!db||!state.uid||!myMember())return;
+    for(const x of nivLista()){
+      if(x.dias>1)break;
+      const em=Date.UTC(+x.data.slice(0,4),+x.data.slice(5,7)-1,+x.data.slice(8,10),12,0),falta=em-Date.now(),id='n_'+x.u+'_'+x.data.slice(0,4);
+      if(falta<=0||falta>36*36e5)continue;
+      try{if(localStorage.getItem('niv_'+id))continue;localStorage.setItem('niv_'+id,'1');}catch(e){}
+      try{db.doc('outbox/'+id).set({uid:state.uid,para:'todos',titulo:'Aniversário',corpo:'Hoje é aniversário de '+x.nome+'! Dê os parabéns. 🎂',eventId:'',quando:'',em,teste:true,at:Date.now()}).catch(()=>{});}catch(e){}
+    }
+  },6000);
+}
 function faltasHTML(){
   const me=myMember();let out='';
   if(me){
@@ -2055,6 +2091,7 @@ function faltasHTML(){
     out+='<div class="card hero"><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div><button class="chip" data-act="rachaIr" aria-expanded="'+!!state.rachaNovo+'" style="cursor:pointer;align-self:flex-start;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Racha</button></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
     if(state.rachaNovo)out+='<div class="card"><h2 style="margin:0">Novo racha</h2>'+rachaForm(null)+'</div>';
   }
+  out+=nivHTML();
   return out+rankHTML()+destaquesHTML()+abonoHTML();
 }
 /* ===================== PÁGINA DO EVENTO: RACHA, RECADOS E ENQUETE; ABA DE NOTIFICAÇÕES =====================
@@ -2134,21 +2171,34 @@ function rachaForm(e){
     const px=pixSalvo(),outros=state.members.filter(m=>m.id!==me.id),presentes=new Set(e?outros.filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id):[]);
     const sel=state.rachaSel||(state.rachaSel=Object.fromEntries(outros.map(m=>[m.id,presentes.size?presentes.has(m.id):false])));
     const nf=rachaFora(val('rc_fora','')).length,n=outros.filter(m=>sel[m.id]).length+nf,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0,evs=e?[]:rachaEventos();
+    const ab=!!state.rachaAberto;
     let h='';
-    h+='<div class="item">'+(evs.length?'<label>Evento (opcional)<select id="rc_ev"><option value="">Sem evento</option>'+evs.map(x=>'<option value="'+esc(x.id)+'"'+(val('rc_ev','')===x.id?' selected':'')+'>'+esc(x.title)+' · '+esc(fmtDay(x.date))+'</option>').join('')+'</select></label>':'')+'<label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
+    h+='<div class="item"><div><div class="small muted">Quem participa do racha</div><div class="seg2"><button data-act="rachaModo" data-v="0" aria-pressed="'+!ab+'">Eu escolho</button><button data-act="rachaModo" data-v="1" aria-pressed="'+ab+'">Cada um entra</button></div></div>'+(evs.length?'<label>Evento (opcional)<select id="rc_ev"><option value="">Sem evento</option>'+evs.map(x=>'<option value="'+esc(x.id)+'"'+(val('rc_ev','')===x.id?' selected':'')+'>'+esc(x.title)+' · '+esc(fmtDay(x.date))+'</option>').join('')+'</select></label>':'')+'<label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
       '<label>Valor total (R$)<input id="rc_total" inputmode="decimal" placeholder="0,00" value="'+esc(val('rc_total',''))+'"></label>'+
       '<div class="grid2"><label>Sua chave PIX<select id="rc_pt">'+Object.keys(PIX_TIPOS).map(k=>'<option value="'+k+'"'+(val('rc_pt',px.t||'cel')===k?' selected':'')+'>'+PIX_TIPOS[k]+'</option>').join('')+'</select></label><label>Chave<input id="rc_pc" autocomplete="off" value="'+esc(val('rc_pc',px.c||''))+'"></label></div>'+
+      (ab?'<div class="small muted">O grupo é avisado e cada pessoa que participou toca em Entrar no racha. A divisão muda a cada entrada. Quando todos tiverem entrado, você toca em Fechar e cobrar: aí o valor trava e cada um recebe a cobrança com o seu PIX.</div><div class="row"><button class="btn primary" data-act="rachaCriar"'+(e?' data-e="'+esc(e.id)+'"':'')+'>Abrir racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>':
       '<label>Data da cobrança (hoje = já aparece para todos do racha)<input id="rc_dt" type="date" min="'+todayStr()+'" value="'+esc(val('rc_dt',todayStr()))+'"></label>'+
       '<div><div class="small muted">Com quem você rachou ('+(n-nf)+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="rachaSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
       '<label>Pessoas de fora do grupo (opcional)<input id="rc_fora" maxlength="200" placeholder="Nomes separados por vírgula" value="'+esc(val('rc_fora',''))+'"></label><div class="small muted">Cada pessoa de fora recebe um link só dela para ver o valor e pagar, sem entrar no app.</div>'+
       '<div class="small">'+(n&&total>0?'Divide por <b>'+(n+1)+'</b> (você e mais '+n+'): <b>'+brl(total/(n+1))+'</b> para cada um.':'Escolha as pessoas e o valor.')+'</div>'+
-      '<div class="row"><button class="btn primary" data-act="rachaCriar"'+(e?' data-e="'+esc(e.id)+'"':'')+'>Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>';
+      '<div class="row"><button class="btn primary" data-act="rachaCriar"'+(e?' data-e="'+esc(e.id)+'"':'')+'>Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>');
     return h;
   }
 }
 const rachaAtivo=r=>!r.cobrar||r.cobrar<=todayStr();
 function rachaCard(r,sub){
   const me=myMember();
+  if(r.aberto){
+    /* racha aberto: as pessoas entram sozinhas; o valor só trava quando quem pagou fecha */
+    const pa=r.partes||{},dentro=Object.keys(pa).filter(i=>pa[i]&&pa[i].st!=='fora'),dono=r.uid===state.uid,eu=me&&dentro.includes(me.id),cada=r.total/(dentro.length+1),A=' data-id="'+esc(r.id)+'"';
+    return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(r.desc||'Racha')+'</h3><span class="chip info">Aberto para entrar</span></div>'+
+      '<div class="small muted">'+esc(nomeDe(r.mid))+' pagou '+brl(r.total)+' · '+(sub?esc(sub)+' · ':'')+quando(r.at)+'</div>'+
+      '<div class="avrow" style="gap:6px"><span class="chip ok">'+esc(nomeDe(r.mid))+'</span>'+dentro.map(i=>'<span class="chip'+(me&&i===me.id?' info':'')+'">'+esc(nomeDe(i))+'</span>').join('')+'</div>'+
+      '<div class="small">'+(dentro.length?'Com <b>'+(dentro.length+1)+'</b> pessoas, fica <b>'+brl(cada)+'</b> para cada um por enquanto.':'Ninguém entrou ainda.')+'</div>'+
+      (dono?'<button class="btn primary" data-act="rachaFechar"'+A+(dentro.length?'':' disabled')+'>Fechar e cobrar</button><button class="tfim" data-act="featApagar" data-col="splits"'+A+'>Apagar racha</button>'
+        :me?(eu?'<button class="btn" data-act="rachaEntrar" data-v="0"'+A+'>Sair deste racha</button>':'<button class="btn primary" data-act="rachaEntrar" data-v="1"'+A+'>Entrar no racha</button>'):'')+
+      (adm()&&!dono?'<button class="tfim" data-act="featApagar" data-col="splits"'+A+'>Apagar racha</button>':'')+'</div>';
+  }
     const partes=r.partes||{},ids=Object.keys(partes),meu=me&&partes[me.id],souDono=r.uid===state.uid,pagos=ids.filter(i=>partes[i].st==='pago').length;
     let x='<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(r.desc||'Racha')+'</h3><span class="chip '+(pagos===ids.length?'ok':'warn')+'">'+pagos+' de '+ids.length+' pagos</span></div>'+
       '<div class="small muted">'+esc(nomeDe(r.mid))+' pagou '+brl(r.total)+' · '+(sub?esc(sub)+' · ':'')+quando(r.at)+'</div>'+(rachaAtivo(r)?'':'<span class="chip info">Cobrança em '+esc(fmtDay(r.cobrar))+'</span>');
@@ -2175,7 +2225,7 @@ function recadosHTML(e){
     (lista.length?'<div class="list" style="gap:8px">'+lista.map(p=>'<div class="item" style="gap:4px"><div class="row between" style="flex-wrap:nowrap"><b>'+esc(p.nome||nomeDe(p.mid))+'</b><span class="row"><span class="small muted">'+quando(p.at)+'</span>'+(podeApagar(p)?'<button class="ticon" style="width:30px;height:30px" data-act="featApagar" data-col="posts" data-id="'+esc(p.id)+'" aria-label="Apagar recado">✕</button>':'')+'</span></div><div>'+esc(p.text)+'</div></div>').join('')+'</div>':'<div class="empty">Nenhum recado ainda.</div>')+'</div>';
 }
 function enquetesHTML(e){
-  const lista=doEvento('polls',e.id),E=esc(e.id);
+  const lista=doEvento('polls',e.id).filter(q=>!q.tipo),E=esc(e.id);
   let h='<div class="card"><div class="row between"><h2 style="margin:0">Enquetes</h2>'+(state.enqNova?'':'<button class="btn" data-act="enqNova">Nova enquete</button>')+'</div>';
   if(state.enqNova)h+='<div class="item"><label>Pergunta<input id="eq_q" maxlength="80" placeholder="Ex.: Sábado ou domingo?" value="'+esc(val('eq_q',''))+'"></label><label>Opções (uma por linha, de 2 a 6)<textarea id="eq_ops" rows="3" placeholder="Sábado\\nDomingo">'+esc(val('eq_ops',''))+'</textarea></label><div class="row"><button class="btn primary" data-act="enqCriar" data-e="'+E+'">Criar enquete</button><button class="btn" data-act="enqCancelar">Cancelar</button></div></div>';
   if(!lista.length&&!state.enqNova)h+='<div class="empty">Nenhuma enquete neste evento.</div>';
@@ -2189,12 +2239,29 @@ function enqCard(q,sub){
       (q.ops||[]).map((o,i)=>{const n=Object.values(votos).filter(v=>v===i).length,pc=tot?Math.round(n/tot*100):0;return '<button class="opc'+(meu===i?' meu':'')+'" data-act="enqVotar" data-id="'+esc(q.id)+'" data-i="'+i+'" aria-pressed="'+(meu===i)+'"><span class="opcb" style="width:'+pc+'%"></span><span class="opct">'+(meu===i?'✓ ':'')+esc(o)+'</span><span class="opcn">'+n+'</span></button>'+(n?'<div class="small muted opcq">'+esc(Object.keys(votos).filter(u=>votos[u]===i).map(nomeUid).sort((a,b)=>a.localeCompare(b)).join(', '))+'</div>':'');}).join('')+
       '<div class="row between"><span class="small muted">por '+esc(q.nome||nomeDe(q.mid))+(sub?' · '+esc(sub):'')+'</span>'+(adm()||q.uid===state.uid?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="'+esc(q.id)+'">Apagar</button>':'')+'</div></div>';
 }
+/* LISTA DO QUE LEVAR (opcional, por evento): fica em polls/l_{evento} com tipo 'lista'. O líder (quem criou a lista) cadastra itens
+   e cada pessoa escolhe o que leva; qualquer um também pode escrever outra coisa que vai levar. As escolhas ficam em votos[uid]. */
+const lvDoc=e=>{const q=(state.feats.polls||{})['l_'+e.id];return q&&q.tipo==='lista'?q:null;};
+function levarHTML(e){
+  const q=lvDoc(e),E=esc(e.id),me=myMember();
+  if(!q)return canManage(e)&&!readOnly()?'<button class="tfim" data-act="lvCriar" data-e="'+E+'">Criar uma lista do que levar</button>':'';
+  const itens=Array.isArray(q.itens)?q.itens:[],v=q.votos||{},dono=q.uid===state.uid||state.isOwner,quemPegou=id=>Object.keys(v).find(u=>((v[u]||{}).p||[]).includes(id)),meus=(v[state.uid]||{}).l||[];
+  let h='<div class="card"><div class="row between"><h2 style="margin:0">O que levar</h2>'+(dono?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="l_'+E+'">Apagar lista</button>':'')+'</div>';
+  if(itens.length)h+='<div class="list" style="gap:6px">'+itens.map(it=>{const u=quemPegou(it.id),meu=u===state.uid;
+    return '<div class="row between" style="flex-wrap:nowrap"><span style="min-width:0">'+esc(it.t)+(u?' <span class="small muted">· '+esc(nomeUid(u))+'</span>':'')+'</span><span class="row" style="flex-wrap:nowrap;gap:4px">'+(me&&(!u||meu)?'<button class="btn'+(meu?' good':'')+'" style="padding:6px 10px" data-act="lvPegar" data-e="'+E+'" data-id="'+esc(it.id)+'">'+(meu?'✓ Eu levo':'Eu levo')+'</button>':(u?'<span class="chip ok">ok</span>':''))+(dono?'<button class="tfim" style="min-height:0;padding:4px 6px" data-act="lvItemDel" data-e="'+E+'" data-id="'+esc(it.id)+'" aria-label="Tirar item">×</button>':'')+'</span></div>';}).join('')+'</div>';
+  else h+='<div class="small muted">'+(dono?'Adicione os itens que alguém precisa levar, ou deixe cada um escrever o que vai levar.':'Escreva abaixo o que você vai levar.')+'</div>';
+  if(dono)h+='<div class="row" style="flex-wrap:nowrap"><input id="lv_item" class="grow" maxlength="40" placeholder="Novo item (ex.: gelo)" value="'+esc(val('lv_item',''))+'"><button class="btn" data-act="lvItem" data-e="'+E+'">Adicionar</button></div>';
+  const livres=[];Object.keys(v).forEach(u=>((v[u]||{}).l||[]).forEach((t,i)=>livres.push({u,t,i})));
+  if(livres.length)h+='<div><div class="small muted">Também vão levar</div><div class="list" style="gap:4px">'+livres.map(x=>'<div class="row between small" style="flex-wrap:nowrap"><span><b>'+esc(nomeUid(x.u))+':</b> '+esc(x.t)+'</span>'+(x.u===state.uid?'<button class="tfim" style="min-height:0;padding:2px 6px" data-act="lvMeuDel" data-e="'+E+'" data-i="'+x.i+'" aria-label="Tirar">×</button>':'')+'</div>').join('')+'</div></div>';
+  if(me&&meus.length<6)h+='<div class="row" style="flex-wrap:nowrap"><input id="lv_meu" class="grow" maxlength="40" placeholder="Vou levar outra coisa..." value="'+esc(val('lv_meu',''))+'"><button class="btn primary" data-act="lvMeu" data-e="'+E+'">Vou levar</button></div>';
+  return h+'</div>';
+}
 function eventoPgHTML(e){
   const st=getStatus(e),l=state.members.find(m=>m.id===e.leaderId),n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length;
   let h='<div class="row between"><button class="btn" data-act="evVoltar">Voltar</button><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
     '<div class="card"><h2 style="margin:0">'+esc(e.title)+'</h2><div class="small muted">'+esc(fmtDay(e.date))+' · '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+' · '+esc(e.local||'local a definir')+'</div><div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?' · '+n+' presentes':'')+'</div></div>';
   if(state.featErr)return h+'<div class="card"><span class="chip warn">Racha, recados e enquetes ainda não foram liberados no banco. O administrador precisa atualizar as regras do Firebase.</span></div>';
-  return h+rachaHTML(e)+recadosHTML(e)+enquetesHTML(e);
+  return h+rachaHTML(e)+levarHTML(e)+recadosHTML(e)+enquetesHTML(e);
 }
 /* notificações: montadas a partir do que já está no app; "visto" fica guardado neste aparelho */
 const alertasVisto=()=>{try{return +localStorage.getItem('alertas_'+state.uid)||0;}catch(e){return 0;}};
@@ -2206,6 +2273,10 @@ function alertasLista(){
   const me=myMember(),out=[],ev=id=>state.events.find(x=>x.id===id),de14=Date.now()-14*864e5;
   const add=(at,ic,txt,eid,fixo)=>{const e=eid&&ev(eid);if(eid&&!e)return;out.push({at:at||0,ic,txt,eid,ev:e?e.title:'',fixo:!!fixo,g:grupo});};let grupo='racha';
   for(const [id,r] of Object.entries(state.feats.splits||{})){
+    if(r.aberto){const pa=r.partes||{},n=Object.keys(pa).filter(i=>pa[i]&&pa[i].st!=='fora').length;
+      if(r.uid===state.uid)add(r.at,'🧾',(r.desc||'Racha')+': '+(n?n+(n===1?' pessoa entrou':' pessoas entraram')+'. Feche para cobrar.':'aberto, esperando o pessoal entrar.'),r.eventId);
+      else if(me&&!(pa[me.id]&&pa[me.id].st!=='fora'))add(r.at,'🙋',nomeDe(r.mid)+' abriu o racha "'+(r.desc||'racha')+'". Entre se você participou.',r.eventId);
+      continue;}
     const p=rachaAtivo(r)&&me&&r.partes&&r.partes[me.id];
     if(p&&p.st==='devendo')add(r.at,'💸','Você deve '+brl(p.v)+' para '+nomeDe(r.mid)+' ('+(r.desc||'racha')+').',r.eventId,true);
     if(p&&p.st==='avisou')add(p.at||r.at,'⏳','Aguardando '+nomeDe(r.mid)+' confirmar os seus '+brl(p.v)+'.',r.eventId);
@@ -2214,16 +2285,16 @@ function alertasLista(){
   }
   grupo='geral';
   for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&vouNo(p.eventId))add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
-  for(const q of Object.values(state.feats.polls||{}))if(q.uid!==state.uid&&vouNo(q.eventId))add(q.at,'📊','Enquete: '+q.q,q.eventId);
+  for(const q of Object.values(state.feats.polls||{}))if(!q.tipo&&q.uid!==state.uid&&vouNo(q.eventId))add(q.at,'📊','Enquete: '+q.q,q.eventId);
   return out.sort((a,b)=>(b.fixo-a.fixo)||(b.at-a.at));
 }
 const alertasNovos=()=>{const v=alertasVisto();return alertasLista().filter(a=>a.ic!=='⏳'&&a.ic!=='🧾'&&(a.fixo||a.at>v)).length;};
 function alertasHTML(){
   const v=state.alertasVistoAntes||0,me=myMember(),de14=Date.now()-14*864e5,ev=id=>state.events.find(x=>x.id===id&&!isOnline(x));
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
-  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
+  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;if(r.aberto)return true;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
   const ge=[];
-  for(const [id,q] of Object.entries(state.feats.polls||{}))if(ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
+  for(const [id,q] of Object.entries(state.feats.polls||{}))if(!q.tipo&&ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
   for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
   ge.sort((a,b)=>b.at-a.at);
   if(state.featErr)return '<div class="card"><span class="chip warn">As notificações ainda não foram liberadas no banco.</span></div>';
@@ -2267,7 +2338,13 @@ function chatHTML(){
   const I=(d,f)=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="'+(f||'none')+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
   const MIC=I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),ENV=I('<path d="M5 12l15-7-5.5 15-2.6-6.4z"/>','currentColor'),LIXO=I('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>');
   const tem=!!String(val('chat_txt','')).trim();
-  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted">as mensagens somem em 2 horas</span></div><div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
+  /* enquetes do chat: ficam fixadas no topo até quem criou apagar, por no máximo 7 dias (as mensagens continuam sumindo em 2 horas) */
+  const enqs=Object.entries(state.feats.polls||{}).map(([id,q])=>({id,...q})).filter(q=>q.eventId==='chat'&&!q.tipo&&(q.at||0)>Date.now()-7*864e5).sort((a,b)=>(b.at||0)-(a.at||0));
+  const enqForm=state.chatEnq?'<div class="item"><label>Pergunta<input id="eq_q" maxlength="80" placeholder="Ex.: Onde vai ser o próximo rolê?" value="'+esc(val('eq_q',''))+'"></label><label>Opções (uma por linha, de 2 a 6)<textarea id="eq_ops" rows="3" placeholder="Bar\nCasa de alguém">'+esc(val('eq_ops',''))+'</textarea></label><div class="row"><button class="btn primary" data-act="enqCriar" data-e="chat">Criar enquete</button><button class="btn" data-act="chatEnq">Cancelar</button></div></div>':'';
+  /* cada enquete vira uma faixa presa no topo do chat; tocar abre para votar e ver o resultado */
+  const faixa=q=>{const n=Object.values(q.votos||{}).filter(v=>Number.isInteger(v)).length,ab=state.chatEnqAb===q.id,votei=Number.isInteger((q.votos||{})[state.uid]);
+    return '<button class="chat-enq'+(ab?' ab':'')+'" data-act="chatEnqAbre" data-id="'+esc(q.id)+'" aria-expanded="'+ab+'"><span class="grow" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left">📊 '+esc(q.q)+'</span><span class="chip'+(votei?' ok':' warn')+'" style="flex-shrink:0">'+(votei?n+(n===1?' voto':' votos'):'votar')+'</span></button>'+(ab?enqCard(q):'');};
+  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted" style="flex:1">somem em 2 horas</span>'+(myMember()&&!state.chatEnq?'<button class="chip" data-act="chatEnq" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Enquete</button>':'')+'</div>'+(enqForm||enqs.length?'<div class="chat-enqs">'+enqForm+enqs.map(faixa).join('')+'</div>':'')+'<div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
     '<div class="chat-bar'+(tem?' tem':'')+'">'+(state.chatGrav
       ?'<button class="chat-b" data-act="chatGravCancel" aria-label="Cancelar gravação">'+LIXO+'</button><span class="chat-rec"><span class="chat-pt"></span>Gravando <b id="chatSeg">0</b>s</span><button class="chat-b env" data-act="chatGravEnviar" aria-label="Enviar áudio">'+ENV+'</button>'
       :'<input id="chat_txt" maxlength="300" placeholder="Mensagem" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" value="'+esc(val('chat_txt',''))+'"><button class="chat-b env so-mic" data-act="chatGravar" aria-label="Gravar áudio">'+MIC+'</button><button class="chat-b env so-env" data-act="chatEnviar" aria-label="Enviar mensagem">'+ENV+'</button>')+'</div>';
@@ -2502,7 +2579,7 @@ function eventosHTML(){
     if(st==='agendado'&&canManage(e)&&!readOnly())btns+='<button class="btn" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
     if(st==='aberto'&&adm()&&!readOnly())btns+='<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>';
     if(st==='encerrado'&&adm()&&!readOnly())btns+='<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir evento</button>';
-    {const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).length,res=[nr?nr+(nr===1?' racha':' rachas'):'',np?np+(np===1?' recado':' recados'):'',nq?nq+(nq===1?' enquete':' enquetes'):''].filter(Boolean).join(' · ');
+    {const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).filter(q=>!q.tipo).length,res=[nr?nr+(nr===1?' racha':' rachas'):'',np?np+(np===1?' recado':' recados'):'',nq?nq+(nq===1?' enquete':' enquetes'):'',lvDoc(e)?'lista do que levar':''].filter(Boolean).join(' · ');
      btns+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Racha e recados'+(res?' ('+res+')':'')+'</button>';}
     if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
     if(adm()&&!readOnly())btns+='<button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
@@ -2807,7 +2884,7 @@ app.addEventListener('click',async ev=>{
   if(act==='rachaNovo'){state.rachaNovo=true;state.rachaSel=null;render();return;}
   /* botão pequeno da tela inicial: abre ou fecha ali mesmo o formulário de racha (com ou sem evento) */
   if(act==='rachaIr'){state.rachaNovo=!state.rachaNovo;state.rachaSel=null;delete state.draft.rc_ev;render();return;}
-  if(act==='rachaCancelar'){state.rachaNovo=false;state.rachaSel=null;render();return;}
+  if(act==='rachaCancelar'){state.rachaNovo=false;state.rachaSel=null;state.rachaAberto=false;render();return;}
   if(act==='rachaSel'){state.rachaSel=state.rachaSel||{};state.rachaSel[d.m]=!state.rachaSel[d.m];render();return;}
   if(act==='rachaCriar'){
     const me=myMember();if(!me)return;
@@ -2817,6 +2894,15 @@ app.addEventListener('click',async ev=>{
     const pt=PIX_TIPOS[g('rc_pt')]?g('rc_pt'):'cel',chave=g('rc_pc').trim(),pix=pixChave(pt,chave);
     const ids=Object.keys(state.rachaSel||{}).filter(i=>state.rachaSel[i]&&state.members.some(m=>m.id===i)&&i!==me.id);
     if(!(total>0))return toast('Digite o valor total.');
+    if(state.rachaAberto){
+      if(pix.length<5)return toast('Digite a sua chave PIX.');
+      try{localStorage.setItem('pix_'+state.uid,JSON.stringify({t:pt,c:chave}));}catch(e){}
+      const sid='s'+Date.now().toString(36),sdesc=g('rc_desc').trim()||'Racha',foiNoPainel=state.tab==='faltas';
+      state.rachaNovo=false;state.rachaSel=null;state.rachaAberto=false;['rc_desc','rc_total','rc_pt','rc_pc','rc_dt','rc_ev','rc_fora'].forEach(k=>delete state.draft[k]);
+      featGravar('splits',sid,{eventId:eid,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes:{},aberto:true,cobrar:'',at:Date.now()},'Racha aberto. Avise o pessoal para entrar.','set');
+      if(foiNoPainel){state.tab='alertas';render();}
+      avisar('todos','Racha aberto: '+sdesc,me.name+' pagou '+brl(total)+'. Toque para entrar na divisão.',eid);return;
+    }
     const fora=rachaFora(g('rc_fora'));
     if(!ids.length&&!fora.length)return toast('Escolha com quem você rachou.');
     if(pix.length<5)return toast('Digite a sua chave PIX.');
@@ -2830,6 +2916,19 @@ app.addEventListener('click',async ev=>{
     convs.forEach(c=>{const doc={sid,pid:c.pid,uid:state.uid,de:me.name,nome:c.nome,desc:sdesc,v:cada,pt,chave,pix,st:'devendo',at:Date.now(),exp:Date.now()+CONV_DIAS*864e5};state.convites[c.k]=doc;db.doc('convites/'+c.k).set(doc).catch(()=>toast('O link para pessoas de fora ainda não foi liberado no banco. O administrador precisa atualizar as regras do Firebase.'));});
     if(convs.length&&state.tab==='faltas'){state.tab='alertas';render();}
     if(ids.length)avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',eid,cobrar,'r_'+sid);return;
+  }
+  if(act==='rachaModo'){state.rachaAberto=d.v==='1';render();return;}
+  if(act==='rachaEntrar'||act==='rachaFechar'){
+    const r=(state.feats.splits||{})[d.id],me=myMember();if(!r||!r.aberto||!me)return;
+    if(act==='rachaEntrar'){if(r.uid===state.uid)return;const entra=d.v==='1';r.partes={...(r.partes||{}),[me.id]:{st:entra?'devendo':'fora'}};
+      featGravar('splits',d.id,{['partes.'+me.id]:{st:entra?'devendo':'fora'}},entra?'Você entrou no racha.':'Você saiu do racha.');return;}
+    if(r.uid!==state.uid)return;
+    const ids=Object.keys(r.partes||{}).filter(i=>r.partes[i]&&r.partes[i].st!=='fora'&&state.members.some(m=>m.id===i));if(!ids.length)return toast('Ninguém entrou no racha ainda.');
+    if(!state.draft['rf_'+d.id]){state.draft['rf_'+d.id]=1;el.textContent='Toque de novo para fechar e cobrar '+ids.length+(ids.length===1?' pessoa':' pessoas');return;}
+    delete state.draft['rf_'+d.id];
+    const cada=Math.round(r.total/(ids.length+1)*100)/100,partes={};ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
+    featGravar('splits',d.id,{partes,aberto:false,at:Date.now()},'Racha fechado. A cobrança foi enviada.');
+    avisar(ids,'Racha: '+(r.desc||''),'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',r.eventId||'');return;
   }
   if(act==='rachaAvisar'||act==='rachaMarcar'){
     const r=(state.feats.splits||{})[d.id],me=myMember();if(!r)return;
@@ -2850,12 +2949,34 @@ app.addEventListener('click',async ev=>{
   }
   if(act==='enqNova'){state.enqNova=true;render();return;}
   if(act==='enqCancelar'){state.enqNova=false;render();return;}
-  if(act==='enqCriar'&&evn){
+  if(['lvCriar','lvItem','lvItemDel','lvPegar','lvMeu','lvMeuDel'].includes(act)&&evn){
+    const q=lvDoc(evn),me=myMember(),id='l_'+evn.id,g=i=>((document.getElementById(i)||{}).value||'').trim().slice(0,40);
+    if(act==='lvCriar'){if(q||!canManage(evn))return;featGravar('polls',id,{eventId:evn.id,tipo:'lista',uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:'Lista do que levar',ops:[],itens:[],votos:{},at:Date.now()},'Lista criada.','set');avisar('todos',evn.title,'Tem uma lista do que levar. Escolha o que você leva.',evn.id);return;}
+    if(!q)return;
+    const dono=q.uid===state.uid||state.isOwner,itens=Array.isArray(q.itens)?q.itens.slice():[],meu={p:((q.votos||{})[state.uid]||{}).p||[],l:((q.votos||{})[state.uid]||{}).l||[]};
+    if(act==='lvItem'){const t=g('lv_item');if(!dono||!t)return;if(itens.length>=30)return toast('A lista já tem muitos itens.');delete state.draft.lv_item;featGravar('polls',id,{itens:itens.concat({id:'i'+Date.now().toString(36),t})});return;}
+    if(act==='lvItemDel'){if(!dono)return;featGravar('polls',id,{itens:itens.filter(x=>x.id!==d.id)});return;}
+    if(!me)return;
+    if(act==='lvPegar'){const outro=Object.keys(q.votos||{}).find(u=>u!==state.uid&&((q.votos[u]||{}).p||[]).includes(d.id));if(outro)return toast('Alguém já vai levar isso.');const p=meu.p.includes(d.id)?meu.p.filter(x=>x!==d.id):meu.p.concat(d.id);featGravar('polls',id,{['votos.'+state.uid]:{p,l:meu.l}});return;}
+    if(act==='lvMeu'){const t=g('lv_meu');if(!t||meu.l.length>=6)return;delete state.draft.lv_meu;featGravar('polls',id,{['votos.'+state.uid]:{p:meu.p,l:meu.l.concat(t)}});return;}
+    if(act==='lvMeuDel'){const i=parseInt(d.i,10);featGravar('polls',id,{['votos.'+state.uid]:{p:meu.p,l:meu.l.filter((x,j)=>j!==i)}});return;}
+    return;
+  }
+  if(act==='nivSalvar'||act==='nivTirar'){
+    if(!state.uid)return;const g=i=>(document.getElementById(i)||{}).value||'',dd=g('nv_d'),mm=g('nv_m');
+    if(act==='nivSalvar'&&(!/^\d\d$/.test(dd)||!/^\d\d$/.test(mm)||+dd>[31,29,31,30,31,30,31,31,30,31,30,31][+mm-1]))return toast('Escolha um dia e um mês válidos.');
+    const niver=act==='nivTirar'?'':mm+'-'+dd;delete state.draft.nv_d;delete state.draft.nv_m;
+    state.avatars[state.uid]={...(state.avatars[state.uid]||{}),niver};render();
+    w(()=>db.doc('avatars/'+state.uid).set({niver},{merge:true}),niver?'Aniversário salvo.':'Aniversário removido.');return;
+  }
+  if(act==='chatEnqAbre'){state.chatEnqAb=state.chatEnqAb===d.id?null:d.id;render();return;}
+  if(act==='chatEnq'){state.chatEnq=!state.chatEnq;if(!state.chatEnq){delete state.draft.eq_q;delete state.draft.eq_ops;}render();return;}
+  if(act==='enqCriar'&&(evn||d.e==='chat')){
     const g=id=>(document.getElementById(id)||{}).value||'',q=g('eq_q').trim(),ops=g('eq_ops').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,6).map(x=>x.slice(0,40));
     if(q.length<3)return toast('Escreva a pergunta.');
     if(ops.length<2)return toast('Coloque pelo menos 2 opções, uma por linha.');
-    const me=myMember();state.enqNova=false;delete state.draft.eq_q;delete state.draft.eq_ops;
-    featGravar('polls','q'+Date.now().toString(36),{eventId:evn.id,uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:q.slice(0,80),ops,votos:{},at:Date.now()},'Enquete criada.','set');avisar('todos',evn.title,'Enquete: '+q,evn.id);return;
+    const me=myMember();state.enqNova=false;state.chatEnq=false;delete state.draft.eq_q;delete state.draft.eq_ops;
+    featGravar('polls','q'+Date.now().toString(36),{eventId:evn?evn.id:'chat',uid:state.uid,mid:me?me.id:'',nome:meuNome(),q:q.slice(0,80),ops,votos:{},at:Date.now()},'Enquete criada.','set');avisar('todos',evn?evn.title:'Enquete no chat',(evn?'Enquete: ':meuNome()+' perguntou: ')+q,evn?evn.id:'');return;
   }
   if(act==='enqVotar'){
     const q=(state.feats.polls||{})[d.id],i=parseInt(d.i,10);if(!q||!(i>=0&&i<(q.ops||[]).length))return;
@@ -3217,7 +3338,7 @@ function subscribe(){
   sub('justifs',db.collection('justifs'),s=>{state.justifs=toMap(s);});
   sub('claims',db.collection('claims'),s=>{state.claims=toMap(s);refreshProfiles();});
   sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
-  sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
+  sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);nivSync();});
   db.collection('chat').onSnapshot(sn=>{state.chat=toMap(sn);state.chatErr=false;chatLimpa();if(!chatPinta(true))scheduleRender();},()=>{state.chatErr=true;scheduleRender();});
   db.collection('convites').onSnapshot(s=>{state.convites=toMap(s);scheduleRender();},()=>{});
   ['splits','posts','polls'].forEach(c=>db.collection(c).onSnapshot(s=>{state.feats[c]=toMap(s);state.featErr=false;scheduleRender();},()=>{state.featErr=true;scheduleRender();}));
@@ -3255,7 +3376,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113190120';
+const VER='20261113192020';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
