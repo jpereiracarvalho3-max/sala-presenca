@@ -120,9 +120,12 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;
 .floor.stage{display:block;height:240px;min-height:240px;padding:0}
 .stage .fig{position:absolute;left:50%;top:115%;width:74px;height:100px;padding:0;margin:0;transform:translate(-50%,-100%);justify-content:flex-end}
 .stage .none{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.floor.stage.online{height:340px;min-height:340px}
+.floor.stage.online{height:390px;min-height:390px}
 .stage.online.canwalk{cursor:pointer}
-.mesa{position:absolute;transform:translate(-50%,-72%);width:70px;height:38px;border-radius:50%;background:#8A5A2B;border:3px solid #5F3D1C;color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.2);padding:0}
+.mesa{position:absolute;transform:translate(-50%,-66%);width:min(112px,30%);height:60px;border-radius:50%;background:#8A5A2B;border:3px solid #5F3D1C;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.22);padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mesa::before{content:'';position:absolute;inset:-16px}
+.mesa:active{filter:brightness(1.15)}
+.stage.online .fig{pointer-events:none}
 .mesa.mine{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--accent)}
 a.btn{text-decoration:none;text-align:center;display:block}
 .fig .bw{display:flex;justify-content:center}
@@ -388,11 +391,12 @@ function pendHTML(){
 const guestsOf=e=>state.guests.filter(g=>g.guestOf===e.id);
 /* eventos online: mesas, lugares e link da chamada */
 const isOnline=e=>!!e&&e.modo==='online';
-const mesasOf=e=>Math.max(1,Math.min(6,parseInt(e.mesas,10)||3));
+const MAX_MESAS=3;
+const mesasOf=e=>Math.max(1,Math.min(MAX_MESAS,parseInt(e.mesas,10)||3));
 function tablePos(i,n){
-  if(n<=3)return {x:(i+1)/(n+1),y:.7};
-  const top=Math.ceil(n/2);
-  return i<top?{x:(i+1)/(top+1),y:.54}:{x:(i-top+1)/(n-top+1),y:.88};
+  if(n<=1)return {x:.5,y:.72};
+  if(n===2)return {x:i?.72:.28,y:.72};
+  return [{x:.25,y:.56},{x:.75,y:.56},{x:.5,y:.88}][i]||{x:.5,y:.72};
 }
 const tableOf=(e,c)=>(c&&Number.isInteger(c.table)&&c.table>=0&&c.table<mesasOf(e))?c.table:-1;
 const seatedAt=(eid,t)=>Object.values(state.checkins).filter(c=>c.eventId===eid&&c.table===t).map(c=>c.memberId).sort();
@@ -401,7 +405,7 @@ function onlineHTML(e){
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
   if(!c)return '<div class="card"><p class="muted" style="margin:0">Para andar pela sala e sentar nas mesas, volte em Eventos e toque em Entrar na sala online.</p></div>';
   const t=tableOf(e,c);
-  if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Toque em uma mesa para sentar e entrar na chamada dela.</p></div>';
+  if(t<0)return '<div class="card"><h3>Sala online</h3><p class="muted" style="margin:0">Toque no chão para o seu boneco andar até lá. Para sentar, toque em uma mesa na sala ou use os botões abaixo.</p><div class="row">'+Array.from({length:mesasOf(e)},(_,i)=>'<button class="btn primary" data-act="sit" data-t="'+i+'" data-e="'+esc(e.id)+'">Sentar na Mesa '+(i+1)+(seatedAt(e.id,i).length?' ('+seatedAt(e.id,i).length+')':'')+'</button>').join('')+'</div></div>';
   const all=state.members.concat(state.guests),inCall=rtc.on&&rtc.eid===e.id&&rtc.table===t;
   const rows=seatedAt(e.id,t).map(id=>{
     const nm=(all.find(m=>m.id===id)||{}).name;if(!nm)return '';
@@ -500,7 +504,7 @@ function eventosHTML(){
               :'<div class="small muted">Líder do evento: <b>'+esc(((state.members.find(m=>m.id===(ed.leaderId||(myMember()||{}).id))||{}).name)||'você')+'</b>'+(state.editing==='new'?' (quem cria o evento é o líder; o administrador pode trocar)':'')+'</div>')+
        '<label>Tema da sala<select id="ev_tema"><option value="auto">Automático (pelo nome do evento)</option>'+Object.keys(THEMES).map(k=>'<option value="'+k+'"'+(val('ev_tema',ed.tema||'auto')===k?' selected':'')+'>'+THEMES[k]+'</option>').join('')+'</select></label>'+
        '<label>Tipo do evento<select id="ev_modo"><option value="presencial">Presencial</option><option value="online"'+(val('ev_modo',ed.modo)==='online'?' selected':'')+'>Online</option></select></label>'+
-       (val('ev_modo',ed.modo)==='online'?'<label>Quantas mesas na sala online<input id="ev_mesas" type="number" min="1" max="6" value="'+esc(val('ev_mesas',ed.mesas||3))+'"></label>':'')+
+       (val('ev_modo',ed.modo)==='online'?'<label>Quantas mesas na sala online (até 3)<input id="ev_mesas" type="number" min="1" max="3" value="'+esc(Math.min(3,parseInt(val('ev_mesas',ed.mesas||3),10)||3))+'"></label>':'')+
        '<div class="row"><button class="btn primary" data-act="saveEvent">Salvar</button><button class="btn" data-act="cancelEdit">Cancelar</button></div></div>';
     }else out+='<button class="btn primary" data-act="newEvent">Novo evento</button>';
   }
@@ -666,7 +670,7 @@ function frame(t){
     if(seated){const sp=seatFor(th,i,n);p.tx=sp.x;p.ty=sp.y;}
     else if(online){
       const c=state.checkins[eid+'_'+id]||{};
-      if(Number.isInteger(c.table)&&c.table>=0&&c.table<nt){const tp=tablePos(c.table,nt),ids=seatedAt(eid,c.table),a=(Math.max(0,ids.indexOf(id))/Math.max(1,ids.length))*Math.PI*2+Math.PI/2;p.tx=tp.x+Math.cos(a)*52/W;p.ty=tp.y+(Math.sin(a)*24+8)/H;fixed=true;}
+      if(Number.isInteger(c.table)&&c.table>=0&&c.table<nt){const tp=tablePos(c.table,nt),ids=seatedAt(eid,c.table),a=(Math.max(0,ids.indexOf(id))/Math.max(1,ids.length))*Math.PI*2+Math.PI/2;const rx=Math.min(64,W*.17);p.tx=tp.x+Math.cos(a)*rx/W;p.ty=Math.min(1,tp.y+(Math.sin(a)*26+6)/H);fixed=true;}
       else if(typeof c.x==='number'&&typeof c.y==='number'){p.tx=Math.max(.05,Math.min(.95,c.x));p.ty=Math.max(.4,Math.min(.98,c.y));fixed=true;}
       else if(p.tx==null||p.fixed)pickTarget(p,th);
       p.fixed=fixed;
@@ -761,7 +765,7 @@ app.addEventListener('click',async ev=>{
   if(act==='cancelEdit'){state.editing=null;state.draft={};render();return;}
   if(act==='saveEvent'){
     const g=id=>(document.getElementById(id)||{}).value||'';
-    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(6,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3))};
+    const data={title:g('ev_title').trim(),date:g('ev_date'),time:g('ev_time'),fim:g('ev_fim'),local:g('ev_local').trim(),leaderId:g('ev_leader'),tema:g('ev_tema')||'auto',modo:g('ev_modo')==='online'?'online':'presencial',mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ev_mesas')||val('ev_mesas',3),10)||3))};
     if(!data.title||!data.date)return toast('Preencha o nome e a data.');
     if(!data.time||!data.fim)return toast('Preencha a hora de início e a de término.');
     if(!adm()){const me=myMember();if(!me)return;if(state.editing==='new')data.leaderId=me.id;else delete data.leaderId;}
@@ -982,7 +986,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261112215153';
+const VER='20261112221755';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
