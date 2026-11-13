@@ -1252,7 +1252,7 @@ const alertasNovos=()=>{const v=alertasVisto();return alertasLista().filter(a=>a
 function alertasHTML(){
   const v=state.alertasVistoAntes||0,me=myMember(),de14=Date.now()-14*864e5,ev=id=>state.events.find(x=>x.id===id&&!isOnline(x));
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
-  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];if(!r.eventId&&(meu||r.uid===state.uid)&&(r.at||0)>de14&&(r.uid===state.uid||rachaAtivo(r)))return true;return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
+  const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
   const ge=[];
   for(const [id,q] of Object.entries(state.feats.polls||{}))if(ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
   for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
@@ -2257,7 +2257,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113161544';
+const VER='20261113163519';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
