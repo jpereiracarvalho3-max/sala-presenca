@@ -101,6 +101,19 @@ service cloud.firestore {
         || (inside() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partes']));
       allow delete: if isOwner() || resource.data.uid == me();
     }
+    // Link de racha para pessoa de fora do grupo: quem tem o link (chave longa e aleatória) vê só aquele racha, até vencer,
+    // e só consegue avisar "já paguei". Quem criou o racha (ou o administrador) cria, confirma e apaga.
+    match /convites/{k} {
+      allow get: if inside() || resource.data.exp > request.time.toMillis();
+      allow list: if inside();
+      allow create: if inside() && request.resource.data.uid == me();
+      allow update: if isOwner() || (signedIn() && resource.data.uid == me())
+        || (resource.data.exp > request.time.toMillis()
+            && resource.data.st == 'devendo'
+            && request.resource.data.st == 'avisou'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st', 'at']));
+      allow delete: if isOwner() || (signedIn() && resource.data.uid == me());
+    }
     match /posts/{id} {
       allow read: if inside();
       allow create: if inside() && request.resource.data.uid == me();

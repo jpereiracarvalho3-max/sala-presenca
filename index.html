@@ -1135,18 +1135,43 @@ function rachaHTML(e){
 }
 /* formulário de novo racha: dentro de um evento (e) ou solto, na tela inicial (e vazio; a pessoa pode ligar a um evento ou deixar sem) */
 const rachaEventos=()=>state.events.filter(x=>!isOnline(x)&&evRecente(x)).sort((a,b)=>evTime(b)-evTime(a));
+/* pessoas de fora do grupo num racha: nomes digitados no formulário; cada uma ganha um link próprio (coleção convites) */
+const rachaFora=t=>String(t||'').split(/[,;\n]/).map(x=>x.trim().slice(0,24)).filter(Boolean).slice(0,10);
+const convChave=()=>{const a=new Uint8Array(18);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b%62]).join('');};
+const convLinkDe=k=>location.origin+location.pathname+'#r-'+k;
+const CONV_DIAS=30;
+/* situação de uma parte do racha: para quem é de fora, o "já paguei" vem do link (convites) */
+const parteSt=p=>p.st==='devendo'&&p.k&&((state.convites||{})[p.k]||{}).st==='avisou'?'avisou':p.st;
+const parteNome=(r,i)=>((r.partes||{})[i]||{}).nome||nomeDe(i);
+/* página que a pessoa de fora vê ao abrir o link: só o racha dela, sem login */
+function conviteHTML(){
+  const c=state.conv;
+  let h='<div class="card" style="align-items:center;text-align:center"><img src="icone-192.png" width="72" height="72" alt="" style="border-radius:18px"><h1 style="margin:0">Eventos dos Bêbados</h1></div>';
+  if(!state.convOk)return h+'<div class="card"><p class="muted" style="margin:0">Abrindo o racha…</p></div>';
+  if(!c)return h+'<div class="card"><h2 style="margin:0">Link inválido ou vencido</h2><p class="muted" style="margin:0">Peça um link novo para quem criou o racha.</p></div>';
+  h+='<div class="card"><h2 style="margin:0">Racha: '+esc(c.desc||'')+'</h2><div class="small muted">Olá, '+esc(c.nome||'')+'. '+esc(c.de||'')+' pagou a conta e dividiu com o grupo.</div>';
+  if(c.st==='pago')return h+'<span class="chip ok">Pagamento confirmado</span><p class="muted" style="margin:0">Obrigado! Pode fechar esta página.</p></div>';
+  const cola=pixCopiaCola(c.pix,c.v,c.de);
+  h+='<div class="cobra"><div class="row between"><b>Você deve '+brl(c.v)+'</b>'+(c.st==='avisou'?'<span class="chip info">Aguardando confirmação</span>':'')+'</div>'+
+    '<div class="small muted">PIX de '+esc(c.de||'')+' ('+esc(PIX_TIPOS[c.pt]||'chave')+'): <b>'+esc(c.chave||c.pix)+'</b></div>'+
+    '<div class="row" style="justify-content:center"><div class="qrwrap"><div class="qrpix" data-text="'+esc(cola)+'"></div></div></div>'+
+    '<div class="row"><button class="btn primary" data-act="copiar" data-t="'+esc(cola)+'" data-msg="PIX copia e cola copiado.">Copiar PIX copia e cola</button><button class="btn" data-act="copiar" data-t="'+esc(c.chave||c.pix)+'" data-msg="Chave copiada.">Copiar chave</button></div>'+
+    (c.st==='avisou'?'<div class="small muted">Você avisou que pagou. Falta '+esc(c.de||'')+' confirmar.</div>':'<button class="btn good" data-act="convAvisar">Já paguei</button>')+'</div>';
+  return h+'</div>';
+}
 function rachaForm(e){
   const me=myMember();if(!me)return '';
   {
     const px=pixSalvo(),outros=state.members.filter(m=>m.id!==me.id),presentes=new Set(e?outros.filter(m=>state.checkins[e.id+'_'+m.id]).map(m=>m.id):[]);
     const sel=state.rachaSel||(state.rachaSel=Object.fromEntries(outros.map(m=>[m.id,presentes.size?presentes.has(m.id):false])));
-    const n=outros.filter(m=>sel[m.id]).length,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0,evs=e?[]:rachaEventos();
+    const nf=rachaFora(val('rc_fora','')).length,n=outros.filter(m=>sel[m.id]).length+nf,total=parseFloat(String(val('rc_total','')).replace(',','.'))||0,evs=e?[]:rachaEventos();
     let h='';
     h+='<div class="item">'+(evs.length?'<label>Evento (opcional)<select id="rc_ev"><option value="">Sem evento</option>'+evs.map(x=>'<option value="'+esc(x.id)+'"'+(val('rc_ev','')===x.id?' selected':'')+'>'+esc(x.title)+' · '+esc(fmtDay(x.date))+'</option>').join('')+'</select></label>':'')+'<label>O que foi<input id="rc_desc" maxlength="40" placeholder="Ex.: carne, bebida, conta do bar" value="'+esc(val('rc_desc',''))+'"></label>'+
       '<label>Valor total (R$)<input id="rc_total" inputmode="decimal" placeholder="0,00" value="'+esc(val('rc_total',''))+'"></label>'+
       '<div class="grid2"><label>Sua chave PIX<select id="rc_pt">'+Object.keys(PIX_TIPOS).map(k=>'<option value="'+k+'"'+(val('rc_pt',px.t||'cel')===k?' selected':'')+'>'+PIX_TIPOS[k]+'</option>').join('')+'</select></label><label>Chave<input id="rc_pc" autocomplete="off" value="'+esc(val('rc_pc',px.c||''))+'"></label></div>'+
       '<label>Data da cobrança (hoje = já aparece para todos do racha)<input id="rc_dt" type="date" min="'+todayStr()+'" value="'+esc(val('rc_dt',todayStr()))+'"></label>'+
-      '<div><div class="small muted">Com quem você rachou ('+n+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="rachaSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
+      '<div><div class="small muted">Com quem você rachou ('+(n-nf)+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="rachaSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
+      '<label>Pessoas de fora do grupo (opcional)<input id="rc_fora" maxlength="200" placeholder="Nomes separados por vírgula" value="'+esc(val('rc_fora',''))+'"></label><div class="small muted">Cada pessoa de fora recebe um link só dela para ver o valor e pagar, sem entrar no app.</div>'+
       '<div class="small">'+(n&&total>0?'Divide por <b>'+(n+1)+'</b> (você e mais '+n+'): <b>'+brl(total/(n+1))+'</b> para cada um.':'Escolha as pessoas e o valor.')+'</div>'+
       '<div class="row"><button class="btn primary" data-act="rachaCriar"'+(e?' data-e="'+esc(e.id)+'"':'')+'>Criar racha</button><button class="btn" data-act="rachaCancelar">Cancelar</button></div></div>';
     return h;
@@ -1166,9 +1191,10 @@ function rachaCard(r,sub){
         '<div class="row"><button class="btn primary" data-act="copiar" data-t="'+esc(cola)+'" data-msg="PIX copia e cola copiado.">Copiar PIX copia e cola</button><button class="btn" data-act="copiar" data-t="'+esc(r.chave||r.pix)+'" data-msg="Chave copiada.">Copiar chave</button></div>'+
         (meu.st==='avisou'?'':'<button class="btn good" data-act="rachaAvisar" data-id="'+esc(r.id)+'">Já paguei</button>')+'</div>';
     }
-    x+='<div class="list" style="gap:6px">'+ids.map(i=>{const p=partes[i];
-      return '<div class="row between"><span>'+esc(nomeDe(i))+' <span class="muted small">'+brl(p.v)+'</span></span><span class="row">'+
-        '<span class="chip '+(p.st==='pago'?'ok':p.st==='avisou'?'info':'warn')+'">'+(p.st==='pago'?'Pago':p.st==='avisou'?'Disse que pagou':'Devendo')+'</span>'+
+    x+='<div class="list" style="gap:6px">'+ids.map(i=>{const p=partes[i],st=parteSt(p);
+      return '<div class="row between"><span>'+esc(p.nome||nomeDe(i))+(p.k?' <span class="chip">de fora</span>':'')+' <span class="muted small">'+brl(p.v)+'</span></span><span class="row">'+
+        '<span class="chip '+(st==='pago'?'ok':st==='avisou'?'info':'warn')+'">'+(st==='pago'?'Pago':st==='avisou'?'Disse que pagou':'Devendo')+'</span>'+
+        (p.k&&p.st!=='pago'&&(souDono||adm())?'<button class="btn" data-act="convLink" data-k="'+esc(p.k)+'" data-n="'+esc(p.nome||'')+'" data-d="'+esc(r.desc||'Racha')+'" title="Enviar o link de pagamento para esta pessoa">Link</button>':'')+
         (souDono||adm()?(p.st==='pago'?'<button class="btn" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="devendo">Desfazer</button>':'<button class="btn good" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="pago">Confirmar</button>'):'')+'</span></div>';}).join('')+'</div>';
     if(souDono||adm())x+='<button class="tfim" data-act="featApagar" data-col="splits" data-id="'+esc(r.id)+'">Apagar racha</button>';
     return x+'</div>';
@@ -1214,8 +1240,8 @@ function alertasLista(){
     const p=rachaAtivo(r)&&me&&r.partes&&r.partes[me.id];
     if(p&&p.st==='devendo')add(r.at,'💸','Você deve '+brl(p.v)+' para '+nomeDe(r.mid)+' ('+(r.desc||'racha')+').',r.eventId,true);
     if(p&&p.st==='avisou')add(p.at||r.at,'⏳','Aguardando '+nomeDe(r.mid)+' confirmar os seus '+brl(p.v)+'.',r.eventId);
-    if(r.uid===state.uid)for(const [mid,q] of Object.entries(r.partes||{}))if(q.st==='avisou')add(q.at||r.at,'🔔',nomeDe(mid)+' disse que pagou '+brl(q.v)+'. Confirme no racha.',r.eventId,true);
-    if(r.uid===state.uid){const dv=Object.keys(r.partes||{}).filter(m=>r.partes[m].st==='devendo');if(dv.length)add(r.at,'🧾',(r.desc||'Racha')+': falta'+(dv.length>1?'m ':' ')+dv.map(nomeDe).join(', ')+' pagar.',r.eventId);}
+    if(r.uid===state.uid)for(const [mid,q] of Object.entries(r.partes||{}))if(parteSt(q)==='avisou')add(q.at||r.at,'🔔',parteNome(r,mid)+' disse que pagou '+brl(q.v)+'. Confirme no racha.',r.eventId,true);
+    if(r.uid===state.uid){const dv=Object.keys(r.partes||{}).filter(m=>r.partes[m].st==='devendo');if(dv.length)add(r.at,'🧾',(r.desc||'Racha')+': falta'+(dv.length>1?'m ':' ')+dv.map(m=>parteNome(r,m)).join(', ')+' pagar.',r.eventId);}
   }
   grupo='geral';
   for(const p of Object.values(state.feats.posts||{}))if(p.uid!==state.uid&&vouNo(p.eventId))add(p.at,'📌',(p.nome||nomeDe(p.mid))+': '+p.text,p.eventId);
@@ -1654,6 +1680,7 @@ function adminHTML(){
 
 function render(){
   if(state.nodb){app.innerHTML='<div class="card"><h1>Eventos dos Bêbados</h1><p>Não consegui conectar ao banco de dados. Confira a internet e abra o link de novo.</p></div>';return;}
+  if(state.convK){app.innerHTML=conviteHTML();if(window.QRCode)app.querySelectorAll('.qrpix').forEach(el=>{try{new QRCode(el,{text:el.dataset.text,width:168,height:168,correctLevel:QRCode.CorrectLevel.M});}catch(e){el.textContent='Use o botão de copiar.';}});return;}
   if(state.needLogin&&instalarPede()){app.innerHTML=instalarHTML();return;}
   if(state.needLogin){app.innerHTML='<div class="card" style="align-items:center;text-align:center;padding:28px 18px"><img src="icone-192.png" width="104" height="104" alt="" style="border-radius:26px"><h1>Eventos dos Bêbados</h1><p class="muted" style="margin:0">Entre com a sua conta Google para ver a sala e validar presença.</p><button class="btn primary" data-act="login">Entrar com Google</button><p class="muted small" style="margin:0">Se o botão não funcionar, abra este link no Safari ou no Chrome.</p></div>';return;}
   let h=head();
@@ -1806,6 +1833,8 @@ app.addEventListener('click',async ev=>{
   if(act==='evAbrir'&&evn){state.evVolta=state.room===evn.id?evn.id:null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.rachaSel=null;state.enqNova=false;state.editing=null;state.chamada=false;state.telaAt=Date.now();setTimeout(scheduleRender,520);render();window.scrollTo(0,0);return;}
   if(act==='evVoltar'){if(state.evVolta){state.room=state.evVolta;state.evVolta=null;}state.evPg=null;state.rachaNovo=false;state.enqNova=false;render();return;}
   if(act==='copiar'){copiar(d.t,d.msg);return;}
+  if(act==='convLink'){const url=convLinkDe(d.k);if(navigator.share){navigator.share({title:'Racha: '+d.d,text:(d.n?d.n+', ':'')+'abra o link para ver quanto ficou a sua parte no racha "'+d.d+'" e pagar por PIX.',url}).catch(()=>{});}else copiar(url,'Link copiado. Envie para '+(d.n||'a pessoa')+'.');return;}
+  if(act==='convAvisar'){if(!state.convK||!state.conv)return;const at=Date.now();db.doc('convites/'+state.convK).update({st:'avisou',at}).then(()=>{state.conv={...state.conv,st:'avisou',at};toast('Avisado. Falta '+(state.conv.de||'')+' confirmar.');render();}).catch(()=>toast('Não consegui avisar. Confira a internet e tente de novo.'));return;}
   if(act==='rachaNovo'){state.rachaNovo=true;state.rachaSel=null;render();return;}
   /* botão pequeno da tela inicial: abre ou fecha ali mesmo o formulário de racha (com ou sem evento) */
   if(act==='rachaIr'){state.rachaNovo=!state.rachaNovo;state.rachaSel=null;delete state.draft.rc_ev;render();return;}
@@ -1819,24 +1848,30 @@ app.addEventListener('click',async ev=>{
     const pt=PIX_TIPOS[g('rc_pt')]?g('rc_pt'):'cel',chave=g('rc_pc').trim(),pix=pixChave(pt,chave);
     const ids=Object.keys(state.rachaSel||{}).filter(i=>state.rachaSel[i]&&state.members.some(m=>m.id===i)&&i!==me.id);
     if(!(total>0))return toast('Digite o valor total.');
-    if(!ids.length)return toast('Escolha com quem você rachou.');
+    const fora=rachaFora(g('rc_fora'));
+    if(!ids.length&&!fora.length)return toast('Escolha com quem você rachou.');
     if(pix.length<5)return toast('Digite a sua chave PIX.');
-    const cada=Math.round(total/(ids.length+1)*100)/100,partes={};ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
+    const cada=Math.round(total/(ids.length+fora.length+1)*100)/100,partes={},convs=[];ids.forEach(i=>{partes[i]={v:cada,st:'devendo'};});
+    fora.forEach((nome,i)=>{const k=convChave(),pid='x'+Date.now().toString(36)+i;partes[pid]={v:cada,st:'devendo',nome,k};convs.push({k,pid,nome});});
     try{localStorage.setItem('pix_'+state.uid,JSON.stringify({t:pt,c:chave}));}catch(e){}
-    state.rachaNovo=false;state.rachaSel=null;const dt=g('rc_dt'),cobrar=/^\d{4}-\d\d-\d\d$/.test(dt)&&dt>todayStr()?dt:'';['rc_desc','rc_total','rc_pt','rc_pc','rc_dt','rc_ev'].forEach(k=>delete state.draft[k]);
+    state.rachaNovo=false;state.rachaSel=null;const dt=g('rc_dt'),cobrar=/^\d{4}-\d\d-\d\d$/.test(dt)&&dt>todayStr()?dt:'';['rc_desc','rc_total','rc_pt','rc_pc','rc_dt','rc_ev','rc_fora'].forEach(k=>delete state.draft[k]);
     const sid='s'+Date.now().toString(36),sdesc=g('rc_desc').trim()||'Racha';
-    featGravar('splits',sid,{eventId:eid,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes,cobrar,at:Date.now()},cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.','set');
-    avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',eid,cobrar,'r_'+sid);return;
+    featGravar('splits',sid,{eventId:eid,uid:state.uid,mid:me.id,desc:sdesc,total,pt,chave,pix,partes,cobrar,at:Date.now()},convs.length?'Racha criado. Toque em Link ao lado de cada pessoa de fora para enviar.':(cobrar?'Racha criado. A cobrança aparece em '+fmtDay(cobrar)+'.':'Racha criado.'),'set');
+    state.convites=state.convites||{};
+    convs.forEach(c=>{const doc={sid,pid:c.pid,uid:state.uid,de:me.name,nome:c.nome,desc:sdesc,v:cada,pt,chave,pix,st:'devendo',at:Date.now(),exp:Date.now()+CONV_DIAS*864e5};state.convites[c.k]=doc;db.doc('convites/'+c.k).set(doc).catch(()=>toast('O link para pessoas de fora ainda não foi liberado no banco. O administrador precisa atualizar as regras do Firebase.'));});
+    if(convs.length&&state.tab==='faltas'){state.tab='alertas';render();}
+    if(ids.length)avisar(ids,'Racha: '+sdesc,'Você deve '+brl(cada)+' para '+me.name+'. Toque para pagar.',eid,cobrar,'r_'+sid);return;
   }
   if(act==='rachaAvisar'||act==='rachaMarcar'){
     const r=(state.feats.splits||{})[d.id],me=myMember();if(!r)return;
     const mid=act==='rachaAvisar'?(me&&me.id):d.m,novo=act==='rachaAvisar'?'avisou':(d.v==='pago'?'pago':'devendo');
     if(!mid||!r.partes||!r.partes[mid])return;
     if(act==='rachaMarcar'&&!(r.uid===state.uid||adm()))return;
-    const at=Date.now();r.partes[mid]={...r.partes[mid],st:novo,at};
+    const at=Date.now(),kf=r.partes[mid].k;r.partes[mid]={...r.partes[mid],st:novo,at};
+    if(kf){try{db.doc('convites/'+kf).update({st:novo,at}).catch(()=>{});}catch(e){}if(state.convites&&state.convites[kf])state.convites[kf].st=novo;}
     featGravar('splits',d.id,{['partes.'+mid+'.st']:novo,['partes.'+mid+'.at']:at},novo==='avisou'?'Avisado. Falta '+nomeDe(r.mid)+' confirmar.':(novo==='pago'?'Pagamento confirmado.':'Marcado como devendo.'));
     if(novo==='avisou')avisar([r.mid],'Racha: '+(r.desc||''),nomeDe(mid)+' disse que pagou '+brl(r.partes[mid].v)+'. Confirme no app.',r.eventId);
-    if(novo==='pago')avisar([mid],'Racha: '+(r.desc||''),meuNome()+' confirmou o seu pagamento de '+brl(r.partes[mid].v)+'.',r.eventId);
+    if(novo==='pago'&&!kf)avisar([mid],'Racha: '+(r.desc||''),meuNome()+' confirmou o seu pagamento de '+brl(r.partes[mid].v)+'.',r.eventId);
     return;
   }
   if(act==='recadoEnviar'&&evn){
@@ -1861,7 +1896,7 @@ app.addEventListener('click',async ev=>{
   if(act==='featApagar'){
     if(!['splits','posts','polls'].includes(d.col))return;
     if(!state.draft['fa_'+d.id]){state.draft['fa_'+d.id]=1;if(el.classList.contains('ticon'))el.textContent='?';else el.textContent='Toque de novo para apagar';return;}
-    delete state.draft['fa_'+d.id];featGravar(d.col,d.id,null,'Apagado.','del');if(d.col==='splits'){try{db.doc('outbox/r_'+d.id).delete().catch(()=>{});}catch(e){}}return;
+    delete state.draft['fa_'+d.id];if(d.col==='splits'){for(const q of Object.values(((state.feats.splits||{})[d.id]||{}).partes||{}))if(q.k){try{db.doc('convites/'+q.k).delete().catch(()=>{});}catch(e){}}}featGravar(d.col,d.id,null,'Apagado.','del');if(d.col==='splits'){try{db.doc('outbox/r_'+d.id).delete().catch(()=>{});}catch(e){}}return;
   }
   if(act==='evAba'){state.evAba=d.v==='enc'?'enc':'atv';render();return;}
   if(act==='rankMode'){state.rankMode=d.v==='total'?'total':'mes';state.raceAt=Date.now();setTimeout(scheduleRender,1700);render();return;}
@@ -2186,6 +2221,7 @@ function subscribe(){
   sub('approvals',db.collection('approvals'),s=>{state.approvals=toMap(s);const a=state.approvals[state.uid];if(state.err&&a&&a.status==='aprovado')location.reload();});
   sub('avatars',db.collection('avatars'),s=>{state.avatars=toMap(s);});
   db.collection('chat').onSnapshot(sn=>{state.chat=toMap(sn);state.chatErr=false;chatLimpa();if(!chatPinta(true))scheduleRender();},()=>{state.chatErr=true;scheduleRender();});
+  db.collection('convites').onSnapshot(s=>{state.convites=toMap(s);scheduleRender();},()=>{});
   ['splits','posts','polls'].forEach(c=>db.collection(c).onSnapshot(s=>{state.feats[c]=toMap(s);state.featErr=false;scheduleRender();},()=>{state.featErr=true;scheduleRender();}));
   db.collection('games').onSnapshot(s=>{state.games=toMap(s);state.gamesErr=false;scheduleRender();},()=>{state.gamesErr=true;scheduleRender();});
   sub('rules',db.doc('config/rules'),s=>{const r=s.exists?s.data():{};state.rules={limite:Math.max(1,r.limite||2),dias:Math.max(1,r.dias||3),appLink:r.appLink||''};});
@@ -2198,6 +2234,9 @@ function boot(){
   let auth;
   try{firebase.initializeApp(FB);auth=firebase.auth();db=firebase.firestore();}catch(e){db=null;}
   if(!db){state.nodb=true;render();return;}
+  /* link de racha para pessoa de fora (#r-CHAVE): mostra só aquele racha, sem pedir login */
+  const rk=/^#r-([A-Za-z0-9]{16,40})$/.exec(location.hash||'');
+  if(rk){state.convK=rk[1];try{db.doc('convites/'+rk[1]).onSnapshot(s=>{const c=s.exists?s.data():null;state.conv=c&&(c.exp||0)>Date.now()?c:null;state.convOk=true;render();},()=>{state.conv=null;state.convOk=true;render();});}catch(e){state.convOk=true;}render();return;}
   user={profiles:async ids=>{const out={};await Promise.all(ids.map(async id=>{try{const s=await db.doc('profiles/'+id).get();if(s.exists)out[id]=s.data();}catch(e){}}));return out;}};
   let started=false;
   auth.onAuthStateChanged(async u=>{
@@ -2218,7 +2257,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113160949';
+const VER='20261113161544';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
