@@ -1084,8 +1084,8 @@ function cComecar(e){
   const ordem=js.map((x,i)=>({mid:x.mid,k:u[i]})).sort((a,b)=>a.k-b.k).map(x=>x.mid),na=cQtdAss(js.length),r={};
   ordem.forEach((m,i)=>{r[m]=i<na?'a':i===na?'j':i===na+1?'d':'c';});
   state.cidVer=false;
-  const L=cidLoc;L.gid=cGid(e);L.fn=(g.fn||0)+1;L.ini=Date.now();L.rand=12000*CID_K;L.indo=false;cFalar(cFala({fase:'papeis'}));
-  cGrava(e,{status:'jogo',host:state.uid,n:(g.n||0)+1,rod:js.map(x=>x.mid),vivos:js.map(x=>x.mid),seg:iCod({r}),fase:'papeis',fn:(g.fn||0)+1,ft:Date.now(),noite:0,visto:{},votos:{},ka:'',pj:'',di:'',up:'',dok:false,forca:false,fechar:false,morto:'',salvo:false,elim:'',empate:false,venc:''}).catch(()=>toast('Não consegui começar a partida.'));
+  const L=cidLoc;L.gid=cGid(e);L.fn=(g.fn||0)+1;L.ini=Date.now();L.rand=12000*CID_K;L.indo=false;L.avisou=false;cFalar(cFala({fase:'prep'}));
+  cGrava(e,{status:'jogo',host:state.uid,n:(g.n||0)+1,rod:js.map(x=>x.mid),vivos:js.map(x=>x.mid),seg:iCod({r}),fase:'prep',fn:(g.fn||0)+1,ft:Date.now(),noite:0,visto:{},votos:{},ka:'',pj:'',di:'',up:'',dok:false,forca:false,fechar:false,morto:'',salvo:false,elim:'',empate:false,venc:''}).catch(()=>toast('Não consegui começar a partida.'));
 }
 /* ---------- narração (só no celular narrador) ---------- */
 const cidLoc={gid:'',fn:-1,ini:0,falaFim:0,rand:0,indo:false,tok:0,tf:null,texto:''};
@@ -1108,7 +1108,8 @@ function cFalar(txt){
 function cFala(g){
   const r=cSeg(g),dois=Object.values(r).filter(x=>x==='a').length>1,A=dois?'Assassinos':'Assassino';
   switch(g.fase){
-    case 'papeis':return 'A partida vai começar. Cada um olhe o seu papel no celular, sem mostrar para ninguém. Ele some em dez segundos.';
+    case 'prep':return 'Atenção. Os papéis serão revelados. Escondam os seus celulares.';
+    case 'papeis':return 'Olhem agora o seu papel. Ele some em dez segundos.';
     case 'dorme':return (g.noite>1?'A noite caiu de novo. ':'')+'A cidade dorme. Todos fechem os olhos e escondam a tela do celular.';
     case 'na':return A+', '+(dois?'abram os olhos e escolham':'abra os olhos e escolha')+' no celular quem vai morrer.';
     case 'fa':return A+', '+(dois?'fechem os olhos e escondam':'feche os olhos e esconda')+' o celular.';
@@ -1144,6 +1145,7 @@ function cAnda(e,g,gid){
   const dt=L.falaFim?t-L.falaFim:-1,r=cSeg(g),vivos=Array.isArray(g.vivos)?g.vivos:[],tem=p=>vivos.some(m=>r[m]===p),S=5000*CID_K;
   const vai=d=>{L.indo=true;cGrava(e,{...d,fn:(g.fn||0)+1,ft:Date.now()}).catch(()=>{L.indo=false;});};
   switch(g.fase){
+    case 'prep':if(dt>=3000*CID_K)vai({fase:'papeis'});break;
     case 'papeis':if(dt>=0&&t-L.ini>=(CID_VER+1500)*CID_K)vai({fase:'dorme',noite:1,ka:'',pj:'',di:'',dok:false});break;
     case 'dorme':if(dt>=S)vai({fase:'na'});break;
     case 'na':if(g.ka||t-L.ini>60000*CID_K)vai({fase:'fa'});break;
@@ -1210,6 +1212,10 @@ function cidScreen(e){
     return h+'</div>';
   }
   const rodape=()=>(souHost?'<div class="item"><span class="small muted">Este celular é o narrador. Se a voz não sair, leia em voz alta:</span><b>'+esc(fala)+'</b></div><button class="tfim" data-act="cEncerrar" data-e="'+E+'">Encerrar a partida</button>':'<button class="tfim" data-act="cHost" data-e="'+E+'">O narrador travou? Narrar por este celular</button>');
+  if(f==='prep'){
+    h+='<div class="cidnoite" style="min-height:240px"><b>Os papéis serão revelados</b><span class="small">Esconda o seu celular. Ninguém pode ver a sua tela.</span></div>';
+    return h+rodape()+'</div>';
+  }
   if(f==='papeis'){
     /* o papel aparece sozinho por 10 segundos e some; depois disso não volta mais até o fim da partida */
     const falta=Math.ceil((CID_VER*CID_K-(Date.now()-(state.cidIni||0)))/1000);
@@ -2504,7 +2510,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113172944';
+const VER='20261113173454';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
