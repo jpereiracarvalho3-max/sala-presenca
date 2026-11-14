@@ -320,6 +320,15 @@ html.tema-junina .top h1{background:linear-gradient(90deg,#FFD23F,#FF9A3D 45%,#F
 .chama{animation:chamaPisca .5s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
 @keyframes chamaPisca{from{transform:scale(1,1)}to{transform:scale(1.06,1.14)}}
 @media (prefers-reduced-motion:reduce){.chama{animation:none}}
+.chat-lig{position:relative;flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--accent);background:transparent;color:var(--accent);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;align-self:center}
+.chat-lig svg{width:19px;height:19px}
+.chat-lig.ab{background:var(--accent);color:var(--accent-ink)}
+.chat-lig.viva{background:var(--ok);border-color:var(--ok);color:#0E2A1B;animation:ligToca 1.6s ease-in-out infinite;box-shadow:0 0 0 0 rgba(95,214,148,.6)}
+.chat-lig b{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--bad);color:#2A0B08;font-size:11px;line-height:17px;text-align:center;padding:0 3px}
+@keyframes ligToca{0%,55%,100%{transform:rotate(0);box-shadow:0 0 0 0 rgba(95,214,148,.55)}6%,18%,30%{transform:rotate(-14deg)}12%,24%,36%{transform:rotate(14deg)}45%{transform:rotate(0);box-shadow:0 0 0 9px rgba(95,214,148,0)}}
+@media (prefers-reduced-motion:reduce){.chat-lig.viva{animation:none}}
+.chat-topo{align-items:center !important}
+.bolinha.viva{background:var(--ok);left:calc(50% - 17px)}
 .hbts{display:flex;flex-direction:row;justify-content:flex-end;gap:6px;margin:-4px -2px -10px 0}
 .titulo h1{white-space:nowrap}
 @media (max-width:350px){.titulo h1{font-size:22px}.temaic{font-size:19px}}
@@ -331,6 +340,7 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .acts>.btn{width:100%;min-height:46px;padding:9px 6px}
 .acts>.btn:only-child{grid-column:1/-1}
+.card>.row>.btn,.item>.row>.btn,.card>.btn,.item>.btn{min-height:42px}
 .evacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .evacts>.btn{width:100%;min-height:44px;padding:9px 4px;font-size:14.5px;white-space:nowrap}
 @media (max-width:350px){.evacts>.btn{font-size:13px}}
@@ -941,7 +951,7 @@ function tabsHTML(){
   const cn=chatNovas();
   const t=[['faltas','Painel'],['eventos','Eventos'],['chat','Chat'],['alertas','Notificações'],['avatar','Avatar']];
   if(adm()){const n=pendingReqs().length;t.push(['admin','Admin'+(n?' ('+n+')':'')]);}
-  return '<nav class="tabs" role="tablist" aria-label="Seções">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[x[0]]+'</svg><span>'+x[1]+'</span>'+((x[0]==='alertas'&&nn)||(x[0]==='chat'&&cn)?'<i class="bolinha" aria-hidden="true"></i>':'')+'</button>').join('')+'</nav>';
+  return '<nav class="tabs" role="tablist" aria-label="Seções">'+t.map(x=>'<button role="tab" data-act="tab" data-t="'+x[0]+'" aria-current="'+(state.tab===x[0])+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[x[0]]+'</svg><span>'+x[1]+'</span>'+((x[0]==='alertas'&&nn)||(x[0]==='chat'&&cn)?'<i class="bolinha" aria-hidden="true"></i>':'')+(x[0]==='chat'&&chamadasVivas().length?'<i class="bolinha viva" aria-hidden="true"></i>':'')+'</button>').join('')+'</nav>';
 }
 function claimHTML(){
   const taken=new Set(Object.values(state.approvals).filter(a=>a.status==='aprovado').map(a=>a.memberId));
@@ -2262,10 +2272,9 @@ function faltasHTML(){
   if(me){
     const a=analyze(me),lim=state.rules.limite;
     const chip=a.suspenso?'<span class="chip bad">Suspenso até '+fmtShort(a.until)+'</span>':'<span class="chip ok">Em dia</span>';
-    out+='<div class="card hero"><div class="hbts"><button class="chip" data-act="rachaIr" aria-expanded="'+!!state.rachaNovo+'">Racha</button>'+(readOnly()?'':'<button class="chip" data-act="novaChamada" aria-expanded="'+!!state.chamada+'">Chamada</button>')+'</div><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
+    out+='<div class="card hero"><div class="hbts"><button class="chip" data-act="rachaIr" aria-expanded="'+!!state.rachaNovo+'">Racha</button></div><div class="row" style="align-items:center;flex-wrap:nowrap"><span class="hav">'+fig(me)+'</span><div class="grow"><div class="small muted">Olá,</div><h2 style="margin:0 0 4px">'+esc(me.name)+'</h2>'+chip+'</div></div><div>Faltas neste mês: <b>'+a.mes+' de '+lim+'</b></div><div class="small muted">'+lim+' faltas no mês = '+state.rules.dias+' dias de suspensão</div><div class="dots">'+(a.hist.slice(-12).map(h=>'<span class="dot '+h.s+'" title="'+esc(h.e.title)+'"></span>').join('')||'<span class="muted small">Sem eventos encerrados.</span>')+'</div></div>';
     if(state.rachaNovo)out+='<div class="card"><h2 style="margin:0">Novo racha</h2>'+rachaForm(null)+'</div>';
-    if(state.chamada&&!readOnly())out+=chamadaFormHTML();
-    out+=chamadasHTML();
+
   }
   out+=nivHTML();
   const conta='<div class="row" style="justify-content:center;gap:8px;margin-top:6px">'+(state.isOwner?'<button class="chip '+(adm()?'ok':'info')+'" data-act="mode" title="Trocar de modo" style="cursor:pointer;padding:7px 12px">'+(adm()?'Modo administrador':'Modo participante')+' (trocar)</button>':'')+(state.uid?'<button class="chip" data-act="logout" title="Sair da conta" style="cursor:pointer;padding:7px 12px">Sair da conta</button>':'')+'</div>';
@@ -2595,7 +2604,7 @@ const hora=ms=>{const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinut
 let chatPos={fim:true,top:0};
 function chatAjusta(){
   try{aplicaTema();document.documentElement.classList.toggle('na-sala',!!state.room);}catch(e){}
-  const no=state.tab==='chat'&&!state.room&&!state.needLogin;document.documentElement.classList.toggle('so-chat',!!no);
+  const no=state.tab==='chat'&&!state.room&&!state.needLogin&&!state.chamada;document.documentElement.classList.toggle('so-chat',!!no);
   if(!no){document.documentElement.classList.remove('tec');document.body.style.top='';}
   const el=document.getElementById('chatLista'),bar=document.querySelector('.chat-bar');if(!no||!el||!bar)return;
   try{
@@ -2637,7 +2646,14 @@ function chatListaHTML(){
   chatJaVi=vistos;
   return out;
 }
+/* tela das chamadas online: abre pelo telefone do chat e fica separada das mensagens */
+function chamadasPgHTML(){
+  const lista=chamadasHTML(),nova=state.chamadaNova||!lista;
+  return '<div class="row between"><button class="btn" data-act="cancelChamada">Voltar ao chat</button><span class="chip '+(lista?'ok':'')+'">'+(lista?'Ao vivo agora':'Nenhuma chamada agora')+'</span></div>'+
+    '<div class="card"><h2 style="margin:0">Chamadas online</h2><span class="small muted">Ligação por voz com mesas e jogos. Não conta presença e some quando é encerrada.</span>'+lista+(nova||readOnly()?'':'<button class="btn primary" data-act="chamadaNova">Nova chamada</button>')+'</div>'+(nova&&!readOnly()?'<div class="card">'+chamadaFormHTML()+'</div>':'');
+}
 function chatHTML(){
+  if(state.chamada&&myMember())return chamadasPgHTML();
   if(state.chatErr)return '<div class="card"><span class="chip warn">O chat ainda não foi liberado no banco. O administrador precisa atualizar as regras do Firebase.</span></div>';
   const I=(d,f)=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="'+(f||'none')+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
   const MIC=I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),ENV=I('<path d="M5 12l15-7-5.5 15-2.6-6.4z"/>','currentColor'),LIXO=I('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>');
@@ -2645,10 +2661,12 @@ function chatHTML(){
   /* enquetes do chat: ficam fixadas no topo até quem criou apagar, por no máximo 7 dias (as mensagens continuam sumindo em 2 horas) */
   const enqs=Object.entries(state.feats.polls||{}).map(([id,q])=>({id,...q})).filter(q=>q.eventId==='chat'&&!q.tipo&&(q.at||0)>Date.now()-7*864e5).sort((a,b)=>(b.at||0)-(a.at||0));
   const enqForm=state.chatEnq?'<div class="item"><label>Pergunta<input id="eq_q" maxlength="80" placeholder="Ex.: Onde vai ser o próximo rolê?" value="'+esc(val('eq_q',''))+'"></label><label>Opções (uma por linha, de 2 a 6)<textarea id="eq_ops" rows="3" placeholder="Bar\nCasa de alguém">'+esc(val('eq_ops',''))+'</textarea></label><div class="acts"><button class="btn" data-act="chatEnq">Cancelar</button><button class="btn primary" data-act="enqCriar" data-e="chat">Criar enquete</button></div></div>':'';
+  /* chamada online: botão de telefone ao lado da Enquete; fica verde e balança quando tem chamada acontecendo */
+  const nViv=chamadasVivas().length;
   /* cada enquete vira uma faixa presa no topo do chat; tocar abre para votar e ver o resultado */
   const faixa=q=>{const n=Object.values(q.votos||{}).filter(v=>Number.isInteger(v)).length,ab=state.chatEnqAb===q.id,votei=Number.isInteger((q.votos||{})[state.uid]);
     return '<button class="chat-enq'+(ab?' ab':'')+'" data-act="chatEnqAbre" data-id="'+esc(q.id)+'" aria-expanded="'+ab+'"><span class="grow" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left">📊 '+esc(q.q)+'</span><span class="chip'+(votei?' ok':' warn')+'" style="flex-shrink:0">'+(votei?n+(n===1?' voto':' votos'):'votar')+'</span></button>'+(ab?enqCard(q):'');};
-  return '<div class="chat-topo"><h2 style="margin:0">Chat do grupo</h2><span class="small muted" style="flex:1;white-space:nowrap">some em 2 h</span>'+(myMember()&&!state.chatEnq?'<button class="chip" data-act="chatEnq" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Enquete</button>':'')+'</div>'+(enqForm||enqs.length?'<div class="chat-enqs">'+enqForm+enqs.map(faixa).join('')+'</div>':'')+'<div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
+  return '<div class="chat-topo"><div style="flex:1;min-width:0;line-height:1.15"><h2 style="margin:0;white-space:nowrap">Chat do grupo</h2><span class="small muted" style="font-size:11.5px;white-space:nowrap">as mensagens somem em 2 h</span></div>'+(myMember()&&!state.chatEnq?'<button class="chip" data-act="chatEnq" style="cursor:pointer;flex-shrink:0;padding:6px 12px;color:var(--accent);border-color:var(--accent)">Enquete</button>':'')+(myMember()?'<button class="chat-lig'+(nViv?' viva':'')+(state.chamada?' ab':'')+'" data-act="novaChamada" aria-expanded="'+!!state.chamada+'" aria-label="'+(nViv?'Chamada online acontecendo agora':'Chamada online')+'">'+I('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>')+(nViv?'<b>'+nViv+'</b>':'')+'</button>':'')+'</div>'+(enqForm||enqs.length?'<div class="chat-enqs">'+enqForm+enqs.map(faixa).join('')+'</div>':'')+'<div id="chatLista" class="chat-l">'+chatListaHTML()+'</div><div class="chat-esp"></div>'+
     '<div class="chat-bar'+(tem?' tem':'')+'">'+(state.chatGrav
       ?'<button class="chat-b" data-act="chatGravCancel" aria-label="Cancelar gravação">'+LIXO+'</button><span class="chat-rec"><span class="chat-pt"></span>Gravando <b id="chatSeg">0</b>s</span><button class="chat-b env" data-act="chatGravEnviar" aria-label="Enviar áudio">'+ENV+'</button>'
       :'<input id="chat_txt" maxlength="300" placeholder="Mensagem" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" value="'+esc(val('chat_txt',''))+'"><button class="chat-b env so-mic" data-act="chatGravar" aria-label="Gravar áudio">'+MIC+'</button><button class="chat-b env so-env" data-act="chatEnviar" aria-label="Enviar mensagem">'+ENV+'</button>')+'</div>';
@@ -2832,9 +2850,10 @@ function instalarHTML(){
 }
 /* chamadas online: são ligações com mesas e jogos, não eventos. Ficam no Painel (botão pequeno no cartão de boas-vindas),
    não contam presença e somem quando encerradas. */
+const chamadasVivas=()=>state.events.filter(e=>isOnline(e)&&getStatus(e)==='aberto');
 function chamadaFormHTML(){
   const eu=myMember();
-  return '<div class="card"><h2 style="margin:0">Nova chamada online</h2>'+
+  return '<div class="item" style="background:transparent;border:0;padding:0"><h2 style="margin:0">Nova chamada</h2>'+
 
         '<label>Nome<input id="ch_nome" value="'+esc(val('ch_nome',eu?'Chamada de '+eu.name:'Chamada'))+'" maxlength="40"></label>'+
         '<div class="small muted">Cada mesa é uma ligação. Quem sentar em uma mesa pode abrir o botão Jogos e jogar com quem está nela.</div>'+
@@ -2848,7 +2867,7 @@ function chamadasHTML(){
   /* chamadas online: ficam à parte dos eventos, não contam presença e somem quando encerradas */
   const chamadas=state.events.filter(e=>isOnline(e)&&getStatus(e)!=='encerrado').sort((a,b)=>evTime(b)-evTime(a));
   if(!chamadas.length)return '';
-  return '<div class="card"><h2 style="margin:0">Chamadas online</h2><div class="list">'+chamadas.map(e=>{
+  return '<div class="item" style="background:transparent;border:0;padding:0"><div class="list">'+chamadas.map(e=>{
     const st=getStatus(e),E=esc(e.id),n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length,l=state.members.find(m=>m.id===e.leaderId),dentro=!!(me&&state.checkins[e.id+'_'+me.id]);
     let b='';
     if(st==='aberto'){
@@ -2857,7 +2876,7 @@ function chamadasHTML(){
     }else if(canManage(e)&&!readOnly())b+='<button class="btn primary" data-act="open" data-e="'+E+'">Abrir agora</button>';
     if(st==='aberto'&&(adm()||isLeader(e))&&!readOnly())b+='<button class="btn danger" data-act="close" data-e="'+E+'">Encerrar</button>';
     return '<div class="item ev evt-online"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(e.title)+'</h3><span class="chip '+(st==='aberto'?'ok':'info')+'">'+(st==='aberto'?'Ao vivo':'Agendada')+'</span></div>'+
-      '<div class="small muted">'+(isJogos(e)?'Sala de jogos':'Conversa')+' · '+(st==='aberto'?n+(n===1?' pessoa na sala':' pessoas na sala'):esc(fmtDay(e.date))+' às '+esc(e.time||'--:--'))+(l?' · criada por '+esc(l.name):'')+'</div>'+(b?'<div class="row">'+b+'</div>':'')+'</div>';
+      '<div class="small muted">'+(isJogos(e)?'Sala de jogos':'Conversa')+' · '+(st==='aberto'?n+(n===1?' pessoa na sala':' pessoas na sala'):esc(fmtDay(e.date))+' às '+esc(e.time||'--:--'))+(l?' · criada por '+esc(l.name):'')+'</div>'+(b?'<div class="acts">'+b+'</div>':'')+'</div>';
   }).join('')+'</div></div>';
 }
 function eventosHTML(){
@@ -3190,7 +3209,7 @@ app.addEventListener('click',async ev=>{
   if(act==='chatGravEnviar'){chatGravFim(true);return;}
   if(act==='chatGravCancel'){chatGravFim(false);return;}
   if(act==='chatTocar'){chatTocar(d.id);return;}
-  if(act==='tab'){if(state.tab==='chat'&&d.t!=='chat'){chatGravFim(false);if(chatAud){try{chatAud.pause();}catch(e){}chatAud=null;state.chatTocando=null;}}if(d.t==='chat'){chatViu();setTimeout(chatFim,60);setTimeout(chatFim,600);}if(d.t==='alertas'){state.alertasVistoAntes=alertasVisto();try{localStorage.setItem('alertas_'+state.uid,String(Date.now()));}catch(e){}}if(d.t!=='eventos')state.evPg=null;state.rachaNovo=false;state.rachaSel=null;state.telaAt=Date.now();setTimeout(scheduleRender,520);state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
+  if(act==='tab'){state.chamada=false;state.chamadaNova=false;if(state.tab==='chat'&&d.t!=='chat'){chatGravFim(false);if(chatAud){try{chatAud.pause();}catch(e){}chatAud=null;state.chatTocando=null;}}if(d.t==='chat'){chatViu();setTimeout(chatFim,60);setTimeout(chatFim,600);}if(d.t==='alertas'){state.alertasVistoAntes=alertasVisto();try{localStorage.setItem('alertas_'+state.uid,String(Date.now()));}catch(e){}}if(d.t!=='eventos')state.evPg=null;state.rachaNovo=false;state.rachaSel=null;state.telaAt=Date.now();setTimeout(scheduleRender,520);state.tab=d.t;if(d.t==='faltas'){state.raceAt=Date.now();setTimeout(scheduleRender,1700);}render();return;}
   if(act==='rankToggle'){state.rankOpen[d.m]=!state.rankOpen[d.m];render();return;}
   if(act==='tComecar'&&evn){await tComecar(evn);return;}
   if(act==='tJogar'&&evn){await tJogar(evn,d.c);return;}
@@ -3205,7 +3224,7 @@ app.addEventListener('click',async ev=>{
   if(act==='convAvisar'){if(!state.convK||!state.conv)return;const at=Date.now();db.doc('convites/'+state.convK).update({st:'avisou',at}).then(()=>{state.conv={...state.conv,st:'avisou',at};toast('Avisado. Falta '+(state.conv.de||'')+' confirmar.');render();}).catch(()=>toast('Não consegui avisar. Confira a internet e tente de novo.'));return;}
   if(act==='rachaNovo'){state.rachaNovo=true;state.rachaSel=null;render();return;}
   /* botão pequeno da tela inicial: abre ou fecha ali mesmo o formulário de racha (com ou sem evento) */
-  if(act==='rachaIr'){state.chamada=false;state.rachaNovo=!state.rachaNovo;state.rachaSel=null;delete state.draft.rc_ev;render();return;}
+  if(act==='rachaIr'){state.rachaNovo=!state.rachaNovo;state.rachaSel=null;delete state.draft.rc_ev;render();return;}
   if(act==='rachaCancelar'){state.rachaNovo=false;state.rachaSel=null;state.rachaAberto=false;render();return;}
   if(act==='rachaSel'){state.rachaSel=state.rachaSel||{};state.rachaSel[d.m]=!state.rachaSel[d.m];render();return;}
   if(act==='rachaCriar'){
@@ -3380,7 +3399,7 @@ app.addEventListener('click',async ev=>{
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
-  if(act==='leave'){{const er=state.events.find(x=>x.id===state.room);state.tab=er&&isOnline(er)?'faltas':'eventos';}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
+  if(act==='leave'){{const er=state.events.find(x=>x.id===state.room);state.tab=er&&isOnline(er)?'chat':'eventos';if(state.tab==='chat'){state.chamada=false;setTimeout(chatFim,80);}}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
   if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=!isOnline(evn)&&cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
   if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.fAdd=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':d.v==='tru'?'tru':(String(d.v).startsWith('f:')&&(F_ORDEM.includes(String(d.v).slice(2))||F_MESA.includes(String(d.v).slice(2))))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
@@ -3451,7 +3470,7 @@ app.addEventListener('click',async ev=>{
     delete state.draft['cl_'+evn.id];
     const data={status:'encerrado',at:Date.now()};
     if(rtc.on&&rtc.eid===evn.id)hangup();
-    state.ctl[evn.id]=data;state.room=null;state.tab=isOnline(evn)?'faltas':'eventos';render();
+    state.ctl[evn.id]=data;state.room=null;state.tab=isOnline(evn)?'chat':'eventos';render();
     w(()=>db.doc('ctl/'+evn.id).set(data),'Evento encerrado.');return;
   }
   if(act==='reopen'&&evn){await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Presença reaberta.');return;}
@@ -3463,9 +3482,10 @@ app.addEventListener('click',async ev=>{
     return;
   }
   if(act==='newEvent'){state.chamada=false;state.editing='new';state.draft={};render();return;}
-  if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=!state.chamada;state.rachaNovo=false;state.chamarSel=null;state.draft={};state.tab='faltas';render();return;}
+  if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=!state.chamada;state.chamadaNova=false;state.chatEnq=false;state.rachaNovo=false;state.chamarSel=null;delete state.draft.ch_nome;delete state.draft.ch_mesas;state.tab='chat';state.telaAt=Date.now();render();window.scrollTo(0,0);if(!state.chamada)setTimeout(chatFim,80);return;}
+  if(act==='chamadaNova'){state.chamadaNova=true;render();return;}
   if(act==='chamarSel'){state.chamarSel=state.chamarSel||{};state.chamarSel[d.m]=!state.chamarSel[d.m];render();return;}
-  if(act==='cancelChamada'){state.chamada=false;state.draft={};render();return;}
+  if(act==='cancelChamada'){if(state.chamadaNova&&chamadasVivas().length){state.chamadaNova=false;render();return;}state.chamada=false;state.chamadaNova=false;delete state.draft.ch_nome;delete state.draft.ch_mesas;render();setTimeout(chatFim,80);return;}
   if(act==='criarChamada'){
     const me=myMember();if(!me)return;
     const g=id=>(document.getElementById(id)||{}).value||'';
@@ -3473,7 +3493,7 @@ app.addEventListener('click',async ev=>{
     const sala='conversa',id='e'+Date.now().toString(36),key=id+'_'+me.id;
     const data={title:(g('ch_nome').trim()||'Chamada de '+me.name).slice(0,40),date:todayStr(),time:hm(agora),fim:hm(fim),local:'',leaderId:me.id,tema:sala==='jogos'?'jantar':'festa',modo:'online',sala,mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ch_mesas'),10)||3)),chamada:true,code:genCode(),createdAt:Date.now(),createdBy:state.uid};
     const ck={eventId:id,memberId:me.id,at:Date.now(),by:'online'};
-    state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.draft={};state.tab='faltas';state.room=id;state.painel=0;render();
+    state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.chamadaNova=false;state.draft={};state.tab='chat';state.room=id;state.painel=0;render();
     w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');
     {const outros=state.members.filter(m=>m.id!==me.id),cs=state.chamarSel,ids=cs?outros.filter(m=>cs[m.id]).map(m=>m.id):outros.map(m=>m.id);state.chamarSel=null;
      if(ids.length)avisar(ids.length===outros.length?'todos':ids,data.title,me.name+' está te chamando para uma chamada online'+(sala==='jogos'?' com jogos':'')+'. Toque para entrar.',id);}
@@ -3742,7 +3762,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113215838';
+const VER='20261113220222';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
