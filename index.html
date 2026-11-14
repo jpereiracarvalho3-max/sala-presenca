@@ -62,6 +62,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn:focus-visible,.tabs button:focus-visible,.fig:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
 textarea{min-height:76px;resize:vertical}
+@media (hover:none),(max-width:820px){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea{font-size:16px !important}}
 label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .empty{padding:22px 14px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:14px}
@@ -271,6 +272,25 @@ html.so-chat.tec .tabs{display:none}
 .alerta[disabled],div.alerta{cursor:default}
 .tabs button{position:relative}
 .bolinha{position:absolute;top:4px;left:calc(50% + 8px);width:9px;height:9px;border-radius:50%;background:var(--bad);border:2px solid #1B1511}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ftile{display:flex;align-items:center;gap:10px;min-width:0;min-height:60px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);text-align:left;cursor:pointer;touch-action:manipulation;transition:transform .08s ease,border-color .12s ease}
+.ftile:active{transform:scale(.97)}
+.ftile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ftile .fic{flex:none;width:36px;height:36px;border-radius:10px;background:var(--surface);display:grid;place-items:center;font-size:19px}
+.ftile .ftx{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ftile .ftx b{font-size:14.5px}
+.ftile .ftx span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fgrid>.ftile:last-child:nth-child(odd){grid-column:1/-1}
+@media (max-width:400px){.ftile{flex-direction:column;align-items:flex-start;gap:6px;padding:10px}.ftile .ftx{width:100%}.ftile .ftx span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.fgrid>.ftile:last-child:nth-child(odd){flex-direction:row;align-items:center;gap:10px}}
+.evacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.evacts>.btn{width:100%;min-height:44px;padding:9px 4px;font-size:14.5px;white-space:nowrap}
+@media (max-width:350px){.evacts>.btn{font-size:13px}}
+.evacts>.full,.evacts>.chip,.evacts>.small{grid-column:1/-1}
+.evacts>.chip{justify-content:center;text-align:center;white-space:normal}
+.evmini{display:flex;justify-content:flex-end;gap:2px;margin-top:-4px}
+.evmini .tfim{padding:8px 10px;min-height:36px}
+.evmini .tfim.per{color:var(--bad)}
+.btn.espera{opacity:.55}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px}
 .seg2 button{border:0;background:transparent;color:var(--muted);font-weight:600;padding:9px 6px;border-radius:9px;cursor:pointer;touch-action:manipulation}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -477,7 +497,8 @@ button.ludp{cursor:pointer;touch-action:manipulation}
 .sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--accent)}
 .avprev{display:flex;justify-content:center;padding:6px 0;background:var(--soft);border-radius:14px}
 .avprev svg{width:104px;height:145px}
-.avprev{position:sticky;top:8px;z-index:3;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.avprev{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:3;box-shadow:0 0 0 8px var(--surface),0 10px 14px -4px rgba(0,0,0,.55);border:1px solid var(--line)}
+@media (max-height:620px){.avprev svg{width:84px;height:117px}}
 .stl{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-weight:600;color:var(--ink)}
 .stl[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 @media (prefers-reduced-motion:reduce){.pisca{animation:none!important}.led{animation:none!important}.smk{animation:none!important;opacity:.6}.fig svg,.th-festa .floor::after,.tw,.sm,.flick{animation:none!important}#toast{transition:none}}
@@ -511,9 +532,12 @@ function entraPresente(evn){
   const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),by:isOnline(evn)?'online':'leader'};
   state.checkins[key]=data;w(()=>db.doc('checkins/'+key).set(data));scheduleRender();
 }
+const EV_ANTES=12*36e5;
 const getStatus=e=>{
   const c=state.ctl[e.id]||{},now=Date.now(),end=endTime(e);
   if(c.status==='encerrado')return 'encerrado';
+  /* sala presencial aberta com mais de 12 horas de antecedência não vale: o evento segue agendado (sem presença, sem encerrar) até começar */
+  if(c.status==='aberto'&&e.modo!=='online'&&now<evTime(e)&&(c.at||0)<evTime(e)-EV_ANTES)return 'agendado';
   if(c.status==='aberto')return (end&&now>=end&&!((c.at||0)>=end))?'encerrado':'aberto';
   if(end&&now>=end)return 'encerrado';
   return now>=evTime(e)?'aberto':'agendado';
@@ -1106,8 +1130,9 @@ function avatarHTML(){
   const sw=(k,arr,names)=>'<div class="avrow">'+arr.map((c,i)=>'<button class="sw" data-act="av" data-k="'+k+'" data-v="'+i+'" aria-pressed="'+(av[k]===i)+'" aria-label="'+esc(names[i])+'" title="'+esc(names[i])+'" style="background:'+c+'"></button>').join('')+'</div>';
   const opt=(t,k,arr)=>'<div><div class="small muted">'+t+'</div><div class="avrow">'+arr.map((n,i)=>'<button class="stl" data-act="av" data-k="'+k+'" data-v="'+i+'" aria-pressed="'+(av[k]===i)+'">'+n+'</button>').join('')+'</div></div>';
   const nv=/^(\d\d)-(\d\d)$/.exec((state.avatars[state.uid]||{}).niver||''),nd=val('nv_d',nv?nv[2]:''),nm=val('nv_m',nv?nv[1]:'');
-  const nivCard='<div class="card"><h2 style="margin:0">Meu aniversário</h2><span class="small muted">No dia, o grupo recebe um aviso de manhã. Só dia e mês, sem o ano.</span><div class="grid2"><label>Dia<select id="nv_d"><option value="">--</option>'+Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')).map(x=>'<option value="'+x+'"'+(nd===x?' selected':'')+'>'+(+x)+'</option>').join('')+'</select></label><label>Mês<select id="nv_m"><option value="">--</option>'+NIV_MES.map((n,i)=>{const x=String(i+1).padStart(2,'0');return '<option value="'+x+'"'+(nm===x?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label></div><div class="row"><button class="btn primary" data-act="nivSalvar">Salvar</button>'+(nv?'<button class="tfim" data-act="nivTirar">Tirar meu aniversário</button>':'')+'</div></div>';
-  return nivCard+'<div class="card"><h2>Meu avatar</h2><div class="avprev">'+fig(me)+'</div>'+
+  const nivCard=!state.nivAb?'':'<div class="card"><h2 style="margin:0">Meu aniversário</h2><span class="small muted">No dia, o grupo recebe um aviso de manhã. Só dia e mês, sem o ano.</span><div class="grid2"><label>Dia<select id="nv_d"><option value="">--</option>'+Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')).map(x=>'<option value="'+x+'"'+(nd===x?' selected':'')+'>'+(+x)+'</option>').join('')+'</select></label><label>Mês<select id="nv_m"><option value="">--</option>'+NIV_MES.map((n,i)=>{const x=String(i+1).padStart(2,'0');return '<option value="'+x+'"'+(nm===x?' selected':'')+'>'+n+'</option>';}).join('')+'</select></label></div><div class="row"><button class="btn primary" data-act="nivSalvar">Salvar</button>'+(nv?'<button class="tfim" data-act="nivTirar">Tirar meu aniversário</button>':'')+'</div></div>';
+  const nivBt='<button class="chip'+(state.nivAb?' ok':'')+'" data-act="nivAbre" aria-expanded="'+!!state.nivAb+'" style="border:1px solid var(--accent);background:transparent;color:var(--accent);flex:none">🎂 '+(nv?nv[2]+'/'+nv[1]:'Aniversário')+'</button>';
+  return '<div class="card avcard"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><h2 style="margin:0">Meu avatar</h2>'+nivBt+'</div>'+nivCard.replace('<div class="card">','<div class="card" style="box-shadow:none;background:var(--soft)">')+'<div class="avprev">'+fig(me)+'</div>'+
     '<div><div class="small muted">Cor da pele</div>'+sw('skin',SKINS,SKIN_N)+'</div>'+
     '<div><div class="small muted">Cor do cabelo</div>'+sw('hair',HAIRS,HAIR_N)+'</div>'+
     '<div><div class="small muted">Estilo do cabelo</div><div class="avrow">'+STYLES.map((n,i)=>'<button class="stl" data-act="av" data-k="style" data-v="'+i+'" aria-pressed="'+(av.style===i)+'">'+n+'</button>').join('')+'</div></div>'+
@@ -2036,10 +2061,10 @@ function roomScreen(e){
   if(emJogo)return h+jogo+reactBar(e);
   h+='<h2 style="margin:4px 0">'+esc(e.title)+'</h2>'+(jogo?jogo+roomHTML(e)+reactBar(e):roomHTML(e)+(isOnline(e)?onlineHTML(e)+reactBar(e):''));
   if(iPode(e))h+='<button class="btn primary" data-act="jogosP" data-e="'+esc(e.id)+'">Jogos</button>';
-  if(!isOnline(e)&&(adm()||myMember()))h+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Racha, recados e enquetes</button>';
+  if(!isOnline(e)&&(adm()||myMember()))h+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Funções do evento</button>';
   if(canManage(e)&&!readOnly()){
     const head0='<div class="card">'+(isOnline(e)?'':'<h3>QR code</h3>');let box=head0;
-    if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
+    if(st==='agendado')box+='<button class="btn primary" data-act="open" data-e="'+esc(e.id)+'">Iniciar evento</button>';
     if(st==='aberto'&&isOnline(e))box+=(adm()?'<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>':'');
     else if(st==='aberto'){
       const link=state.rules.appLink||(location.origin+location.pathname);
@@ -2295,7 +2320,7 @@ function sorteioHTML(e){
   const q=stDoc(e),E=esc(e.id),me=myMember();
   if(!q){
     if(!canManage(e)||readOnly()||Date.now()>stFim(e))return '';
-    if(state.stNovo!==e.id)return '<button class="tfim" data-act="stNovo" data-e="'+E+'">Criar um sorteio neste evento</button>';
+    if(state.stNovo!==e.id)return '<div class="card"><h2 style="margin:0">Sorteio</h2><span class="small muted">Amigo oculto do evento: o app sorteia e cada pessoa só vê quem tirou, no próprio celular.</span><button class="btn primary" data-act="stNovo" data-e="'+E+'">Criar um sorteio neste evento</button></div>';
     const sel=state.stSel||(state.stSel=Object.fromEntries(state.members.map(m=>[m.id,(((state.avatars[avUid(m)]||{}).rsvp||{})[e.id])==='sim'||(me&&m.id===me.id)]))),n=state.members.filter(m=>sel[m.id]).length+rachaFora(val('st_fora','')).length;
     return '<div class="card"><h2 style="margin:0">Novo sorteio</h2><div class="item">'+
       '<label>Valor do presente (R$)<input id="st_valor" inputmode="decimal" placeholder="Ex.: 50,00" value="'+esc(val('st_valor',''))+'"></label>'+
@@ -2340,7 +2365,7 @@ function amigoHTML(c){
 const lvDoc=e=>{const q=(state.feats.polls||{})['l_'+e.id];return q&&q.tipo==='lista'?q:null;};
 function levarHTML(e){
   const q=lvDoc(e),E=esc(e.id),me=myMember();
-  if(!q)return canManage(e)&&!readOnly()?'<button class="tfim" data-act="lvCriar" data-e="'+E+'">Criar uma lista do que levar</button>':'';
+  if(!q)return '<div class="card"><h2 style="margin:0">O que levar</h2><span class="small muted">'+(canManage(e)&&!readOnly()?'Monte a lista do que precisa e cada um marca o que vai levar.':'O líder ainda não criou a lista deste evento.')+'</span>'+(canManage(e)&&!readOnly()?'<button class="btn primary" data-act="lvCriar" data-e="'+E+'">Criar uma lista do que levar</button>':'')+'</div>';
   const itens=Array.isArray(q.itens)?q.itens:[],v=q.votos||{},dono=q.uid===state.uid||state.isOwner,quemPegou=id=>Object.keys(v).find(u=>((v[u]||{}).p||[]).includes(id)),meus=(v[state.uid]||{}).l||[];
   let h='<div class="card"><div class="row between"><h2 style="margin:0">O que levar</h2>'+(dono?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="l_'+E+'">Apagar lista</button>':'')+'</div>';
   if(itens.length)h+='<div class="list" style="gap:6px">'+itens.map(it=>{const u=quemPegou(it.id),meu=u===state.uid;
@@ -2357,7 +2382,18 @@ function eventoPgHTML(e){
   let h='<div class="row between"><button class="btn" data-act="evVoltar">Voltar</button><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span></div>'+
     '<div class="card"><h2 style="margin:0">'+esc(e.title)+'</h2><div class="small muted">'+esc(fmtDay(e.date))+' · '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+' · '+esc(e.local||'local a definir')+'</div><div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?' · '+n+' presentes':'')+'</div></div>';
   if(state.featErr)return h+'<div class="card"><span class="chip warn">Racha, recados e enquetes ainda não foram liberados no banco. O administrador precisa atualizar as regras do Firebase.</span></div>';
-  return h+sorteioHTML(e)+rachaHTML(e)+levarHTML(e)+recadosHTML(e)+enquetesHTML(e);
+  /* Funções do evento: um cartão para cada função; tocar abre só aquela parte */
+  const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).filter(q=>!q.tipo).length,sq=stDoc(e),lq=lvDoc(e),pl=(n,a,b)=>n+' '+(n===1?a:b);
+  const fs=[{k:'racha',ic:'🧾',n:'Racha',s:nr?pl(nr,'racha','rachas'):'Dividir a conta'},
+    (sq||(canManage(e)&&!readOnly()&&Date.now()<=stFim(e)))?{k:'sorteio',ic:'🎁',n:'Sorteio',s:sq?(stSou(sq)?(stVi(sq)?'Você já viu quem tirou':'Veja quem você tirou'):'Sorteio feito'):'Criar amigo oculto'}:null,
+    {k:'levar',ic:'🧺',n:'O que levar',s:lq?pl((lq.itens||[]).length,'item','itens'):(canManage(e)&&!readOnly()?'Criar a lista':'Sem lista ainda')},
+    {k:'enq',ic:'📊',n:'Enquetes',s:nq?pl(nq,'enquete','enquetes'):'Fazer uma votação'},
+    {k:'rec',ic:'📌',n:'Recados',s:np?pl(np,'recado','recados'):'Deixar um aviso'}].filter(Boolean);
+  const sec=fs.some(f=>f.k===state.evSec)?state.evSec:'';
+  h+='<div class="card"><h2 style="margin:0">Funções</h2><div class="fgrid">'+fs.map(f=>'<button class="ftile" data-act="evSec" data-v="'+f.k+'" aria-pressed="'+(sec===f.k)+'"><span class="fic" aria-hidden="true">'+f.ic+'</span><span class="ftx"><b>'+f.n+'</b><span>'+esc(f.s)+'</span></span></button>').join('')+'</div></div>';
+  if(!sec)return h;
+  const corpo=sec==='racha'?rachaHTML(e):sec==='sorteio'?sorteioHTML(e):sec==='levar'?levarHTML(e):sec==='enq'?enquetesHTML(e):recadosHTML(e);
+  return h+'<div id="evSecao">'+(corpo||'<div class="card"><div class="empty">Nada por aqui ainda.</div></div>')+'</div>';
 }
 /* notificações: montadas a partir do que já está no app; "visto" fica guardado neste aparelho */
 const alertasVisto=()=>{try{return +localStorage.getItem('alertas_'+state.uid)||0;}catch(e){return 0;}};
@@ -2695,22 +2731,26 @@ function eventosHTML(){
   out+='<div class="card"><div class="seg2"><button data-act="evAba" data-v="atv" aria-pressed="'+!verEnc+'">Próximos'+(nAtv?' ('+nAtv+')':'')+'</button><button data-act="evAba" data-v="enc" aria-pressed="'+verEnc+'">Encerrados'+(nEnc?' ('+nEnc+')':'')+'</button></div>'+(evs.length?'<div class="list">'+evs.map(e=>{
     const st=getStatus(e),l=state.members.find(m=>m.id===e.leaderId);
     const n=state.members.filter(m=>state.checkins[e.id+'_'+m.id]).length;
-    const present=!!(me&&state.checkins[e.id+'_'+me.id]);
-    let btns='';
-    if(adm()||(st==='aberto'&&(present||isLeader(e))))btns+='<button class="btn primary" data-act="enter" data-e="'+esc(e.id)+'">Entrar na sala</button>';
-    if(st==='agendado'&&canManage(e)&&!readOnly())btns+='<button class="btn" data-act="open" data-e="'+esc(e.id)+'">Abrir sala agora</button>';
+    const present=!!(me&&state.checkins[e.id+'_'+me.id])&&st!=='agendado';
+    let btns='',mini='';
+    if(adm()||(st==='aberto'&&(present||isLeader(e))))btns+='<button class="btn primary full" data-act="enter" data-e="'+esc(e.id)+'">Entrar na sala</button>';
+    {const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).filter(q=>!q.tipo).length,nf=nr+np+nq+(lvDoc(e)?1:0)+(stDoc(e)?1:0);
+     btns+='<button class="btn FUNC" data-act="evAbrir" data-e="'+esc(e.id)+'">Funções'+(nf?' · '+nf:'')+'</button>';}
+    const nAntes=btns.length;
+    /* antes de o evento começar o líder vê Iniciar evento (liberado a partir de 12 horas antes); depois de começar, Encerrar */
+    if(st==='agendado'&&canManage(e)&&!readOnly()){const lib=evTime(e)-Date.now()<=EV_ANTES;
+      btns+='<button class="btn'+(lib?'':' espera')+'" data-act="open" data-e="'+esc(e.id)+'"'+(lib?'':' data-cedo="1" aria-disabled="true"')+'>Iniciar evento</button>';}
     if(st==='aberto'&&adm()&&!readOnly())btns+='<button class="btn danger" data-act="close" data-e="'+esc(e.id)+'">Encerrar evento</button>';
     if(st==='encerrado'&&adm()&&!readOnly())btns+='<button class="btn" data-act="reopen" data-e="'+esc(e.id)+'">Reabrir evento</button>';
-    {const nr=doEvento('splits',e.id).length,np=doEvento('posts',e.id).length,nq=doEvento('polls',e.id).filter(q=>!q.tipo).length,res=[nr?nr+(nr===1?' racha':' rachas'):'',np?np+(np===1?' recado':' recados'):'',nq?nq+(nq===1?' enquete':' enquetes'):'',lvDoc(e)?'lista do que levar':''].filter(Boolean).join(' · ');
-     btns+='<button class="btn" data-act="evAbrir" data-e="'+esc(e.id)+'">Racha e recados'+(res?' ('+res+')':'')+'</button>';
-     {const sq=stDoc(e);if(sq&&stSou(sq)&&Date.now()<stFim(e))btns+='<button class="chip" data-act="stIr" data-e="'+esc(e.id)+'" style="cursor:pointer;padding:8px 14px;font-size:13.5px;color:var(--accent);border-color:var(--accent)">🎁 '+(stVi(sq)?'Ver com quem você saiu e editar o que quer ganhar':'Realize o seu sorteio')+'</button>';}}
-    if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())btns+='<button class="btn" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
-    if(adm()&&!readOnly())btns+='<button class="btn danger" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
+    btns=btns.replace('btn FUNC',btns.length===nAntes?'btn full':'btn');
+    {const sq=stDoc(e);if(sq&&stSou(sq)&&Date.now()<stFim(e))btns+='<button class="chip" data-act="stIr" data-e="'+esc(e.id)+'" style="cursor:pointer;padding:8px 14px;font-size:13.5px;color:var(--accent);border-color:var(--accent)">🎁 '+(stVi(sq)?'Ver com quem você saiu e editar o que quer ganhar':'Realize o seu sorteio')+'</button>';}
+    if((adm()||(myMember()&&e.createdBy===state.uid))&&!readOnly())mini+='<button class="tfim" data-act="editEvent" data-e="'+esc(e.id)+'">Editar</button>';
+    if(adm()&&!readOnly())mini+='<button class="tfim per" data-act="delEvent" data-e="'+esc(e.id)+'">Apagar</button>';
     let rsvp='';
     if(st!=='encerrado'){
       const r=rsvpOf(e);
       rsvp='<div class="small">Vão: <b>'+r.sim.length+'</b>'+(r.sim.length?' ('+esc(r.sim.join(', '))+')':'')+' - Não vão: <b>'+r.nao.length+'</b>'+(r.nao.length?' ('+esc(r.nao.join(', '))+')':'')+'</div>'+
-        (me&&!present&&!readOnly()?'<div class="row"><button class="btn'+(r.mine==='sim'?' good':'')+'" aria-pressed="'+(r.mine==='sim')+'" data-act="rsvp" data-v="sim" data-e="'+esc(e.id)+'">'+(r.mine==='sim'?'✓ Vou':'Vou')+'</button><button class="btn'+(r.mine==='nao'?' danger':'')+'" aria-pressed="'+(r.mine==='nao')+'" data-act="rsvp" data-v="nao" data-e="'+esc(e.id)+'">'+(r.mine==='nao'?'✓ Não vou':'Não vou')+'</button>'+(st==='agendado'?'<button class="btn" data-act="ics" data-e="'+esc(e.id)+'">Adicionar à agenda</button>':'')+'</div>':'');
+        (me&&!present&&!readOnly()?'<div class="evacts"><button class="btn'+(r.mine==='sim'?' good':'')+'" aria-pressed="'+(r.mine==='sim')+'" data-act="rsvp" data-v="sim" data-e="'+esc(e.id)+'">'+(r.mine==='sim'?'✓ Vou':'Vou')+'</button><button class="btn'+(r.mine==='nao'?' danger':'')+'" aria-pressed="'+(r.mine==='nao')+'" data-act="rsvp" data-v="nao" data-e="'+esc(e.id)+'">'+(r.mine==='nao'?'✓ Não vou':'Não vou')+'</button>'+(st==='agendado'?'<button class="tfim full" style="grid-column:1/-1;min-height:32px;padding:4px 10px" data-act="ics" data-e="'+esc(e.id)+'">Adicionar à agenda do celular</button>':'')+'</div>':'');
     }
     let codeBox='';
     if(isOnline(e)){if(st==='aberto'&&me&&!present&&!readOnly()&&!adm()&&!isLeader(e))codeBox='<button class="btn primary" data-act="joinOnline" data-e="'+esc(e.id)+'">Entrar na sala online</button>';}
@@ -2721,7 +2761,7 @@ function eventosHTML(){
       '<div class="small muted">'+esc(dt.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.',''))+' · '+esc(e.time||'--:--')+(e.fim?' até '+esc(e.fim):'')+' · '+esc(isOnline(e)?(isJogos(e)?'sala de jogos online':'online'):(e.local||'local a definir'))+'</div></div></div>'+
       '<div class="row"><span class="chip '+(st==='aberto'?'ok':st==='encerrado'?'':'info')+'">'+({agendado:'Agendado',aberto:'Sala aberta',encerrado:'Encerrado'})[st]+'</span>'+(quando?'<span class="chip warn">'+quando+'</span>':'')+'</div>'+
       '<div class="small">Líder: <b>'+esc(l?l.name:'não definido')+'</b>'+(st!=='agendado'?(isOnline(e)?' - '+n+' na sala':' - '+n+' de '+state.members.length+' presentes'):'')+(guestsOf(e).length?' - '+guestsOf(e).length+' convidado(s)':'')+(present?(isOnline(e)?' - <b>você está na sala</b>':' - <b>você está presente</b>'):'')+'</div>'+rsvp+codeBox+
-      (btns?'<div class="row">'+btns+'</div>':'')+'</div>';
+      (btns?'<div class="evacts">'+btns+'</div>':'')+(mini?'<div class="evmini">'+mini+'</div>':'')+'</div>';
   }).join('')+'</div>':'<div class="empty">'+(verEnc?'Nenhum evento encerrado ainda.':'Nenhum evento marcado.')+'</div>')+'</div>';
   return out;
 }
@@ -2730,7 +2770,6 @@ function eventosHTML(){
    Tocar no boneco abre os dados daquela pessoa. */
 /* presença só conta para a corrida e as conquistas depois que o evento começa de verdade: pelo horário marcado, ou quando
    o líder abre a sala mais cedo no próprio dia (até 12 horas antes). Sala aberta com dias de antecedência não adianta ponto. */
-const EV_ANTES=12*36e5;
 const evComecou=e=>{if(Date.now()>=evTime(e))return true;const c=state.ctl[e.id]||{};return c.status==='aberto'&&(c.at||0)>=evTime(e)-EV_ANTES;};
 function rankHTML(){
   if(!state.members.length)return '<div class="card"><div class="empty">Nenhum membro cadastrado.</div></div>';
@@ -3004,7 +3043,8 @@ app.addEventListener('click',async ev=>{
   if(act==='tPedir'&&evn){await tPedir(evn);return;}
   if(act==='tResp'&&evn){await tResponder(evn,d.v);return;}
   if(act==='tEncerrar'&&evn){if(!state.draft['te_'+evn.id]){state.draft['te_'+evn.id]=1;el.textContent='Toque de novo para encerrar a partida';return;}delete state.draft['te_'+evn.id];await tEncerrar(evn);return;}
-  if(act==='evAbrir'&&evn){state.evVolta=state.room===evn.id?evn.id:null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.rachaSel=null;state.enqNova=false;state.editing=null;state.chamada=false;state.telaAt=Date.now();setTimeout(scheduleRender,520);render();window.scrollTo(0,0);return;}
+  if(act==='evAbrir'&&evn){state.evSec='';state.evVolta=state.room===evn.id?evn.id:null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.rachaSel=null;state.enqNova=false;state.editing=null;state.chamada=false;state.telaAt=Date.now();setTimeout(scheduleRender,520);render();window.scrollTo(0,0);return;}
+  if(act==='evSec'){state.evSec=state.evSec===d.v?'':d.v;state.rachaNovo=false;state.enqNova=false;render();if(state.evSec)setTimeout(()=>{const c=document.getElementById('evSecao');if(c&&c.getBoundingClientRect().top>innerHeight*.55)c.scrollIntoView({block:'start',behavior:'smooth'});},60);return;}
   if(act==='evVoltar'){if(state.evVolta){state.room=state.evVolta;state.evVolta=null;}state.evPg=null;state.rachaNovo=false;state.enqNova=false;render();return;}
   if(act==='copiar'){copiar(d.t,d.msg);return;}
   if(act==='convLink'){const url=convLinkDe(d.k);if(navigator.share){navigator.share({title:'Racha: '+d.d,text:(d.n?d.n+', ':'')+'abra o link para ver quanto ficou a sua parte no racha "'+d.d+'" e pagar por PIX.',url}).catch(()=>{});}else copiar(url,'Link copiado. Envie para '+(d.n||'a pessoa')+'.');return;}
@@ -3105,7 +3145,7 @@ app.addEventListener('click',async ev=>{
   if(act==='stLink'){const url=convLinkDe(d.k);if(navigator.share){navigator.share({title:d.d,text:(d.n?d.n+', ':'')+'este é o seu link do '+d.d+'. Abra para ver quem você tirou. Não mostre para ninguém!',url}).catch(()=>{});}else copiar(url,'Link copiado. Envie só para '+(d.n||'a pessoa')+'.');return;}
   if(['stNovo','stCriar','stRevelar','stDicaSalvar','stApagar','stIr'].includes(act)&&evn){
     const q=stDoc(evn),me=myMember(),id=stId(evn),g=i=>((document.getElementById(i)||{}).value||'').trim();
-    if(act==='stIr'){state.evVolta=null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.enqNova=false;state.editing=null;state.chamada=false;render();setTimeout(()=>{const c=document.getElementById('cardSorteio');if(c)c.scrollIntoView({block:'start'});else window.scrollTo(0,0);},60);return;}
+    if(act==='stIr'){state.evSec='sorteio';state.evVolta=null;state.room=null;state.tab='eventos';state.evPg=evn.id;state.rachaNovo=false;state.enqNova=false;state.editing=null;state.chamada=false;render();setTimeout(()=>{const c=document.getElementById('cardSorteio');if(c)c.scrollIntoView({block:'start'});else window.scrollTo(0,0);},60);return;}
     if(act==='stNovo'){if(q||!canManage(evn))return;state.stNovo=evn.id;state.stSel=null;render();return;}
     if(act==='stCriar'){
       if(q||!canManage(evn)||!me)return;
@@ -3130,6 +3170,7 @@ app.addEventListener('click',async ev=>{
     if(act==='stApagar'){if(!(q.uid===state.uid||state.isOwner))return;if(!state.draft['sa_'+id]){state.draft['sa_'+id]=1;el.textContent='Toque de novo para apagar o sorteio';return;}delete state.draft['sa_'+id];stApaga(id,q);toast('Sorteio apagado.');return;}
     return;
   }
+  if(act==='nivAbre'){state.nivAb=!state.nivAb;render();return;}
   if(act==='chatEnqAbre'){state.chatEnqAb=state.chatEnqAb===d.id?null:d.id;render();return;}
   if(act==='chatEnq'){state.chatEnq=!state.chatEnq;if(!state.chatEnq){delete state.draft.eq_q;delete state.draft.eq_ops;}render();return;}
   if(act==='enqCriar'&&(evn||d.e==='chat')){
@@ -3239,7 +3280,13 @@ app.addEventListener('click',async ev=>{
     await w(async()=>{let mid=r.memberId;if(!mid){mid='m'+Date.now().toString(36);await db.doc('members/'+mid).set({name:r.novoNome,order:state.members.length+1,since:todayStr()});}await db.doc('approvals/'+d.u).set({status:'aprovado',memberId:mid,at:Date.now()});},'Acesso aprovado.');return;
   }
   if(act==='refuse'){await w(()=>db.doc('approvals/'+d.u).set({status:'recusado',at:Date.now()}),'Pedido recusado.');return;}
-  if(act==='open'&&evn){await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Presença aberta.');return;}
+  if(act==='open'&&evn){
+    if(!canManage(evn))return;
+    const falta=evTime(evn)-Date.now();
+    if(!isOnline(evn)&&falta>EV_ANTES){const lib=new Date(evTime(evn)-EV_ANTES);return toast('Dá para iniciar a partir de '+lib.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' às '+pad(lib.getHours())+':'+pad(lib.getMinutes())+' (12 horas antes do horário marcado).');}
+    if(!isOnline(evn)&&!state.draft['op_'+evn.id]){state.draft['op_'+evn.id]=1;el.textContent='Toque de novo para iniciar';setTimeout(()=>{delete state.draft['op_'+evn.id];},6000);return;}
+    delete state.draft['op_'+evn.id];
+    await w(()=>db.doc('ctl/'+evn.id).set({status:'aberto',at:Date.now()}),'Evento iniciado. A presença já vale.');return;}
   if(act==='close'&&evn){
     if(!(adm()||(isOnline(evn)&&isLeader(evn))))return;
     if(!state.draft['cl_'+evn.id]){state.draft['cl_'+evn.id]=1;el.textContent='Toque de novo para encerrar';return;}
@@ -3537,7 +3584,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113195429';
+const VER='20261113214914';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
