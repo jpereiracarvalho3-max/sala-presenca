@@ -181,7 +181,8 @@ body:has(.room.grande){padding-top:max(8px,env(safe-area-inset-top,0px));padding
 .tabs button[aria-current="true"]{background:transparent;color:var(--accent)}
 .tabs button[aria-current="true"] svg{filter:drop-shadow(0 0 6px rgba(245,166,35,.55))}
 #app:has(.tabs){padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
-#toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+/* o aviso flutuante aparece no alto, para não cobrir os botões de ação que ficam embaixo */
+#toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:90;text-align:center;width:max-content;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .item.ev{--evc:#F5A623;border-left:5px solid var(--evc)}
 .item.ev.evt-festa{--evc:#9B6BFF}.item.ev.evt-cinema{--evc:#E5484D}.item.ev.evt-jantar{--evc:#E0A458}.item.ev.evt-churrasco{--evc:#4CC38A}.item.ev.evt-online{--evc:#5AA9FF}
 .item.ev.fim{opacity:.72}
@@ -351,6 +352,9 @@ html.tema-junina .top h1{background:linear-gradient(90deg,#FFD23F,#FF9A3D 45%,#F
 @media (max-width:350px){.titulo h1{font-size:22px}.temaic{font-size:19px}}
 .hbts .chip{cursor:pointer;justify-content:center;padding:6px 12px;color:var(--accent);border-color:var(--accent);background:transparent}
 .hbts .chip[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink)}
+/* celular estreito: menos margem em volta, para tabuleiros e botões ganharem espaço */
+@media (max-width:350px){body{padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}.card{padding:12px}}
+.row.between>.chip{white-space:nowrap;flex:none}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g2>label{min-width:0}
 input[type=date],input[type=time]{min-height:44px;-webkit-appearance:none;appearance:none;text-align:left}
 input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left}
@@ -526,6 +530,8 @@ button.fas{cursor:pointer}
 .ludt .meio{background:#5d3a1a;border:0}
 .ludp{position:absolute;width:5.4%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.6);padding:0}
 button.ludp{cursor:pointer;touch-action:manipulation}
+/* área de toque maior que o peão, para acertar com o dedo no celular pequeno */
+button.ludp.pode::after{content:'';position:absolute;left:50%;top:50%;width:38px;height:38px;transform:translate(-50%,-50%);border-radius:50%}
 .ludp.pode{width:7.2%;border-color:#16181d;animation:fpisca .6s ease-out infinite;z-index:3}
 @keyframes fpisca{from{box-shadow:0 0 0 0 rgba(255,255,255,.95)}to{box-shadow:0 0 0 7px rgba(255,255,255,0)}}
 .luddado{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:#fff;color:#16181d;font-family:var(--font-head);font-size:22px;margin-right:6px;vertical-align:middle}
@@ -613,7 +619,7 @@ const EV_ANTES=12*36e5;
    Sem ninguém dentro, a chamada conta como encerrada (2 minutos de folga depois de criada). */
 const LIG_VIVO=5*60000;
 const naChamada=c=>!!c&&!c.fora&&(c.vivo||0)>Date.now()-LIG_VIVO;
-const ligVazia=e=>{if(!e||!e.chamada)return false;const c=state.ctl[e.id]||{};if(Date.now()-Math.max(e.createdAt||0,c.at||0)<120000)return false;for(const k in state.checkins){const x=state.checkins[k];if(x.eventId===e.id&&naChamada(x))return false;}return true;};
+const ligVazia=(e,folga)=>{if(!e||!e.chamada)return false;const c=state.ctl[e.id]||{};if(Date.now()-Math.max(e.createdAt||0,c.at||0)<(folga||15000))return false;for(const k in state.checkins){const x=state.checkins[k];if(x.eventId===e.id&&naChamada(x))return false;}return true;};
 const getStatus=e=>{
   const c=state.ctl[e.id]||{},now=Date.now(),end=endTime(e);
   if(c.status==='encerrado')return 'encerrado';
@@ -2253,7 +2259,7 @@ function roomScreen(e){
       const gs=guestsOf(e);
       box+='<h3>Convidados</h3>'+
         (gs.length?'<div class="list">'+gs.map(g=>'<div class="item"><div class="row between"><b>'+esc(g.name)+'</b><button class="btn danger" data-act="delGuest" data-m="'+esc(g.id)+'" data-e="'+esc(e.id)+'">Remover</button></div></div>').join('')+'</div>':'')+
-        '<div class="row"><input class="grow" id="gn_'+esc(e.id)+'" placeholder="Nome do convidado" value="'+esc(val('gn_'+e.id))+'"><button class="btn primary" data-act="addGuest" data-e="'+esc(e.id)+'">Adicionar convidado</button></div>';
+        '<div class="row" style="flex-wrap:nowrap"><input class="grow" id="gn_'+esc(e.id)+'" placeholder="Nome do convidado" value="'+esc(val('gn_'+e.id))+'"><button class="btn primary" style="flex:none;white-space:nowrap" data-act="addGuest" data-e="'+esc(e.id)+'">Adicionar</button></div>';
     }
     if(box!==head0)h+=box+'</div>';
   }else if(!isOnline(e))h+='<div class="card"><span class="chip ok">Sua presença está confirmada</span></div>';
@@ -3421,7 +3427,8 @@ app.addEventListener('click',async ev=>{
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
   if(act==='leave'){{const er=state.events.find(x=>x.id===state.room);
     /* saiu da tela da chamada sem estar na ligação de voz: sai da chamada (se era a última pessoa, a chamada encerra sozinha) */
-    if(er&&isOnline(er)&&er.chamada&&!(rtc.on&&rtc.eid===er.id)){const eu=myMember(),k=eu&&er.id+'_'+eu.id,c=k&&state.checkins[k];if(c&&!c.fora){state.checkins[k]={...c,fora:true,table:null};db.doc('checkins/'+k).update({fora:true,table:null}).catch(()=>{});setTimeout(ligFecha,400);}}state.tab=er&&isOnline(er)?'chat':'eventos';if(state.tab==='chat'){state.chamada=false;setTimeout(chatFim,80);}}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
+    if(er&&isOnline(er)&&er.chamada){const eu=myMember(),k=eu&&er.id+'_'+eu.id,c=k&&state.checkins[k];if(rtc.on&&rtc.eid===er.id){try{hangup(false);}catch(x){}}
+      if(c&&!c.fora){state.checkins[k]={...c,fora:true,table:null,call:false,rtc:{}};db.doc('checkins/'+k).update({fora:true,table:null,call:false,rtc:{}}).catch(()=>{});setTimeout(ligFecha,400);setTimeout(ligFecha,16000);}}state.tab=er&&isOnline(er)?'chat':'eventos';if(state.tab==='chat'){state.chamada=false;setTimeout(chatFim,80);}}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
   if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=!isOnline(evn)&&cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
   if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.fAdd=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':d.v==='tru'?'tru':(String(d.v).startsWith('f:')&&(F_ORDEM.includes(String(d.v).slice(2))||F_MESA.includes(String(d.v).slice(2))))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
@@ -3726,7 +3733,7 @@ function ligBate(){
 /* o dono do app ou quem criou a chamada grava o encerramento da chamada vazia, para ela sumir de vez para todo mundo */
 const ligFechando=new Set();
 function ligFecha(){
-  try{if(readOnly()||!state.loaded)return;for(const e of state.events){if(!isOnline(e)||!e.chamada||ligFechando.has(e.id)||(state.ctl[e.id]||{}).status==='encerrado'||!ligVazia(e))continue;
+  try{if(readOnly()||!state.loaded)return;for(const e of state.events){if(!isOnline(e)||!e.chamada||ligFechando.has(e.id)||(state.ctl[e.id]||{}).status==='encerrado'||!ligVazia(e,45000))continue;
     if(!(state.isOwner||isLeader(e)))continue;ligFechando.add(e.id);db.doc('ctl/'+e.id).set({status:'encerrado',at:Date.now()}).catch(()=>{ligFechando.delete(e.id);});}}catch(x){}
 }
 function sweepGuests(){
@@ -3799,7 +3806,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113220824';
+const VER='20261113221914';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
