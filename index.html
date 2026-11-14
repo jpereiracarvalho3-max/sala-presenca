@@ -618,9 +618,9 @@ const EV_ANTES=12*36e5;
 /* chamada online: quem está nela manda um sinal de vida a cada minuto (checkins.vivo) e marca "fora" ao sair.
    Sem ninguém dentro, a chamada conta como encerrada (2 minutos de folga depois de criada). */
 const LIG_VIVO=5*60000;
-/* quem entrou por uma versão antiga do app não manda sinal de vida: conta como presente por 3 horas desde que entrou,
-   para a chamada não cair no meio de um jogo enquanto os celulares ainda estão se atualizando */
-const naChamada=c=>!!c&&!c.fora&&(c.vivo?c.vivo>Date.now()-LIG_VIVO:(c.at||0)>Date.now()-3*36e5);
+/* está na chamada quem entrou e não tocou em Sair. A chamada só encerra sozinha quando TODOS saíram pelo botão Sair;
+   ninguém é tirado por tempo (celular bloqueado ou app em segundo plano não derruba a chamada nem o jogo). */
+const naChamada=c=>!!c&&!c.fora;
 const ligVazia=(e,folga)=>{if(!e||!e.chamada)return false;const c=state.ctl[e.id]||{};if(Date.now()-Math.max(e.createdAt||0,c.at||0)<(folga||15000))return false;for(const k in state.checkins){const x=state.checkins[k];if(x.eventId===e.id&&naChamada(x))return false;}return true;};
 const getStatus=e=>{
   const c=state.ctl[e.id]||{},now=Date.now(),end=endTime(e);
@@ -3808,7 +3808,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113222644';
+const VER='20261113223533';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
