@@ -604,9 +604,15 @@ function entraPresente(evn){
   state.checkins[key]=data;w(()=>db.doc('checkins/'+key).set(data));scheduleRender();
 }
 const EV_ANTES=12*36e5;
+/* chamada online: quem está nela manda um sinal de vida a cada minuto (checkins.vivo) e marca "fora" ao sair.
+   Sem ninguém dentro, a chamada conta como encerrada (2 minutos de folga depois de criada). */
+const LIG_VIVO=5*60000;
+const naChamada=c=>!!c&&!c.fora&&(c.vivo||0)>Date.now()-LIG_VIVO;
+const ligVazia=e=>{if(!e||!e.chamada)return false;const c=state.ctl[e.id]||{};if(Date.now()-Math.max(e.createdAt||0,c.at||0)<120000)return false;for(const k in state.checkins){const x=state.checkins[k];if(x.eventId===e.id&&naChamada(x))return false;}return true;};
 const getStatus=e=>{
   const c=state.ctl[e.id]||{},now=Date.now(),end=endTime(e);
   if(c.status==='encerrado')return 'encerrado';
+  if(ligVazia(e))return 'encerrado';
   /* sala presencial aberta com mais de 12 horas de antecedência não vale: o evento segue agendado (sem presença, sem encerrar) até começar */
   if(c.status==='aberto'&&e.modo!=='online'&&now<evTime(e)&&(c.at||0)<evTime(e)-EV_ANTES)return 'agendado';
   if(c.status==='aberto')return (end&&now>=end&&!((c.at||0)>=end))?'encerrado':'aberto';
@@ -1264,7 +1270,7 @@ function reactBar(e){
 function roomHTML(e,imersa){
   const st=getStatus(e),live=st==='aberto',th=themeOf(e);
   const inRoom=[],outside=[];
-  state.members.concat(guestsOf(e)).forEach(m=>{(state.checkins[e.id+'_'+m.id]?inRoom:outside).push(m);});
+  state.members.concat(guestsOf(e)).forEach(m=>{const c=state.checkins[e.id+'_'+m.id];((c&&(!e.chamada||naChamada(c)))?inRoom:outside).push(m);});
   const susp=m=>{if(isOnline(e))return false;const a=analyze(m);const h=a.hist.find(x=>x.e.id===e.id);return h?h.s==='suspenso':(st!=='encerrado'&&a.suspenso);};
   const mk=(m,cls,i)=>{
     const stage=cls==='in';
@@ -2878,7 +2884,7 @@ function chamadasHTML(){
   const chamadas=state.events.filter(e=>isOnline(e)&&getStatus(e)!=='encerrado').sort((a,b)=>evTime(b)-evTime(a));
   if(!chamadas.length)return '';
   return '<div class="list">'+chamadas.map(e=>{
-    const st=getStatus(e),E=esc(e.id),gente=state.members.filter(m=>state.checkins[e.id+'_'+m.id]),n=gente.length,l=state.members.find(m=>m.id===e.leaderId),dentro=!!(me&&state.checkins[e.id+'_'+me.id]);
+    const st=getStatus(e),E=esc(e.id),gente=state.members.filter(m=>{const c=state.checkins[e.id+'_'+m.id];return c&&(!e.chamada||naChamada(c));}),n=gente.length,l=state.members.find(m=>m.id===e.leaderId),dentro=!!(me&&gente.some(m=>m.id===me.id));
     let b='';
     if(st==='aberto'){
       if(me&&!dentro&&!readOnly())b='<button class="btn primary" data-act="joinOnline" data-e="'+E+'">Entrar na chamada</button>';
@@ -3069,8 +3075,8 @@ function adminHTML(){
   out+='<div class="card"><h2>Cópia de segurança</h2><button class="btn" data-act="backup">Baixar cópia de segurança</button></div>';
   out+='<div class="card"><h2>Membros</h2><div class="list">'+state.members.map(m=>{
     const claimUid=Object.keys(state.approvals).find(u=>state.approvals[u].status==='aprovado'&&state.approvals[u].memberId===m.id);
-    return '<div class="item"><div class="row"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" data-act="rename" data-m="'+esc(m.id)+'">Salvar nome</button></div>'+
-      '<div class="row between"><span class="chip '+(claimUid?'ok':'')+'">'+(claimUid?'Já entrou'+(state.names[claimUid]?' como '+esc(state.names[claimUid]):''):'Ainda não entrou')+'</span><span class="row">'+(claimUid?'<button class="btn" data-act="release" data-u="'+esc(claimUid)+'">Remover acesso</button>':'')+'<button class="btn danger" data-act="delMember" data-m="'+esc(m.id)+'">Remover</button></span></div></div>';
+    return '<div class="item"><div class="row" style="flex-wrap:nowrap"><input class="grow" id="mn_'+esc(m.id)+'" value="'+esc(val('mn_'+m.id,m.name))+'" aria-label="Nome"><button class="btn" style="flex:none;white-space:nowrap" data-act="rename" data-m="'+esc(m.id)+'">Salvar</button></div>'+
+      '<div class="row between" style="flex-wrap:nowrap"><span class="chip '+(claimUid?'ok':'')+'" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(claimUid?'Já entrou'+(state.names[claimUid]?' como '+esc(state.names[claimUid]):''):'Ainda não entrou')+'</span><span class="evmini" style="margin:0;flex:none">'+(claimUid?'<button class="tfim" data-act="release" data-u="'+esc(claimUid)+'">Tirar acesso</button>':'')+'<button class="tfim per" data-act="delMember" data-m="'+esc(m.id)+'">Remover</button></span></div></div>';
   }).join('')+'</div><label>Adicionar membros<textarea id="nm_new" rows="3" placeholder="Um nome por linha, ou separados por vírgula">'+esc(val('nm_new'))+'</textarea></label><button class="btn primary" data-act="addMember">Adicionar</button></div>';
   return out;
 }
@@ -3411,7 +3417,9 @@ app.addEventListener('click',async ev=>{
   if(act==='skipClaim'){state.skipClaim=true;render();return;}
   if(act==='mode'){state.adminOn=!state.adminOn;try{localStorage.setItem('presenca_adm',state.adminOn?'1':'0');}catch(e){}if(!state.adminOn&&state.tab==='admin')state.tab='faltas';render();return;}
   if(act==='av'){const k=d.k,v=parseInt(d.v,10);if(!['skin','hair','style','shirt','mao','boca','oculos','chapeu','roupa','colar','anel','rosto','olho','expr','sobr'].includes(k)||!(v>=0)||!state.uid)return;const cur=state.avatars[state.uid]||{};state.avatars[state.uid]={...cur,[k]:v};render();await w(()=>db.doc('avatars/'+state.uid).set({...cur,[k]:v}));return;}
-  if(act==='leave'){{const er=state.events.find(x=>x.id===state.room);state.tab=er&&isOnline(er)?'chat':'eventos';if(state.tab==='chat'){state.chamada=false;setTimeout(chatFim,80);}}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
+  if(act==='leave'){{const er=state.events.find(x=>x.id===state.room);
+    /* saiu da tela da chamada sem estar na ligação de voz: sai da chamada (se era a última pessoa, a chamada encerra sozinha) */
+    if(er&&isOnline(er)&&er.chamada&&!(rtc.on&&rtc.eid===er.id)){const eu=myMember(),k=eu&&er.id+'_'+eu.id,c=k&&state.checkins[k];if(c&&!c.fora){state.checkins[k]={...c,fora:true,table:null};db.doc('checkins/'+k).update({fora:true,table:null}).catch(()=>{});setTimeout(ligFecha,400);}}state.tab=er&&isOnline(er)?'chat':'eventos';if(state.tab==='chat'){state.chamada=false;setTimeout(chatFim,80);}}state.jogoP=null;state.room=null;state.reactOpen=false;state.painel=0;render();return;}
   if(act==='jogosP'&&evn){const cg=cGame(evn),eu=myMember();state.jogoQual=!isOnline(evn)&&cg&&cg.status==='jogo'&&eu&&(cg.rod||[]).includes(eu.id)?'cid':'';state.jogoP=evn.id;state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
   if(/^f[A-Z]/.test(act)){fAcao(act,d,evn);return;}
   if(act==='jogoQual'){state.fRegras=null;state.fPronto=null;state.fAdd=null;state.jogoQual=d.v==='cid'?'cid':d.v==='imp'?'imp':d.v==='tru'?'tru':(String(d.v).startsWith('f:')&&(F_ORDEM.includes(String(d.v).slice(2))||F_MESA.includes(String(d.v).slice(2))))?d.v:'';state.impVer=false;state.cidVer=false;render();window.scrollTo(0,0);return;}
@@ -3453,6 +3461,7 @@ app.addEventListener('click',async ev=>{
   if(act==='painel'){state.painel=d.v==='1'?1:0;render();return;}
   if(act==='enter'&&evn){
     entraPresente(evn);
+    if(isOnline(evn)){const eu=myMember(),k=eu&&evn.id+'_'+eu.id,c=k&&state.checkins[k];if(c){state.checkins[k]={...c,fora:false,vivo:Date.now()};db.doc('checkins/'+k).update({fora:false,vivo:Date.now()}).catch(()=>{});}}
     state.room=evn.id;render();return;
   }
   if(act==='joinMe'){state.skipClaim=false;render();return;}
@@ -3505,7 +3514,7 @@ app.addEventListener('click',async ev=>{
     const agora=new Date(),fim=new Date(agora.getTime()+6*36e5),hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
     const sala='conversa',id='e'+Date.now().toString(36),key=id+'_'+me.id;
     const data={title:(g('ch_nome').trim()||'Chamada de '+me.name).slice(0,40),date:todayStr(),time:hm(agora),fim:hm(fim),local:'',leaderId:me.id,tema:sala==='jogos'?'jantar':'festa',modo:'online',sala,mesas:Math.max(1,Math.min(MAX_MESAS,parseInt(g('ch_mesas'),10)||3)),chamada:true,code:genCode(),createdAt:Date.now(),createdBy:state.uid};
-    const ck={eventId:id,memberId:me.id,at:Date.now(),by:'online'};
+    const ck={eventId:id,memberId:me.id,at:Date.now(),vivo:Date.now(),by:'online'};
     state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.chamadaNova=false;state.draft={};state.tab='chat';state.room=id;state.painel=0;render();
     w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');
     {const outros=state.members.filter(m=>m.id!==me.id),cs=state.chamarSel,ids=cs?outros.filter(m=>cs[m.id]).map(m=>m.id):outros.map(m=>m.id);state.chamarSel=null;
@@ -3566,7 +3575,7 @@ app.addEventListener('click',async ev=>{
   if(act==='joinOnline'&&evn){
     const me=myMember();if(!me)return toast('Escolha quem você é primeiro.');
     if(getStatus(evn)!=='aberto')return toast('A sala deste evento não está aberta.');
-    const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),by:'online'};
+    const key=evn.id+'_'+me.id,data={eventId:evn.id,memberId:me.id,at:Date.now(),vivo:Date.now(),by:'online'};
     state.checkins[key]=data;state.room=evn.id;render();
     w(()=>db.doc('checkins/'+key).set(data),'Você entrou na sala.').then(ok=>{if(!ok&&state.checkins[key]===data){delete state.checkins[key];render();}});
     return;
@@ -3706,6 +3715,17 @@ function rtcSync(){
 window.addEventListener('pagehide',()=>{if(rtc.on)hangup();});
 /* convidados somem quando o evento deles é encerrado ou apagado (quem limpa é o app do administrador) */
 const sweeping=new Set();
+function ligBate(){
+  try{const me=myMember();if(!me||readOnly())return;const id=(rtc.on&&rtc.eid)||state.room,e=id&&state.events.find(x=>x.id===id);
+    if(!e||!isOnline(e)||(state.ctl[e.id]||{}).status==='encerrado')return;const k=e.id+'_'+me.id,c=state.checkins[k];if(!c||c.fora)return;
+    state.checkins[k]={...c,vivo:Date.now()};db.doc('checkins/'+k).update({vivo:Date.now()}).catch(()=>{});}catch(x){}
+}
+/* o dono do app ou quem criou a chamada grava o encerramento da chamada vazia, para ela sumir de vez para todo mundo */
+const ligFechando=new Set();
+function ligFecha(){
+  try{if(readOnly()||!state.loaded)return;for(const e of state.events){if(!isOnline(e)||!e.chamada||ligFechando.has(e.id)||(state.ctl[e.id]||{}).status==='encerrado'||!ligVazia(e))continue;
+    if(!(state.isOwner||isLeader(e)))continue;ligFechando.add(e.id);db.doc('ctl/'+e.id).set({status:'encerrado',at:Date.now()}).catch(()=>{ligFechando.delete(e.id);});}}catch(x){}
+}
 function sweepGuests(){
   if(!state.isOwner||!state.loaded||state.err)return;
   for(const e of state.events){
@@ -3771,11 +3791,12 @@ function boot(){
     }catch(e){}
     try{if(localStorage.getItem('presenca_adm')==='0')state.adminOn=false;}catch(e){}
     subscribe();
-    let sig='';setInterval(()=>{if(state.room){const er=state.events.find(x=>x.id===state.room);if(er&&!isOnline(er))entraPresente(er);}const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;sweepGuests();rtcSync();scheduleRender();}else if(state.tab==='eventos'&&!state.room&&!state.editing&&Date.now()-(state.cdAt||0)>55000){state.cdAt=Date.now();scheduleRender();}},15000);
+    setInterval(ligBate,60000);
+    let sig='';setInterval(()=>{ligFecha();if(state.room){const er=state.events.find(x=>x.id===state.room);if(er&&!isOnline(er))entraPresente(er);}const n=state.events.map(e=>e.id+getStatus(e)).join();if(n!==sig){sig=n;sweepGuests();rtcSync();scheduleRender();}else if(state.tab==='eventos'&&!state.room&&!state.editing&&Date.now()-(state.cdAt||0)>55000){state.cdAt=Date.now();scheduleRender();}},15000);
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113220413';
+const VER='20261113220646';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
