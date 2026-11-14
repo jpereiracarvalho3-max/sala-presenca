@@ -329,6 +329,11 @@ html.tema-junina .top h1{background:linear-gradient(90deg,#FFD23F,#FF9A3D 45%,#F
 @media (prefers-reduced-motion:reduce){.chat-lig.viva{animation:none}}
 .chat-topo{align-items:center !important}
 .bolinha.viva{background:var(--ok);left:calc(50% - 17px)}
+.ligpes{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.ligp{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 6px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--muted);cursor:pointer;min-width:0;touch-action:manipulation;opacity:.6}
+.ligp[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+.ligp .ligpf{display:block;height:54px}.ligp .ligpf svg{width:38px;height:53px}
+.ligp .ligpn{font-size:12.5px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ligtopo{flex-direction:row;align-items:center;gap:14px}
 .ligic{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--accent);border:1px solid var(--line)}
 .ligic.viva{background:var(--ok);color:#0E2A1B;border-color:transparent;animation:ligToca 1.6s ease-in-out infinite}
@@ -2666,10 +2671,9 @@ function chatListaHTML(){
 }
 /* tela das chamadas online: abre pelo telefone do chat e fica separada das mensagens */
 function chamadasPgHTML(){
-  const lista=chamadasHTML(),nova=state.chamadaNova||!lista,TEL='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>';
-  return '<div class="row between"><button class="btn" data-act="cancelChamada">'+(state.chamadaNova&&lista?'Voltar':'Voltar ao chat')+'</button></div>'+
-    '<div class="card ligtopo"><span class="ligic'+(lista?' viva':'')+'">'+TEL+'</span><div style="min-width:0"><h2 style="margin:0">Chamadas online</h2><span class="small muted">Ligação por voz com mesas e jogos. Não conta presença e some quando é encerrada.</span></div></div>'+
-    (nova&&!readOnly()?(lista&&!state.chamadaNova?lista:'')+chamadaFormHTML():lista+(readOnly()?'':'<button class="btn primary" style="min-height:48px" data-act="chamadaNova">Nova chamada</button>'));
+  const lista=chamadasHTML();
+  return '<div class="row between"><button class="btn" data-act="cancelChamada">Voltar ao chat</button></div>'+
+    (lista?'<div class="small muted" style="padding:0 4px;font-weight:600">Acontecendo agora</div>'+lista:'')+(readOnly()?'':chamadaFormHTML());
 }
 function chatHTML(){
   if(state.chamada&&myMember())return chamadasPgHTML();
@@ -2871,13 +2875,11 @@ function instalarHTML(){
    não contam presença e somem quando encerradas. */
 const chamadasVivas=()=>state.events.filter(e=>isOnline(e)&&getStatus(e)==='aberto');
 function chamadaFormHTML(){
-  const eu=myMember(),nm=Math.max(1,Math.min(3,parseInt(val('ch_mesas',3),10)||3));
-  const outros=state.members.filter(m=>!eu||m.id!==eu.id),sel=state.chamarSel||(state.chamarSel=Object.fromEntries(outros.map(m=>[m.id,true]))),n=outros.filter(m=>sel[m.id]).length;
-  return '<div class="card"><h2 style="margin:0">Nova chamada</h2>'+
-    '<label>Nome<input id="ch_nome" value="'+esc(val('ch_nome',eu?'Chamada de '+eu.name:'Chamada'))+'" maxlength="40"></label>'+
-    '<div><div class="small muted" style="font-weight:600;margin-bottom:4px">Quantas mesas</div><input type="hidden" id="ch_mesas" value="'+nm+'"><div class="seg2" style="grid-template-columns:repeat(3,1fr)">'+[1,2,3].map(k=>'<button data-act="chMesas" data-v="'+k+'" aria-pressed="'+(nm===k)+'">'+k+(k===1?' mesa':' mesas')+'</button>').join('')+'</div><div class="small muted" style="margin-top:6px">Cada mesa é uma ligação. Quem senta em uma mesa conversa e pode abrir os Jogos com quem está nela.</div></div>'+
-    '<div><div class="small muted" style="font-weight:600;margin-bottom:6px">Quem recebe o aviso ('+n+')</div><div class="avrow">'+outros.map(m=>'<button class="stl" data-act="chamarSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'">'+esc(m.name)+'</button>').join('')+'</div></div>'+
-    '<div class="acts"><button class="btn" data-act="cancelChamada">Cancelar</button><button class="btn primary" data-act="criarChamada">Começar agora</button></div></div>';
+  /* chamada nova: só escolher quem chamar. Sempre 3 mesas e o nome é "Chamada de Fulano". */
+  const eu=myMember(),outros=state.members.filter(m=>!eu||m.id!==eu.id),sel=state.chamarSel||(state.chamarSel=Object.fromEntries(outros.map(m=>[m.id,true]))),n=outros.filter(m=>sel[m.id]).length;
+  return '<div class="card"><div class="row between" style="flex-wrap:nowrap"><h2 style="margin:0">Chamar quem?</h2><button class="tfim" style="min-height:36px;padding:4px 8px;flex:none" data-act="chamarTodos">'+(n===outros.length?'Ninguém':'Todos')+'</button></div>'+
+    '<div class="ligpes">'+outros.map(m=>'<button class="ligp" data-act="chamarSel" data-m="'+esc(m.id)+'" aria-pressed="'+!!sel[m.id]+'"><span class="ligpf">'+fig(m)+'</span><span class="ligpn">'+esc(m.name)+'</span></button>').join('')+'</div>'+
+    '<button class="btn primary" style="min-height:50px" data-act="criarChamada">'+(n?'Ligar para '+(n===outros.length?'todos':n+(n===1?' pessoa':' pessoas')):'Abrir a chamada sem avisar ninguém')+'</button></div>';
 }
 function chamadasHTML(){
   const me=myMember();
@@ -3506,8 +3508,9 @@ app.addEventListener('click',async ev=>{
   if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=!state.chamada;state.chamadaNova=false;state.chatEnq=false;state.rachaNovo=false;state.chamarSel=null;delete state.draft.ch_nome;delete state.draft.ch_mesas;state.tab='chat';state.telaAt=Date.now();render();window.scrollTo(0,0);if(!state.chamada)setTimeout(chatFim,80);return;}
   if(act==='chamadaNova'){state.chamadaNova=true;render();window.scrollTo(0,0);return;}
   if(act==='chMesas'){state.draft.ch_mesas=parseInt(d.v,10)||3;{const nmEl=document.getElementById('ch_nome');if(nmEl)state.draft.ch_nome=nmEl.value;}render();return;}
+  if(act==='chamarTodos'){const eu=myMember(),outros=state.members.filter(m=>!eu||m.id!==eu.id),sel=state.chamarSel||{},todos=outros.every(m=>sel[m.id]);state.chamarSel=Object.fromEntries(outros.map(m=>[m.id,!todos]));render();return;}
   if(act==='chamarSel'){state.chamarSel=state.chamarSel||{};state.chamarSel[d.m]=!state.chamarSel[d.m];render();return;}
-  if(act==='cancelChamada'){if(state.chamadaNova&&chamadasVivas().length){state.chamadaNova=false;render();return;}state.chamada=false;state.chamadaNova=false;delete state.draft.ch_nome;delete state.draft.ch_mesas;render();setTimeout(chatFim,80);return;}
+  if(act==='cancelChamada'){state.chamada=false;state.chamadaNova=false;delete state.draft.ch_nome;delete state.draft.ch_mesas;render();setTimeout(chatFim,80);return;}
   if(act==='criarChamada'){
     const me=myMember();if(!me)return;
     const g=id=>(document.getElementById(id)||{}).value||'';
@@ -3796,7 +3799,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113220646';
+const VER='20261113220824';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
