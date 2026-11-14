@@ -333,6 +333,9 @@ html.tema-junina .top h1{background:linear-gradient(90deg,#FFD23F,#FF9A3D 45%,#F
 .ligpes{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
 .ligp{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 6px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--muted);cursor:pointer;min-width:0;touch-action:manipulation;opacity:.6}
 .ligp[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+.ligpop{position:absolute;top:56px;left:10px;right:10px;z-index:121;padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto}
+.ligpop .ligp{opacity:1;color:var(--ink)}
+.ligp.toca{animation:ligPisca 1s ease-in-out infinite}
 .ligp .ligpf{display:block;height:54px}.ligp .ligpf svg{width:38px;height:53px}
 .ligp .ligpn{font-size:12.5px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ligtopo{flex-direction:row;align-items:center;gap:14px}
@@ -1050,6 +1053,13 @@ function tablePos(i,n){
 }
 const tableOf=(e,c)=>(c&&Number.isInteger(c.table)&&c.table>=0&&c.table<mesasOf(e))?c.table:-1;
 const seatedAt=(eid,t)=>Object.values(state.checkins).filter(c=>c.eventId===eid&&c.table===t).map(c=>c.memberId).sort();
+/* dentro da chamada: chamar mais alguém (o celular da pessoa toca com avisos seguidos) */
+function ligChamarHTML(e){
+  if(isOnline(e)&&e.chamada&&getStatus(e)==='aberto'&&!readOnly()){const eu=myMember();if(eu&&naChamada(state.checkins[e.id+'_'+eu.id])){
+    const fora=state.members.filter(m=>m.id!==eu.id&&!naChamada(state.checkins[e.id+'_'+m.id]));
+    if(fora.length)return (state.ligChamar===e.id?'<div class="ligpop"><div class="row between" style="flex-wrap:nowrap"><b>Chamar alguém</b><button class="tfim" style="min-height:32px;padding:2px 8px" data-act="ligChamar" data-e="'+esc(e.id)+'">Fechar</button></div><div class="small muted">Toque em quem você quer chamar. O celular da pessoa recebe até 10 avisos seguidos, como se estivesse tocando, e para quando ela entra.</div><div class="ligpes">'+fora.map(m=>{const t=tocandoPara(e.id,m.id);return '<button class="ligp'+(t?' toca':'')+'" data-act="ligTocar" data-e="'+esc(e.id)+'" data-m="'+esc(m.id)+'" aria-pressed="'+t+'"><span class="ligpf">'+fig(m)+'</span><span class="ligpn">'+(t?'Chamando...':esc(m.name))+'</span></button>';}).join('')+'</div></div>':'');}}
+  return '';
+}
 function onlineHTML(e){
   if(getStatus(e)!=='aberto')return '';
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id];
@@ -1217,8 +1227,8 @@ function onlineScreen(e){
   const me=myMember(),c=me&&state.checkins[e.id+'_'+me.id],st=getStatus(e),aberto=st==='aberto',t=c?tableOf(e,c):-1,E=esc(e.id);
   const jogo=isJogos(e)?trucoHTML(e):'';
   let dir=aberto?'':'<span class="chip">'+({agendado:'Agendado',encerrado:'Encerrado'})[st]+'</span>';
-  if(c&&aberto){if(t>=0)dir+='<button class="chip" data-act="jogosP" data-e="'+E+'" style="cursor:pointer;padding:7px 14px;font-size:14px;color:var(--accent);border-color:var(--accent);background:rgba(0,0,0,.55)">Jogos</button>';dir+=icoBtn('balao','reactToggle','','Reagir',state.reactOpen?'on':'');if(t>=0)dir+=micBtn(e,t)+icoBtn('levantar','stand',E,'Levantar da mesa');}
-  const sala='<section class="psala"><div class="ibar"><span>'+icoBtn('sair','leave','','Sair da sala')+'</span><span>'+dir+'</span></div>'+(state.reactOpen&&c&&aberto?'<div class="rpop">'+emojiRow(e)+'</div>':'')+roomHTML(e,true)+'</section>';
+  if(c&&aberto){if(t>=0)dir+='<button class="chip" data-act="jogosP" data-e="'+E+'" style="cursor:pointer;padding:7px 14px;font-size:14px;color:var(--accent);border-color:var(--accent);background:rgba(0,0,0,.55)">Jogos</button>';if(e.chamada&&naChamada(c)&&!readOnly())dir+='<button class="chip" data-act="ligChamar" data-e="'+E+'" aria-label="Chamar alguém para a chamada" aria-expanded="'+(state.ligChamar===e.id)+'" style="cursor:pointer;padding:7px 11px;font-size:15px;background:rgba(0,0,0,.55);'+(state.ligChamar===e.id?'border-color:var(--accent)':'')+'">📞</button>';dir+=icoBtn('balao','reactToggle','','Reagir',state.reactOpen?'on':'');if(t>=0)dir+=micBtn(e,t)+icoBtn('levantar','stand',E,'Levantar da mesa');}
+  const sala='<section class="psala"><div class="ibar"><span>'+icoBtn('sair','leave','','Sair da sala')+'</span><span>'+dir+'</span></div>'+(state.reactOpen&&c&&aberto?'<div class="rpop">'+emojiRow(e)+'</div>':'')+(aberto?ligChamarHTML(e):'')+roomHTML(e,true)+'</section>';
   if(!jogo)return '<div class="imersa">'+sala+'</div>';
   const p=state.painel?1:0;
   return '<div class="imersa" data-swipe="1"><div class="trilho'+(p?' p1':'')+'"><section class="pjogo">'+jogo+'</section>'+sala+'</div>'+
@@ -2816,6 +2826,21 @@ function pushHTML(){
   return '<div class="card"><button class="btn primary" data-act="pushAtivar"'+(state.pushBusy?' disabled':'')+'>'+(state.pushBusy?'Ativando...':'Ativar notificações no celular')+'</button></div>';
 }
 /* põe um aviso na fila: para = lista de ids de membros, ou 'todos' (o robô tira o autor e quem marcou Não vou no evento) */
+/* toque de chamada: até 10 avisos seguidos, um a cada 3 segundos (o robô de avisos olha a fila de 3 em 3 s), como um telefone tocando.
+   Para sozinho quando a pessoa entra na chamada, quando quem chamou sai ou quando a chamada acaba. */
+const tocando={};
+function tocarChamada(eid,ids,titulo,corpo){
+  const chave=eid+'|'+ids.slice().sort().join(',');clearInterval(tocando[chave]);let n=0;
+  const vez=()=>{
+    const e=state.events.find(x=>x.id===eid),me=myMember(),eu=me&&state.checkins[eid+'_'+me.id];
+    if(!e||getStatus(e)!=='aberto'||!naChamada(eu)||n>=10){clearInterval(tocando[chave]);delete tocando[chave];scheduleRender();return;}
+    const falta=ids.filter(m=>!naChamada(state.checkins[eid+'_'+m]));
+    if(!falta.length){clearInterval(tocando[chave]);delete tocando[chave];scheduleRender();return;}
+    n++;avisar(falta,titulo,corpo,eid);
+  };
+  vez();tocando[chave]=setInterval(vez,3000);
+}
+const tocandoPara=(eid,m)=>Object.keys(tocando).some(k=>k.startsWith(eid+'|')&&k.slice(eid.length+1).split(',').includes(m));
 function avisar(para,titulo,corpo,eventId,quando,id,teste){
   if(!db)return;
   try{db.doc('outbox/'+(id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)))).set({uid:state.uid,para,titulo:String(titulo||'').slice(0,80),corpo:String(corpo||'').slice(0,180),eventId:eventId||'',quando:quando||'',teste:!!teste,at:Date.now()}).then(cutucar).catch(()=>{});}catch(e){}
@@ -3517,6 +3542,9 @@ app.addEventListener('click',async ev=>{
   if(act==='novaChamada'){if(!myMember())return toast('Entre como membro para criar uma chamada.');state.editing=null;state.chamada=!state.chamada;state.chamadaNova=false;state.chatEnq=false;state.rachaNovo=false;state.chamarSel=null;delete state.draft.ch_nome;delete state.draft.ch_mesas;state.tab='chat';state.telaAt=Date.now();render();window.scrollTo(0,0);if(!state.chamada)setTimeout(chatFim,80);return;}
   if(act==='chamadaNova'){state.chamadaNova=true;render();window.scrollTo(0,0);return;}
   if(act==='chMesas'){state.draft.ch_mesas=parseInt(d.v,10)||3;{const nmEl=document.getElementById('ch_nome');if(nmEl)state.draft.ch_nome=nmEl.value;}render();return;}
+  if(act==='ligChamar'&&evn){state.ligChamar=state.ligChamar===evn.id?null:evn.id;render();return;}
+  if(act==='ligTocar'&&evn){const eu=myMember();if(!eu||!d.m)return;if(tocandoPara(evn.id,d.m))return toast('Já está chamando. Espere terminar.');
+    tocarChamada(evn.id,[d.m],'📞 '+eu.name+' está ligando',eu.name+' está te chamando para uma chamada online. Toque para entrar.');toast('Chamando '+(((state.members.find(m=>m.id===d.m)||{}).name)||'')+'...');render();return;}
   if(act==='chamarTodos'){const eu=myMember(),outros=state.members.filter(m=>!eu||m.id!==eu.id),sel=state.chamarSel||{},todos=outros.every(m=>sel[m.id]);state.chamarSel=Object.fromEntries(outros.map(m=>[m.id,!todos]));render();return;}
   if(act==='chamarSel'){state.chamarSel=state.chamarSel||{};state.chamarSel[d.m]=!state.chamarSel[d.m];render();return;}
   if(act==='cancelChamada'){state.chamada=false;state.chamadaNova=false;delete state.draft.ch_nome;delete state.draft.ch_mesas;render();setTimeout(chatFim,80);return;}
@@ -3530,7 +3558,7 @@ app.addEventListener('click',async ev=>{
     state.events=state.events.concat([{id,...data}]);state.checkins[key]=ck;state.chamada=false;state.chamadaNova=false;state.draft={};state.tab='chat';state.room=id;state.painel=0;render();
     w(async()=>{await db.doc('events/'+id).set(data);await db.doc('checkins/'+key).set(ck);},'Chamada aberta.');
     {const outros=state.members.filter(m=>m.id!==me.id),cs=state.chamarSel,ids=cs?outros.filter(m=>cs[m.id]).map(m=>m.id):outros.map(m=>m.id);state.chamarSel=null;
-     if(ids.length)avisar(ids.length===outros.length?'todos':ids,data.title,me.name+' está te chamando para uma chamada online'+(sala==='jogos'?' com jogos':'')+'. Toque para entrar.',id);}
+     if(ids.length)setTimeout(()=>tocarChamada(id,ids,'📞 '+me.name+' está ligando',me.name+' está te chamando para uma chamada online. Toque para entrar.'),600);}
     return;
   }
   if(act==='editEvent'){state.editing=d.e;state.draft={};render();return;}
@@ -3808,7 +3836,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113223533';
+const VER='20261113224023';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
