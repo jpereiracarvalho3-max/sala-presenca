@@ -266,6 +266,22 @@ html.so-chat.tec .tabs{display:none}
 .opcb{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.22}
 .opcq{margin:-4px 0 2px 4px}
 .opct,.opcn{position:relative}.opcn{font-family:var(--font-head)}
+.rcl{flex-wrap:nowrap;gap:8px;padding:7px 0 1px;border-top:1px solid var(--line)}
+.rcl .rcn{display:flex;flex-direction:column;min-width:0;line-height:1.25;overflow-wrap:anywhere}
+.rcl .rcr{flex-wrap:nowrap;flex:none;gap:6px}
+.rcl .chip{white-space:nowrap}
+.rcl .btn{min-height:36px;padding:6px 10px;font-size:13.5px;white-space:nowrap}
+.ntf{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.28);min-width:0}
+.ntf.novo{border-color:var(--accent)}
+.ntf-top{display:flex;align-items:center;gap:10px;min-width:0}
+.ntf-ic{flex:none;width:38px;height:38px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:20px}
+.ntf-t{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.2}
+.ntf-t b{font-family:var(--font-head);font-size:15.5px}
+.ntf-t .small{overflow-wrap:anywhere}
+.ntf-para{flex:none;align-self:flex-start;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.ntf-para.todos{background:var(--info-bg);color:var(--info);border-color:transparent}
+.ntf>.item{background:transparent;border:0;padding:0}
+.ntf-txt{font-size:15px;overflow-wrap:anywhere}
 .alerta{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:12px;padding:10px;cursor:pointer;font:inherit;touch-action:manipulation}
 .alerta i{font-style:normal;font-size:22px;line-height:1.1}
 .alerta .grow{display:flex;flex-direction:column;gap:2px}
@@ -432,6 +448,17 @@ input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and
 .cidlista .stl:disabled{opacity:.45;cursor:default}
 .cidfala{border-radius:14px;background:var(--soft);border:1px solid var(--line);padding:14px;text-align:center;font-weight:600;font-size:17px;line-height:1.35}
 .chip.cidfora{opacity:.45;text-decoration:line-through}
+.jgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.jtile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;min-height:112px;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--soft);color:var(--ink);text-align:left;cursor:pointer;touch-action:manipulation;transition:transform .08s ease,border-color .12s ease}
+.jtile:active{transform:scale(.97)}
+.jtile.viva{border-color:rgba(95,214,148,.55)}
+.jtile .jic{width:42px;height:42px;border-radius:12px;background:var(--surface);display:grid;place-items:center;font-size:23px;line-height:1}
+.jtile b{font-family:var(--font-head);font-size:14.5px;line-height:1.2;overflow-wrap:anywhere}
+.jtile .jmeta{margin-top:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.jtile .jst{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:600;color:var(--ink)}
+.jtile .jst.viva{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.jgrid>.jtile:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:center;min-height:0}
+.jgrid>.jtile:last-child:nth-child(odd) .jmeta{margin:0 0 0 auto}
 .jogoop{border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:12px 14px 6px;display:flex;flex-direction:column;gap:2px}
 .jogoopb{width:100%;text-align:left;border:0;background:transparent;color:var(--ink);padding:0;display:flex;flex-direction:column;gap:6px;cursor:pointer;touch-action:manipulation}
 .jogoopb b{font-family:var(--font-head);font-size:19px}
@@ -1517,12 +1544,16 @@ const cDorme=(sub)=>'<div class="cidnoite">'+cLua+'<b>A cidade dorme</b><span cl
 function cLista(ids,sel,bloq){return '<div class="cidlista">'+ids.map(m=>'<button class="stl" data-act="cSel" data-m="'+esc(m)+'" aria-pressed="'+(sel===m)+'"'+(bloq&&bloq[m]?' disabled':'')+'>'+esc(iNome(m))+(bloq&&bloq[m]?' <span class="small muted">('+bloq[m]+')</span>':'')+'</button>').join('')+'</div>';}
 function jogosTopo(e,qual){return '<div class="row between"><button class="btn" data-act="jogoQual" data-v="">Voltar aos jogos</button><span class="chip info">'+(qual==='cid'?'A Cidade Dorme':'Impostor')+'</span></div>';}
 /* tela do botão Jogos: lista os jogos da sala presencial com as regras de cada um; a pessoa escolhe um e entra */
+const J_IC={cav:'🐎',rol:'🎡',vod:'😈',bom:'💣',car:'🃏',sin:'🚦',pro:'🤔',mai:'👥',che:'👑',imp:'🕵️',cid:'🌙',lud:'🎲',pok:'♠️',bin:'🔢',vin:'🂡',nav:'🚢',dam:'⚫',des:'✏️',tru:'🎴'};
 function jogosMenu(e){
-  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<div class="jogoop"><button class="jogoopb" data-act="jogoQual" data-v="'+v+'"><span class="row between" style="flex-wrap:nowrap"><b>'+J.nome+'</b>'+(rolando?'<span class="chip ok">Em andamento</span>':(n?'<span class="chip">'+n+' no jogo</span>':''))+'</span><span class="small muted">'+J.desc+'</span></button>'+fReqHTML(k,e)+fRegrasHTML(k)+'</div>';};
+  /* menu em grade: um cartão por jogo, com ícone, nome, quantas pessoas precisa e se já tem partida.
+     A explicação, os pré-requisitos e o "Como funciona" ficam na entrada de cada jogo, antes de começar. */
+  const cartao=(v,k,rolando,n)=>{const J=F_JOGOS[k];return '<button class="jtile'+(rolando?' viva':'')+'" data-act="jogoQual" data-v="'+v+'"><span class="jic" aria-hidden="true">'+(J_IC[k]||'🎮')+'</span><b>'+J.nome+'</b><span class="jmeta">'+(rolando?'<span class="jst viva"><i class="ligpt"></i>Em andamento</span>':n?'<span class="jst">'+n+' na mesa</span>':(J.min||2)+'+ pessoas')+'</span></button>';};
   const gi=iGame(e)||{},gc=cGame(e)||{},topo='<div class="row between"><button class="btn" data-act="jogosPSair">Voltar para a sala</button><span class="chip info">Jogos</span></div>';
-  if(isOnline(e))return topo+'<div class="card"><h2 style="margin:0">Jogos da chamada</h2><span class="small muted">Joga quem está sentado nesta mesa, cada um no seu celular. A ligação continua durante o jogo.</span>'+F_MESA.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+cartao('tru','tru',(tGame(e)||{}).status==='playing',0)+'</div>';
-  return topo+'<div class="card"><h2 style="margin:0">Jogos de shot</h2><span class="small muted">Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.</span>'+F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+'</div>'+
-    '<div class="card"><h2 style="margin:0">Jogos de conversa</h2>'+cartao('imp','imp',gi.status==='playing',iJog(e,gi).length)+cartao('cid','cid',gc.status==='jogo',iJog(e,gc).length)+'</div>';
+  const sec=(t,sub,itens)=>'<div class="card"><div><h2 style="margin:0">'+t+'</h2><span class="small muted">'+sub+'</span></div><div class="jgrid">'+itens+'</div></div>';
+  if(isOnline(e))return topo+sec('Jogos da chamada','Joga quem está sentado nesta mesa, cada um no seu celular. A ligação continua durante o jogo.',F_MESA.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join('')+cartao('tru','tru',(tGame(e)||{}).status==='playing',0));
+  return topo+sec('Jogos de shot','Rápidos, com o boneco de cada um na mesa. Quem perde, bebe.',F_ORDEM.map(k=>{const g=fGame(e,k)||{};return cartao('f:'+k,k,g.st==='jogo',fJog(e,g).length);}).join(''))+
+    sec('Jogos de conversa','Para jogar falando, com papéis e palavras secretas no celular de cada um.',cartao('imp','imp',gi.status==='playing',iJog(e,gi).length)+cartao('cid','cid',gc.status==='jogo',iJog(e,gc).length));
 }
 
 function cidScreen(e){
@@ -2439,7 +2470,7 @@ function rachaCard(r,sub){
         (meu.st==='avisou'?'':'<button class="btn good" data-act="rachaAvisar" data-id="'+esc(r.id)+'">Já paguei</button>')+'</div>';
     }
     x+='<div class="list" style="gap:6px">'+ids.map(i=>{const p=partes[i],st=parteSt(p);
-      return '<div class="row between"><span>'+esc(p.nome||nomeDe(i))+(p.k?' <span class="chip">de fora</span>':'')+' <span class="muted small">'+brl(p.v)+'</span></span><span class="row">'+
+      return '<div class="row between rcl"><span class="rcn"><span>'+esc(p.nome||nomeDe(i))+(p.k?' <span class="chip">de fora</span>':'')+'</span><span class="muted small">'+brl(p.v)+'</span></span><span class="row rcr">'+
         '<span class="chip '+(st==='pago'?'ok':st==='avisou'?'info':'warn')+'">'+(st==='pago'?'Pago':st==='avisou'?'Disse que pagou':'Devendo')+'</span>'+
         (p.k&&p.st!=='pago'&&(souDono||adm())?'<button class="btn" data-act="convLink" data-k="'+esc(p.k)+'" data-n="'+esc(p.nome||'')+'" data-d="'+esc(r.desc||'Racha')+'" title="Enviar o link de pagamento para esta pessoa">Link</button>':'')+
         (souDono||adm()?(p.st==='pago'?'<button class="btn" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="devendo">Desfazer</button>':'<button class="btn good" data-act="rachaMarcar" data-id="'+esc(r.id)+'" data-m="'+esc(i)+'" data-v="pago">Confirmar</button>'):'')+'</span></div>';}).join('')+'</div>';
@@ -2465,7 +2496,7 @@ function enqCard(q,sub){
     const votos=q.votos||{},tot=Object.values(votos).filter(v=>Number.isInteger(v)).length,meu=votos[state.uid];
     return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(q.q)+'</h3><span class="small muted">'+tot+(tot===1?' voto':' votos')+'</span></div>'+
       (q.ops||[]).map((o,i)=>{const n=Object.values(votos).filter(v=>v===i).length,pc=tot?Math.round(n/tot*100):0;return '<button class="opc'+(meu===i?' meu':'')+'" data-act="enqVotar" data-id="'+esc(q.id)+'" data-i="'+i+'" aria-pressed="'+(meu===i)+'"><span class="opcb" style="width:'+pc+'%"></span><span class="opct">'+(meu===i?'✓ ':'')+esc(o)+'</span><span class="opcn">'+n+'</span></button>'+(n?'<div class="small muted opcq">'+esc(Object.keys(votos).filter(u=>votos[u]===i).map(nomeUid).sort((a,b)=>a.localeCompare(b)).join(', '))+'</div>':'');}).join('')+
-      '<div class="row between"><span class="small muted">por '+esc(q.nome||nomeDe(q.mid))+(sub?' · '+esc(sub):'')+'</span>'+(adm()||q.uid===state.uid?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="'+esc(q.id)+'">Apagar</button>':'')+'</div></div>';
+      '<div class="row between"><span class="small muted">por '+esc(q.nome||nomeDe(q.mid))+(sub?' · '+esc(sub):'')+'</span>'+(adm()||q.uid===state.uid?'<button class="tfim" style="min-height:36px;padding:4px 10px" data-act="featApagar" data-col="polls" data-id="'+esc(q.id)+'">Apagar</button>':'')+'</div></div>';
 }
 /* SORTEIO DO EVENTO (amigo oculto, amigo bebida...): opcional, um por evento, criado pelo líder ou pelo administrador.
    Fica em polls/s_{evento} (tipo 'sorteio'). Quem cria escolhe os participantes e o app sorteia na hora.
@@ -2562,9 +2593,9 @@ function levarHTML(e){
   const q=lvDoc(e),E=esc(e.id),me=myMember();
   if(!q)return '<div class="card"><h2 style="margin:0">O que levar</h2><span class="small muted">'+(canManage(e)&&!readOnly()?'Monte a lista do que precisa e cada um marca o que vai levar.':'O líder ainda não criou a lista deste evento.')+'</span>'+(canManage(e)&&!readOnly()?'<button class="btn primary" data-act="lvCriar" data-e="'+E+'">Criar uma lista do que levar</button>':'')+'</div>';
   const itens=Array.isArray(q.itens)?q.itens:[],v=q.votos||{},dono=q.uid===state.uid||state.isOwner,quemPegou=id=>Object.keys(v).find(u=>((v[u]||{}).p||[]).includes(id)),meus=(v[state.uid]||{}).l||[];
-  let h='<div class="card"><div class="row between"><h2 style="margin:0">O que levar</h2>'+(dono?'<button class="tfim" style="min-height:0;padding:4px 8px" data-act="featApagar" data-col="polls" data-id="l_'+E+'">Apagar lista</button>':'')+'</div>';
+  let h='<div class="card"><div class="row between"><h2 style="margin:0">O que levar</h2>'+(dono?'<button class="tfim" style="min-height:36px;padding:4px 10px" data-act="featApagar" data-col="polls" data-id="l_'+E+'">Apagar lista</button>':'')+'</div>';
   if(itens.length)h+=(me?'<div class="small muted">Toque em <b>Eu levo</b> no que você vai levar. Cada item fica com uma pessoa; toque de novo para desistir.</div>':'')+'<div class="list" style="gap:6px">'+itens.map(it=>{const u=quemPegou(it.id),meu=u===state.uid;
-    return '<div class="lvit'+(meu?' meu':u?' pego':'')+'"><span class="lvn"><b>'+esc(it.t)+'</b>'+(u?'<span class="small muted">'+(meu?'Você leva':esc(nomeUid(u))+' leva')+'</span>':'<span class="small muted">Ninguém pegou ainda</span>')+'</span><span class="row" style="flex-wrap:nowrap;gap:4px">'+(me&&(!u||meu)?'<button class="btn'+(meu?' good':' primary')+'" style="padding:6px 12px;min-height:40px;white-space:nowrap" data-act="lvPegar" data-e="'+E+'" data-id="'+esc(it.id)+'">'+(meu?'✓ Eu levo':'Eu levo')+'</button>':(u?'<span class="chip ok">✓ Já tem</span>':''))+(dono?'<button class="tfim" style="min-height:36px;padding:4px 8px" data-act="lvItemDel" data-e="'+E+'" data-id="'+esc(it.id)+'" aria-label="Tirar item">×</button>':'')+'</span></div>';}).join('')+'</div>';
+    return '<div class="lvit'+(meu?' meu':u?' pego':'')+'"><span class="lvn"><b>'+esc(it.t)+'</b>'+(u?'<span class="small muted">'+(meu?'Você leva':esc(nomeUid(u))+' leva')+'</span>':'<span class="small muted">Ninguém pegou ainda</span>')+'</span><span class="row" style="flex-wrap:nowrap;gap:4px">'+(me&&(!u||meu)?'<button class="btn'+(meu?' good':' primary')+'" style="padding:6px 12px;min-height:40px;white-space:nowrap" data-act="lvPegar" data-e="'+E+'" data-id="'+esc(it.id)+'">'+(meu?'✓ Eu levo':'Eu levo')+'</button>':(u?'<span class="chip ok">✓ Já tem</span>':''))+(dono?'<button class="tfim" style="min-height:36px;min-width:36px;padding:4px 8px" data-act="lvItemDel" data-e="'+E+'" data-id="'+esc(it.id)+'" aria-label="Tirar item">×</button>':'')+'</span></div>';}).join('')+'</div>';
   else h+='<div class="small muted">'+(dono?'Adicione os itens que alguém precisa levar, ou deixe cada um escrever o que vai levar.':'Escreva abaixo o que você vai levar.')+'</div>';
   if(dono)h+='<div class="row" style="flex-wrap:nowrap"><input id="lv_item" class="grow" maxlength="40" placeholder="Novo item (ex.: gelo)" value="'+esc(val('lv_item',''))+'"><button class="btn" data-act="lvItem" data-e="'+E+'">Adicionar</button></div>';
   const livres=[];Object.keys(v).forEach(u=>((v[u]||{}).l||[]).forEach((t,i)=>livres.push({u,t,i})));
@@ -2621,15 +2652,18 @@ function alertasHTML(){
   const v=state.alertasVistoAntes||0,me=myMember(),de14=Date.now()-14*864e5,ev=id=>state.events.find(x=>x.id===id&&!isOnline(x));
   /* racha: só para quem está nele, e só enquanto houver dívida em aberto; depois fica apenas no evento */
   const sts=state.events.filter(x=>{const q=stDoc(x);return q&&stSou(q)&&(!stVi(q)||!stTemDica(q))&&Date.now()<stFim(x);});
-  const stCard=sts.length?'<div class="card"><h2 style="margin:0">Sorteio</h2><div class="list" style="gap:8px">'+sts.map(x=>{const q=stDoc(x);return '<div class="item"><div class="row between" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">'+esc(x.title)+'</h3>'+(q.valor?'<span class="chip info">até '+brl(q.valor)+'</span>':'')+'</div><div class="small muted">Sorteio do evento · '+esc(fmtDay(x.date))+'</div>'+(stVi(q)?'':'<button class="btn primary" data-act="stIr" data-e="'+esc(x.id)+'">Realize o seu sorteio</button>')+(stTemDica(q)?'':'<label>O que você quer ganhar?<textarea id="st_dn_'+esc(x.id)+'" rows="2" maxlength="300" placeholder="Escreva dicas para quem tirou você">'+esc(val('st_dn_'+x.id,''))+'</textarea></label><button class="btn'+(stVi(q)?' primary':'')+'" data-act="stDicaSalvar" data-e="'+esc(x.id)+'" data-c="st_dn_'+esc(x.id)+'">Salvar o que eu quero ganhar</button>')+'</div>';}).join('')+'</div></div>':'';
+  /* uma lista só: cada notificação diz o que é (tipo), de qual evento, quando, e se é só para você ou para todos */
+  const lista=[],nt=(o)=>lista.push(o);
+  sts.forEach(x=>{const q=stDoc(x);nt({at:q.at||0,fixo:1,ic:'🎁',tipo:'Sorteio',de:x.title,todos:false,novo:!stVi(q),h:'<div class="item">'+(q.valor?'<div class="small">Presente de até <b>'+brl(q.valor)+'</b></div>':'')+(stVi(q)?'':'<button class="btn primary" data-act="stIr" data-e="'+esc(x.id)+'">Realize o seu sorteio</button>')+(stTemDica(q)?'':'<label>O que você quer ganhar?<textarea id="st_dn_'+esc(x.id)+'" rows="2" maxlength="300" placeholder="Escreva dicas para quem tirou você">'+esc(val('st_dn_'+x.id,''))+'</textarea></label><button class="btn'+(stVi(q)?' primary':'')+'" data-act="stDicaSalvar" data-e="'+esc(x.id)+'" data-c="st_dn_'+esc(x.id)+'">Salvar o que eu quero ganhar</button>')+'</div>'});});
   const rc=Object.entries(state.feats.splits||{}).map(([id,r])=>({id,...r})).filter(r=>{if(r.eventId&&!ev(r.eventId))return false;if(r.aberto)return true;const p=r.partes||{},meu=me&&p[me.id];return (meu&&meu.st!=='pago'&&rachaAtivo(r))||(r.uid===state.uid&&Object.values(p).some(x=>x.st!=='pago'));}).sort((a,b)=>(b.at||0)-(a.at||0));
-  const ge=[];
-  for(const [id,q] of Object.entries(state.feats.polls||{}))if(!q.tipo&&ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))ge.push({at:q.at||0,h:enqCard({id,...q},ev(q.eventId).title)});
-  for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))ge.push({at:p.at||0,h:'<div class="alerta'+(p.uid!==state.uid&&p.at>v?' novo':'')+'"><i>📌</i><span class="grow"><span><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</span><span class="small muted">'+esc(ev(p.eventId).title)+' · '+quando(p.at)+'</span></span></div>'});
-  ge.sort((a,b)=>b.at-a.at);
+  rc.forEach(r=>{const meu=me&&(r.partes||{})[me.id];nt({at:r.at||0,fixo:(meu&&meu.st==='devendo')||r.uid===state.uid?1:0,ic:'🧾',tipo:r.aberto?'Racha aberto':'Racha',de:r.eventId?ev(r.eventId).title:'Sem evento',todos:!!r.aberto,novo:(r.at||0)>v&&r.uid!==state.uid,h:rachaCard(r,'')});});
+  for(const [id,q] of Object.entries(state.feats.polls||{}))if(!q.tipo&&ev(q.eventId)&&evRecente(ev(q.eventId))&&(q.uid===state.uid||vouNo(q.eventId)))nt({at:q.at||0,fixo:0,ic:'📊',tipo:'Enquete',de:ev(q.eventId).title,todos:true,novo:(q.at||0)>v&&q.uid!==state.uid,h:enqCard({id,...q},'')});
+  for(const p of Object.values(state.feats.posts||{}))if(ev(p.eventId)&&evRecente(ev(p.eventId))&&(p.uid===state.uid||vouNo(p.eventId)))nt({at:p.at||0,fixo:0,ic:'📌',tipo:'Recado',de:ev(p.eventId).title,todos:true,novo:p.uid!==state.uid&&p.at>v,h:'<div class="ntf-txt"><b>'+esc(p.nome||nomeDe(p.mid))+':</b> '+esc(p.text)+'</div>'});
+  lista.sort((a,b)=>(b.fixo-a.fixo)||(b.at-a.at));
+  const item=o=>'<article class="ntf'+(o.novo?' novo':'')+'"><header class="ntf-top"><span class="ntf-ic" aria-hidden="true">'+o.ic+'</span><span class="ntf-t"><b>'+o.tipo+'</b><span class="small muted">'+esc(o.de)+(o.at?' · '+quando(o.at):'')+'</span></span><span class="ntf-para'+(o.todos?' todos':'')+'">'+(o.todos?'Para todos':'Só você')+'</span></header>'+o.h+'</article>';
   if(state.featErr)return '<div class="card"><span class="chip warn">As notificações ainda não foram liberadas no banco.</span></div>';
-  return pushHTML()+stCard+(rc.length?'<div class="card"><h2 style="margin:0">Racha</h2><div class="list" style="gap:8px">'+rc.map(r=>rachaCard(r,r.eventId?ev(r.eventId).title:'Sem evento')).join('')+'</div></div>':'')+
-    '<div class="card"><h2 style="margin:0">Geral</h2>'+(ge.length?'<div class="list" style="gap:8px">'+ge.map(x=>x.h).join('')+'</div>':'<div class="empty">Nenhuma notificação por enquanto.</div>')+'</div>';
+  return pushHTML()+'<div class="row between" style="padding:0 4px"><h2 style="margin:0">Notificações</h2>'+(lista.length?'<span class="small muted">'+lista.length+(lista.length===1?' aviso':' avisos')+'</span>':'')+'</div>'+
+    (lista.length?'<div class="list" style="gap:10px">'+lista.map(item).join('')+'</div>':'<div class="card"><div class="empty">Nenhuma notificação por enquanto.</div></div>');
 }
 
 /* CHAT GERAL: texto e áudio curto para todos os integrantes. As mensagens somem depois de 2 horas
@@ -3836,7 +3870,7 @@ function boot(){
   });
 }
 /* atualização automática: se houver versão nova publicada, recarrega sozinho (menos no meio de uma sala ou chamada) */
-const VER='20261113224023';
+const VER='20261113225706';
 async function checkVer(){
   try{
     const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
